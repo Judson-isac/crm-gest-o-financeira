@@ -167,7 +167,7 @@ export default function FuncoesClient({ funcoes, redes, permissoesDisponiveis, a
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {funcoes.map(funcao => (
+                {funcoes.filter(f => f.nome !== 'Superadmin' && f.nome !== 'Superadministrador').map(funcao => (
                   <TableRow key={funcao.id}>
                     <TableCell className="font-medium">{funcao.nome}</TableCell>
                     {redes.length > 1 && <TableCell>{funcao.nomeRede}</TableCell>}

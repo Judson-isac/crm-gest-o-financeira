@@ -126,7 +126,7 @@ export function SuperAdminUsuariosManager({ initialUsuarios, redes, funcoes, red
     redeFilter === 'all' || user.redeId === redeFilter
   );
 
-  const availableFuncoes = funcoes.filter(f => f.redeId === selectedRedeId);
+  const availableFuncoes = funcoes.filter(f => f.redeId === selectedRedeId && f.nome !== 'Superadmin');
 
   return (
     <>
