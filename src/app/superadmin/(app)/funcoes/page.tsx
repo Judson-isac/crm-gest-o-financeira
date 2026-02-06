@@ -1,5 +1,6 @@
-
 'use server';
+
+export const dynamic = 'force-dynamic';
 
 import { getFuncoes, getRedes, getDistinctValues } from '@/lib/api';
 import FuncoesClient from '@/components/superadmin/FuncoesClient';
@@ -29,9 +30,9 @@ export default async function FuncoesPage() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Gerenciamento de Funções</h1>
-      <FuncoesClient 
-        funcoes={funcoesComRede} 
-        redes={redes} 
+      <FuncoesClient
+        funcoes={funcoesComRede}
+        redes={redes}
         permissoesDisponiveis={permissoesDisponiveis}
         allPolos={distinctValues.polos}
       />
