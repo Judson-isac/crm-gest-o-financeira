@@ -47,3 +47,6 @@ backup.sql
 
 # Build artifacts
 build
+
+# Production docker-compose with credentials (DO NOT COMMIT)
+docker-compose.prod.yml
