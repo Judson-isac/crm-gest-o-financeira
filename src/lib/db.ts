@@ -242,9 +242,25 @@ export async function getUserById(userId: string): Promise<Usuario | undefined> 
     }
 }
 
-export async function getAllUsuarios(redeId?: string): Promise<Omit<Usuario, 'senha'>[]> {
+export async function getAllUsuarios(redeId?: string, excludeSuperadmins: boolean = false): Promise<Omit<Usuario, 'senha'>[]> {
     const client = await pool.connect();
     try {
+        let whereConditions: string[] = [];
+        const params: string[] = [];
+        let paramIndex = 1;
+
+        if (redeId) {
+            whereConditions.push(`u."redeId" = $${paramIndex}`);
+            params.push(redeId);
+            paramIndex++;
+        }
+
+        if (excludeSuperadmins) {
+            whereConditions.push(`u."isSuperadmin" = FALSE`);
+        }
+
+        const whereClause = whereConditions.length > 0 ? ' WHERE ' + whereConditions.join(' AND ') : '';
+
         const query = `
             SELECT 
                 u.id, u.nome, u.email, u.funcao, u.status, u."redeId",
@@ -254,8 +270,8 @@ export async function getAllUsuarios(redeId?: string): Promise<Omit<Usuario, 'se
             FROM usuarios u
             LEFT JOIN redes r ON u."redeId" = r.id
             LEFT JOIN funcoes f ON u.funcao = f.nome AND u."redeId" = f."redeId"
-        ` + (redeId ? ' WHERE u."redeId" = $1' : '');
-        const params = redeId ? [redeId] : [];
+        ` + whereClause;
+
         const result = await client.query(query, params);
         return result.rows.map(row => ({ ...row, polos: row.polos || [] }));
     } finally {

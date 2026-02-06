@@ -163,9 +163,9 @@ export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
 
 export async function getUsuarios(redeId?: string): Promise<Omit<Usuario, 'senha'>[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
-    if (isSuperAdmin) return db.getAllUsuarios(redeId);
+    if (isSuperAdmin) return db.getAllUsuarios(redeId, false);
     if (!sessionRedeId) return [];
-    return db.getAllUsuarios(sessionRedeId);
+    return db.getAllUsuarios(sessionRedeId, true); // Exclude superadmins for regular users
 }
 
 export async function getNumerosProcessoSeletivo(redeId?: string): Promise<(NumeroProcessoSeletivo & { rede: string })[]> {

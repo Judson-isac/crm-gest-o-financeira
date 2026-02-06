@@ -226,9 +226,23 @@ export async function saveUsuarioAction(usuario: Partial<Usuario>) {
     const user = await getAuthenticatedUser();
     if (!user) throw new Error("Acesso negado.");
 
+    // Security: Check if trying to edit an existing user
+    if (usuario.id) {
+      const existingUser = await db.getUserById(usuario.id);
+      if (existingUser?.isSuperadmin && !user.isSuperadmin) {
+        throw new Error("Você não tem permissão para editar superadmins.");
+      }
+    }
+
+    // Security: Prevent non-superadmin from creating superadmin
+    if (usuario.isSuperadmin && !user.isSuperadmin) {
+      throw new Error("Você não tem permissão para criar superadmins.");
+    }
+
     if (!user.isSuperadmin) {
       if (!user.redeId) throw new Error("Usuário não pertence a nenhuma rede.");
       usuario.redeId = user.redeId;
+      usuario.isSuperadmin = false; // Force non-superadmin
     }
 
     if (!usuario.id && !usuario.senha) {
@@ -253,7 +267,15 @@ export async function saveUsuarioAction(usuario: Partial<Usuario>) {
 
 export async function deleteUsuarioAction(id: string) {
   try {
-    // Add security check here if needed
+    const user = await getAuthenticatedUser();
+    if (!user) throw new Error("Acesso negado.");
+
+    // Security: Prevent non-superadmin from deleting superadmin
+    const userToDelete = await db.getUserById(id);
+    if (userToDelete?.isSuperadmin && !user.isSuperadmin) {
+      throw new Error("Você não tem permissão para excluir superadmins.");
+    }
+
     await db.deleteUsuario(id);
     revalidatePath('/usuarios/listar');
     revalidatePath('/superadmin/usuarios');
