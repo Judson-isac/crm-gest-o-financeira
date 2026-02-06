@@ -27,7 +27,7 @@ export async function saveSuperAdminAction(data: Partial<Usuario>) {
         const adminData: Partial<Usuario> = {
             ...data,
             isSuperadmin: true,
-            redeId: undefined, // Super Admins are global
+            redeId: 'rede_default', // Super Admins need a network (database constraint)
             funcao: 'Superadmin',
             polos: [], // Usually global
             status: data.status || 'Ativo'
