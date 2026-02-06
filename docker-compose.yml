@@ -16,7 +16,7 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     networks:
-      - traefik-public
+      - UniCesumar
     labels:
       # Traefik configuration
       - "traefik.enable=true"
@@ -32,5 +32,5 @@ services:
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
 
 networks:
-  traefik-public:
+  UniCesumar:
     external: true
