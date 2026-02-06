@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   // Force dynamic rendering for all routes (no static generation)
-  dynamicParams: true,
   generateBuildId: async () => 'build',
   skipTrailingSlashRedirect: true,
   images: {
