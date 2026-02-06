@@ -1,110 +1,140 @@
 -- =====================================================================
 -- CRM Gestão Financeira - Inicialização do Banco de Dados
--- Arquivo SEGURO para versionamento no Git
--- Contém apenas estrutura (schema) + dados essenciais (seed data)
+-- Schema ATUALIZADO do banco atual + seed data mínimo
 -- =====================================================================
 
--- Configurações
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 
--- =====================================================================
--- TABELAS
--- =====================================================================
+-- ===  == TABELAS ==================================================================
 
 -- Redes
 CREATE TABLE IF NOT EXISTS public.redes (
     id TEXT PRIMARY KEY,
-    nome TEXT UNIQUE NOT NULL,
-    polos TEXT[]
+    nome TEXT UNIQUE,
+    polos TEXT[],
+    modulos TEXT[] DEFAULT '{}'::TEXT[]
 );
 
 -- Funções/Perfis
 CREATE TABLE IF NOT EXISTS public.funcoes (
     id TEXT PRIMARY KEY,
-    nome TEXT UNIQUE NOT NULL,
+    nome TEXT UNIQUE,
     permissoes JSONB,
     "redeId" VARCHAR(255) NOT NULL REFERENCES public.redes(id) ON DELETE CASCADE,
-    polos TEXT[]
+    polos TEXT[],
+    "verRanking" BOOLEAN DEFAULT FALSE
 );
 
 -- Usuários
 CREATE TABLE IF NOT EXISTS public.usuarios (
     id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    senha TEXT NOT NULL,
+    nome TEXT,
+    email TEXT UNIQUE,
+    senha TEXT,
     funcao TEXT,
-    status TEXT DEFAULT 'ativo',
+    status TEXT,
     rede TEXT,
     avatarurl TEXT,
     "redeId" VARCHAR(255) NOT NULL REFERENCES public.redes(id) ON DELETE CASCADE,
-    "isSuperadmin" BOOLEAN DEFAULT FALSE NOT NULL
+    "isSuperadmin" BOOLEAN DEFAULT FALSE NOT NULL,
+    polos TEXT[] DEFAULT '{}'::TEXT[]
 );
 
 -- Matrículas
 CREATE TABLE IF NOT EXISTS public.matriculas (
     id TEXT PRIMARY KEY,
-    nome_aluno TEXT,
-    cpf TEXT,
-    email TEXT,
+    "redeId" TEXT NOT NULL REFERENCES public.redes(id) ON DELETE CASCADE,
+    "dataMatricula" TIMESTAMP NOT NULL,
+    "processoSeletivoId" TEXT,
+    polo TEXT NOT NULL,
+    estado TEXT NOT NULL,
+    cidade TEXT NOT NULL,
+    "nomeAluno" TEXT NOT NULL,
     telefone TEXT,
-    curso_id TEXT,
-    data_matricula TIMESTAMP DEFAULT NOW(),
-    status TEXT DEFAULT 'ativo',
-    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
+    ra TEXT,
+    "tipoCursoId" TEXT,
+    "cursoSigla" TEXT NOT NULL,
+    "campanhaId" TEXT,
+    "canalId" TEXT,
+    "primeiraMensalidade" NUMERIC(10,2),
+    "segundaMensalidade" NUMERIC(10,2) NOT NULL,
+    "criadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "atualizadoEm" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    anexos TEXT[],
+    "usuarioId" TEXT
 );
 
 -- Cursos
 CREATE TABLE IF NOT EXISTS public.cursos (
     id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
+    nome TEXT,
     sigla TEXT,
     tipo TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    sigla_alternativa TEXT,
+    nicho TEXT,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE,
+    UNIQUE (sigla, "redeId")
 );
 
 -- Tipos de Curso
 CREATE TABLE IF NOT EXISTS public.tipos_curso (
     id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
+    nome TEXT,
     sigla TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
 );
 
 -- Campanhas
 CREATE TABLE IF NOT EXISTS public.campanhas (
     id TEXT PRIMARY KEY,
     nome TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE,
+    "dataInicial" TIMESTAMP,
+    "dataFinal" TIMESTAMP,
+    status TEXT
 );
 
 -- Canais
 CREATE TABLE IF NOT EXISTS public.canais (
     id TEXT PRIMARY KEY,
     nome TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
 );
 
 -- Processos Seletivos
 CREATE TABLE IF NOT EXISTS public.processos_seletivos (
     id TEXT PRIMARY KEY,
     nome TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE,
+    numero TEXT,
+    ano INTEGER,
+    "dataInicial" TIMESTAMP,
+    "dataFinal" TIMESTAMP
 );
 
 -- Números de Processo Seletivo
 CREATE TABLE IF NOT EXISTS public.numeros_processo_seletivo (
     id TEXT PRIMARY KEY,
     numero TEXT,
-    processo_seletivo_id TEXT
+    processo_seletivo_id TEXT,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
 );
 
 -- Space Points
 CREATE TABLE IF NOT EXISTS public.spacepoints (
     id TEXT PRIMARY KEY,
     nome TEXT,
-    ativo BOOLEAN DEFAULT TRUE
+    ativo BOOLEAN,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE,
+    "processoSeletivo" TEXT,
+    date TIMESTAMP,
+    percentage NUMERIC(5,2)
 );
 
 -- Financial Records
@@ -146,7 +176,8 @@ CREATE TABLE IF NOT EXISTS public.despesas (
     data DATE,
     descricao TEXT,
     valor NUMERIC,
-    categoria TEXT
+    categoria TEXT,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
 );
 
 -- Metas
@@ -155,54 +186,103 @@ CREATE TABLE IF NOT EXISTS public.metas (
     rede TEXT,
     mes INTEGER,
     ano INTEGER,
-    valor NUMERIC
+    valor NUMERIC,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE
 );
 
--- Configurações do Sistema
+-- System Config
 CREATE TABLE IF NOT EXISTS public.system_config (
-    id TEXT PRIMARY KEY DEFAULT 'default',
-    app_name TEXT DEFAULT 'CRM Gestão Financeira',
-    app_logo TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    key VARCHAR(50) PRIMARY KEY,
+    value TEXT
 );
 
--- Configurações de Ranking
+-- Ranking Config
 CREATE TABLE IF NOT EXISTS public.ranking_config (
-    id TEXT PRIMARY KEY DEFAULT 'default',
-    sound_url TEXT,
-    voice_enabled BOOLEAN DEFAULT TRUE,
-    sound_enabled BOOLEAN DEFAULT TRUE,
-    voice_speed NUMERIC DEFAULT 1.0,
-    manual_alert_sound_url TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    "redeId" TEXT PRIMARY KEY REFERENCES public.redes(id) ON DELETE CASCADE,
+    "voiceEnabled" BOOLEAN DEFAULT TRUE,
+    "voiceSpeed" NUMERIC DEFAULT 1.1,
+    "soundEnabled" BOOLEAN DEFAULT TRUE,
+    "alertMode" TEXT DEFAULT 'confetti',
+    "soundUrl" TEXT,
+    "updatedAt" TIMESTAMP DEFAULT NOW(),
+    "manualAlertSoundUrl" TEXT,
+    manualalertsoundurl TEXT
+);
+
+-- Ranking Messages
+CREATE TABLE IF NOT EXISTS public.ranking_messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    "redeId" TEXT REFERENCES public.redes(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    "createdAt" TIMESTAMP DEFAULT NOW()
+);
+
+-- Saved Sounds
+CREATE TABLE IF NOT EXISTS public.saved_sounds (
+    id TEXT PRIMARY KEY,
+    "redeId" TEXT NOT NULL REFERENCES public.redes(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    "createdAt" TIMESTAMP DEFAULT NOW()
 );
 
 -- =====================================================================
--- DADOS INICIAIS (SEED DATA)
+-- FOREIGN KEYS ADICIONAIS
+-- =====================================================================
+
+ALTER TABLE public.matriculas DROP CONSTRAINT IF EXISTS "matriculas_campanhaId_fkey";
+ALTER TABLE public.matriculas ADD CONSTRAINT "matriculas_campanhaId_fkey" FOREIGN KEY ("campanhaId") REFERENCES public.campanhas(id);
+
+ALTER TABLE public.matriculas DROP CONSTRAINT IF EXISTS "matriculas_canalId_fkey";
+ALTER TABLE public.matriculas ADD CONSTRAINT "matriculas_canalId_fkey" FOREIGN KEY ("canalId") REFERENCES public.canais(id);
+
+ALTER TABLE public.matriculas DROP CONSTRAINT IF EXISTS "matriculas_processoSeletivoId_fkey";
+ALTER TABLE public.matriculas ADD CONSTRAINT "matriculas_processoSeletivoId_fkey" FOREIGN KEY ("processoSeletivoId") REFERENCES public.processos_seletivos(id);
+
+ALTER TABLE public.matriculas DROP CONSTRAINT IF EXISTS "matriculas_tipoCursoId_fkey";
+ALTER TABLE public.matriculas ADD CONSTRAINT "matriculas_tipoCursoId_fkey" FOREIGN KEY ("tipoCursoId") REFERENCES public.tipos_curso(id);
+
+ALTER TABLE public.matriculas DROP CONSTRAINT IF EXISTS "matriculas_usuarioId_fkey";
+ALTER TABLE public.matriculas ADD CONSTRAINT "matriculas_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES public.usuarios(id);
+
+ALTER TABLE public.spacepoints DROP CONSTRAINT IF EXISTS "spacepoints_processoSeletivo_fkey";
+ALTER TABLE public.spacepoints ADD CONSTRAINT "spacepoints_processoSeletivo_fkey" FOREIGN KEY ("processoSeletivo") REFERENCES public.processos_seletivos(id);
+
+-- =====================================================================
+-- ÍNDICES
+-- =====================================================================
+
+CREATE INDEX IF NOT EXISTS idx_matriculas_datamatricula ON public.matriculas("dataMatricula");
+CREATE INDEX IF NOT EXISTS idx_matriculas_nomealuno ON public.matriculas("nomeAluno");
+CREATE INDEX IF NOT EXISTS idx_matriculas_redeid ON public.matriculas("redeId");
+CREATE INDEX IF NOT EXISTS idx_usuarios_email ON public.usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_rede ON public.usuarios("redeId");
+
+-- =====================================================================
+-- SEED DATA (Dados Iniciais)
 -- =====================================================================
 
 -- Rede Padrão
-INSERT INTO public.redes (id, nome, polos) 
-VALUES ('rede_default', 'Rede Principal', ARRAY[]::TEXT[])
+INSERT INTO public.redes (id, nome, polos, modulos) 
+VALUES ('rede_default', 'Rede Principal', ARRAY[]::TEXT[], ARRAY[]::TEXT[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Função Superadmin
-INSERT INTO public.funcoes (id, nome, permissoes, "redeId", polos)
+INSERT INTO public.funcoes (id, nome, permissoes, "redeId", polos, "verRanking")
 VALUES (
     'funcao_superadmin',
     'Superadministrador',
     '{"verDashboard": true, "gerenciarUsuarios": true, "gerenciarMatriculas": true, "realizarImportacoes": true, "gerenciarCadastrosGerais": true, "verRelatoriosFinanceiros": true}'::JSONB,
     'rede_default',
-    ARRAY[]::TEXT[]
+    ARRAY[]::TEXT[],
+    TRUE
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Usuário Superadmin Padrão
+-- Usuário Superadmin
 -- Email: admin@crm.com
--- Senha: Admin@2024 (hash bcrypt)
-INSERT INTO public.usuarios (id, nome, email, senha, funcao, status, "redeId", "isSuperadmin")
+-- Senha: Admin@2024
+INSERT INTO public.usuarios (id, nome, email, senha, funcao, status, "redeId", "isSuperadmin", polos)
 VALUES (
     'user_superadmin',
     'Administrador',
@@ -211,43 +291,21 @@ VALUES (
     'Superadministrador',
     'ativo',
     'rede_default',
-    TRUE
+    TRUE,
+    ARRAY[]::TEXT[]
 )
 ON CONFLICT (email) DO NOTHING;
 
--- Tipos de Curso Padrão
-INSERT INTO public.tipos_curso (id, nome, sigla, ativo) VALUES
-    ('tc_grad_ead', 'Graduação - EAD', 'GRAD/EAD', TRUE),
-    ('tc_grad_hib', 'Graduação - Híbrido', 'GRAD/HIB', TRUE),
-    ('tc_pos', 'Pós-Graduação', 'PÓS', TRUE),
-    ('tc_pro', 'Profissionalizante', 'PRO', TRUE),
-    ('tc_tec', 'Técnico', 'TEC', TRUE)
-ON CONFLICT (id) DO NOTHING;
-
 -- Config do Sistema
-INSERT INTO public.system_config (id, app_name)
-VALUES ('default', 'CRM Gestão Financeira')
-ON CONFLICT (id) DO NOTHING;
-
--- Config do Ranking
-INSERT INTO public.ranking_config (id, voice_enabled, sound_enabled, voice_speed)
-VALUES ('default', TRUE, TRUE, 1.0)
-ON CONFLICT (id) DO NOTHING;
-
--- =====================================================================
--- ÍNDICES (Performance)
--- =====================================================================
-
-CREATE INDEX IF NOT EXISTS idx_usuarios_email ON public.usuarios(email);
-CREATE INDEX IF NOT EXISTS idx_usuarios_rede ON public.usuarios("redeId");
-CREATE INDEX IF NOT EXISTS idx_financial_records_rede ON public.financial_records("redeId");
-CREATE INDEX IF NOT EXISTS idx_matriculas_rede ON public.matriculas("redeId");
+INSERT INTO public.system_config (key, value)
+VALUES ('appName', 'CRM Gestão Financeira')
+ON CONFLICT (key) DO NOTHING;
 
 -- =====================================================================
 -- FIM DA INICIALIZAÇÃO
 -- =====================================================================
--- ✅ Banco inicializado com sucesso!
--- 📧 Login padrão: admin@crm.com
--- 🔑 Senha padrão: Admin@2024
--- ⚠️  IMPORTANTE: Altere a senha após primeiro login!
+-- ✅ Banco inicializado!
+-- 📧 Login: admin@crm.com
+-- 🔑 Senha: Admin@2024
+-- ⚠️  ALTERE a senha após primeiro login!
 -- =====================================================================
