@@ -566,8 +566,23 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
 }
 
 export async function deleteRede(id: string): Promise<void> {
+    // Security: Prevent deletion of default network (protects superadmins)
+    if (id === 'rede_default') {
+        throw new Error('A rede padrão não pode ser excluída pois protege as contas de superadmin.');
+    }
+
     const client = await pool.connect();
     try {
+        // Check if there are superadmins in this network
+        const superadminCheck = await client.query(
+            'SELECT COUNT(*) as count FROM usuarios WHERE "redeId" = $1 AND "isSuperadmin" = TRUE',
+            [id]
+        );
+
+        if (parseInt(superadminCheck.rows[0].count) > 0) {
+            throw new Error('Esta rede contém superadmins. Não é possível excluir.');
+        }
+
         await client.query('DELETE FROM redes WHERE id = $1', [id]);
     } finally {
         client.release();
