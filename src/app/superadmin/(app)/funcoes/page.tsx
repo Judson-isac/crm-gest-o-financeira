@@ -1,7 +1,5 @@
 'use server';
 
-export const dynamic = 'force-dynamic';
-
 import { getFuncoes, getRedes, getDistinctValues } from '@/lib/api';
 import FuncoesClient from '@/components/superadmin/FuncoesClient';
 import { Permissoes, Rede } from '@/lib/types';
