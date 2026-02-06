@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+
+// Force all routes to be dynamic (no static generation during build)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 
