@@ -6,13 +6,13 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DATABASE_URL: ${DATABASE_URL}
+        DATABASE_URL: postgresql://crm_user:Crm@2024!Forte@pgvector_pgvector.1.oltiobu9m52thyvfomv2w8c0o:5432/crm_gestao
     image: crm-app:latest
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - DATABASE_URL=postgresql://crm_user:Crm@2024!Forte@pgvector_pgvector.1.oltiobu9m52thyvfomv2w8c0o:5432/crm_gestao
+      - NEXTAUTH_URL=https://gestaofinanceiracrm.redebrazao.shop
+      - NEXTAUTH_SECRET=sKSatGC7FAZ1IEZ55r+RpbY8/icajvkwBF6U8uYByFA=
     networks:
       - UniCesumar
     deploy:
@@ -27,7 +27,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.crm.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.crm.rule=Host(`gestaofinanceiracrm.redebrazao.shop`)
         - traefik.http.routers.crm.entrypoints=websecure
         - traefik.http.routers.crm.tls.certresolver=letsencryptresolver
         - traefik.http.routers.crm.priority=1
@@ -41,5 +41,6 @@ networks:
   UniCesumar:
     external: true
     name: UniCesumar
+
 
 
