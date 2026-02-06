@@ -14,7 +14,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Disable static optimization to prevent build errors
+  // Force dynamic rendering for all routes (no static generation)
+  dynamicParams: true,
   generateBuildId: async () => 'build',
   skipTrailingSlashRedirect: true,
   images: {
