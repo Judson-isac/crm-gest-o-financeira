@@ -2,6 +2,10 @@ import { Suspense } from 'react';
 import LoginForm from './login-form';
 import { getSystemConfig } from '@/lib/db';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+
 export default async function LoginPage() {
   const config = await getSystemConfig();
 
