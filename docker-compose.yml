@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
     image: crm-app:latest
     container_name: crm-app
     restart: unless-stopped
