@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Disable static optimization to prevent build errors
+  generateBuildId: async () => 'build',
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [
       {
