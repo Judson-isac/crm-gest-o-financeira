@@ -6,11 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DATABASE_URL: postgresql://crm_user:Crm@2024!Forte@pgvector_pgvector.1.oltiobu9m52thyvfomv2w8c0o:5432/crm_gestao
+        DATABASE_URL: postgresql://crm_user:Crm@2024!Forte@pgvector:5432/crm_gestao
     image: crm-app:latest
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://crm_user:Crm@2024!Forte@pgvector_pgvector.1.oltiobu9m52thyvfomv2w8c0o:5432/crm_gestao
+      - DATABASE_URL=postgresql://crm_user:Crm@2024!Forte@pgvector:5432/crm_gestao
       - NEXTAUTH_URL=https://gestaofinanceiracrm.redebrazao.shop
       - NEXTAUTH_SECRET=sKSatGC7FAZ1IEZ55r+RpbY8/icajvkwBF6U8uYByFA=
     networks:
