@@ -1,0 +1,18 @@
+export async function getSuperAdminStats(): Promise<SuperAdminStats> {
+    const client = await pool.connect();
+    try {
+        const [redesResult, usuariosResult, funcoesResult] = await Promise.all([
+            client.query('SELECT COUNT(*) FROM redes'),
+            client.query('SELECT COUNT(*) FROM usuarios'),
+            client.query('SELECT COUNT(*) FROM funcoes')
+        ]);
+
+        return {
+            totalRedes: parseInt(redesResult.rows[0].count),
+            totalUsuarios: parseInt(usuariosResult.rows[0].count),
+            totalFuncoes: parseInt(funcoesResult.rows[0].count)
+        };
+    } finally {
+        client.release();
+    }
+}

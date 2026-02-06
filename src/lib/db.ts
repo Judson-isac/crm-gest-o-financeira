@@ -1,0 +1,1600 @@
+
+'use server';
+import { Pool } from 'pg';
+import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
+import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, RankingConfig, RankingMessage, SuperAdminStats } from './types';
+
+const pool = new Pool({
+    user: process.env.PGUSER || 'postgres',
+    host: process.env.PGHOST || 'localhost',
+    database: process.env.PGDATABASE || 'postgres',
+    password: process.env.PGPASSWORD || 'mysecretpassword',
+    port: parseInt(process.env.PGPORT || '5432', 10),
+});
+
+const SALT_ROUNDS = 10;
+
+// Helper function to build WHERE clauses
+const buildWhereClause = (filters: Filters, allowedPolos: string[] | null, redeId: string | null): { text: string, values: any[] } => {
+    const safeFilters = filters || {};
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    const poloFilterFromRequest = Array.isArray(safeFilters.polo) ? safeFilters.polo : (safeFilters.polo ? [safeFilters.polo] : []);
+
+    let effectivePolos: string[] | null = null;
+    if (allowedPolos) { // User has polo restrictions
+        if (poloFilterFromRequest.length > 0) {
+            // Intersect user filter with allowed polos
+            effectivePolos = poloFilterFromRequest.filter(p => allowedPolos.includes(p));
+        } else {
+            // No specific polos requested, use all allowed
+            effectivePolos = allowedPolos;
+        }
+    } else if (allowedPolos === null) { // Superadmin, no restrictions
+        effectivePolos = poloFilterFromRequest.length > 0 ? poloFilterFromRequest : null;
+    } else { // User has no allowed polos (empty array)
+        effectivePolos = [];
+    }
+
+    if (effectivePolos && effectivePolos.length > 0) {
+        conditions.push(`polo = ANY($${paramIndex++})`);
+        values.push(effectivePolos);
+    } else if (Array.isArray(allowedPolos) && allowedPolos.length === 0) {
+        // This user is restricted to an empty list of polos, so they can see nothing.
+        conditions.push('1=0');
+    }
+
+    if (safeFilters.categoria) {
+        conditions.push(`categoria = $${paramIndex++}`);
+        values.push(safeFilters.categoria);
+    }
+    if (safeFilters.mes) {
+        conditions.push(`referencia_mes = $${paramIndex++}`);
+        values.push(safeFilters.mes);
+    }
+    if (safeFilters.ano) {
+        conditions.push(`referencia_ano = $${paramIndex++}`);
+        values.push(safeFilters.ano);
+    }
+    if (redeId) {
+        conditions.push(`"redeId" = $${paramIndex++}`);
+        values.push(redeId);
+    }
+
+    return {
+        text: conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '',
+        values,
+    };
+};
+
+const financialRecordColumns = `
+    id, polo, categoria, tipo, parcela, 
+    valor_pago, 
+    valor_repasse, 
+    referencia_mes, referencia_ano, data_importacao, import_id, nome_arquivo, tipo_importacao, sigla_curso, "redeId"
+`;
+
+export async function getFinancialRecords(permissions: UserPermissions, filters: Filters, page = 1, pageSize = 10): Promise<{ records: FinancialRecord[], totalCount: number }> {
+    const client = await pool.connect();
+    try {
+        const whereClause = buildWhereClause(filters, permissions.polos, permissions.redeId);
+
+        const countQuery = `SELECT COUNT(*) FROM financial_records ${whereClause.text}`;
+        const totalCountResult = await client.query(countQuery, whereClause.values);
+        const totalCount = parseInt(totalCountResult.rows[0].count, 10) || 0;
+
+        const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+        const safePageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10;
+
+        const offset = (safePage - 1) * safePageSize;
+        const dataQuery = `SELECT ${financialRecordColumns} FROM financial_records ${whereClause.text} ORDER BY data_importacao DESC LIMIT $${whereClause.values.length + 1} OFFSET $${whereClause.values.length + 2}`;
+        const result = await client.query(dataQuery, [...whereClause.values, safePageSize, offset]);
+
+        const parsedRecords = result.rows.map(row => ({
+            ...row,
+            valor_pago: parseFloat(row.valor_pago || '0'),
+            valor_repasse: parseFloat(row.valor_repasse || '0'),
+        }));
+
+        return { records: parsedRecords, totalCount };
+    } finally {
+        client.release();
+    }
+}
+
+export async function getSummaryData(permissions: UserPermissions, filters: Filters): Promise<SummaryData> {
+    const client = await pool.connect();
+    try {
+        const whereClause = buildWhereClause(filters, permissions.polos, permissions.redeId);
+        const query = `
+            SELECT
+                COUNT(*) as totalRecords,
+                COALESCE(SUM(valor_pago), 0) as totalReceita,
+                COALESCE(SUM(valor_repasse), 0) as totalRepasse,
+                COUNT(*) FILTER (WHERE tipo = 'Mensalidade') as mensalidadeCount,
+                COUNT(*) FILTER (WHERE tipo = 'Acordo') as acordoCount,
+                COUNT(*) FILTER (WHERE tipo = 'Serviço') as servicoCount,
+                COUNT(*) FILTER (WHERE tipo = 'Descontos') as descontosCount
+            FROM financial_records
+            ${whereClause.text}
+        `;
+
+        const result = await client.query(query, whereClause.values);
+        const row = result.rows[0];
+
+        return {
+            totalRecords: parseInt(row.totalrecords, 10) || 0,
+            totalReceita: parseFloat(row.totalreceita) || 0,
+            totalRepasse: parseFloat(row.totalrepasse) || 0,
+            tipoCounts: {
+                Mensalidade: parseInt(row.mensalidadecount, 10) || 0,
+                Acordo: parseInt(row.acordocount, 10) || 0,
+                Serviço: parseInt(row.servicocount, 10) || 0,
+                Descontos: parseInt(row.descontoscount, 10) || 0,
+            },
+        };
+    } finally {
+        client.release();
+    }
+}
+// Helper to ensure a polo exists in a rede's polos array
+async function ensurePoloExistsInRede(client: any, polo: string, redeId: string) {
+    if (!polo || !redeId) return;
+
+    // Check if polo already exists in the rede
+    const result = await client.query(
+        'SELECT 1 FROM redes WHERE id = $1 AND $2 = ANY(polos)',
+        [redeId, polo]
+    );
+
+    if (result.rows.length === 0) {
+        // Add polo to the array if it doesn't exist
+        await client.query(
+            'UPDATE redes SET polos = array_append(polos, $2) WHERE id = $1',
+            [redeId, polo]
+        );
+    }
+}
+
+export async function storeFinancialRecords(records: (Omit<FinancialRecord, 'id' | 'data_importacao'> & { redeId: string })[]): Promise<void> {
+    if (!records || records.length === 0) {
+        return;
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const importId = records[0]?.import_id || uuidv4();
+        const redeId = records[0].redeId; // Pega a redeId do primeiro registro
+
+        if (!redeId) {
+            throw new Error("A propriedade 'redeId' é obrigatória em todos os registros para a importação.");
+        }
+
+        // Insere todos os registros financeiros
+        for (const record of records) {
+            const newId = uuidv4();
+            await ensurePoloExistsInRede(client, record.polo, redeId);
+            await client.query(
+                'INSERT INTO financial_records (id, polo, categoria, tipo, parcela, valor_pago, valor_repasse, referencia_mes, referencia_ano, import_id, nome_arquivo, tipo_importacao, sigla_curso, data_importacao, "redeId") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $14)',
+                [newId, record.polo, record.categoria, record.tipo, record.parcela, record.valor_pago, record.valor_repasse, record.referencia_mes, record.referencia_ano, importId, record.nome_arquivo, record.tipo_importacao, record.sigla_curso, redeId]
+            );
+        }
+
+        // Insere um único log para a importação
+        const firstRecord = records[0];
+        if (firstRecord) {
+            await client.query(
+                'INSERT INTO import_logs (id, import_id, nome_arquivo, total_registros, referencia_mes, referencia_ano, tipo_importacao, data_importacao, "redeId") VALUES ($1, $1, $2, $3, $4, $5, $6, NOW(), $7)',
+                [importId, firstRecord.nome_arquivo, records.length, firstRecord.referencia_mes, firstRecord.referencia_ano, firstRecord.tipo_importacao, redeId]
+            );
+        }
+
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getFinancialRecordsByImportId(importId: string): Promise<FinancialRecord[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(`SELECT ${financialRecordColumns} FROM financial_records WHERE import_id = $1`, [importId]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function validateUserCredentials(email: string, password?: string): Promise<Usuario | null> {
+    if (!password) return null;
+    const client = await pool.connect();
+    try {
+        const userResult = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+        const user = userResult.rows[0];
+        if (!user) {
+            return null;
+        }
+
+        // Securely compare the provided password with the stored hash.
+        const isMatch = await bcrypt.compare(password, user.senha);
+
+        if (isMatch) {
+            return user;
+        }
+
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getUserById(userId: string): Promise<Usuario | undefined> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM usuarios WHERE id = $1', [userId]);
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+}
+
+export async function getAllUsuarios(redeId?: string): Promise<Omit<Usuario, 'senha'>[]> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT 
+                u.id, u.nome, u.email, u.funcao, u.status, u."redeId",
+                r.nome as rede,
+                f.polos,
+                u."isSuperadmin"
+            FROM usuarios u
+            LEFT JOIN redes r ON u."redeId" = r.id
+            LEFT JOIN funcoes f ON u.funcao = f.nome AND u."redeId" = f."redeId"
+        ` + (redeId ? ' WHERE u."redeId" = $1' : '');
+        const params = redeId ? [redeId] : [];
+        const result = await client.query(query, params);
+        return result.rows.map(row => ({ ...row, polos: row.polos || [] }));
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveUsuario(usuario: Partial<Usuario>): Promise<Usuario> {
+    const client = await pool.connect();
+    try {
+        const dataToSave: Partial<Usuario> & { isSuperadmin?: boolean } = { ...usuario };
+        delete (dataToSave as any).rede;
+
+        if (typeof dataToSave.funcao === 'string') {
+            dataToSave.isSuperadmin = dataToSave.funcao === 'Superadmin';
+        }
+        if (dataToSave.senha) {
+            dataToSave.senha = await bcrypt.hash(dataToSave.senha, SALT_ROUNDS);
+        }
+        if (dataToSave.id) {
+            const { id, ...updateFields } = dataToSave;
+            delete (updateFields as any).avatarUrl; // Don't try to update avatarUrl
+
+            const fieldEntries = Object.entries(updateFields).filter(([key, value]) => value !== undefined);
+
+            if (fieldEntries.length === 0) {
+                const currentUser = await getUserById(id);
+                if (!currentUser) throw new Error("User not found");
+                return currentUser;
+            }
+            const fieldNames = fieldEntries.map(([key], i) => `"${key}"=$${i + 2}`).join(', ');
+            const fieldValues = fieldEntries.map(([_, value]) => value);
+            const query = `UPDATE usuarios SET ${fieldNames} WHERE id = $1 RETURNING *`;
+            const result = await client.query(query, [id, ...fieldValues]);
+            return result.rows[0];
+        } else {
+            const newId = uuidv4();
+            const { nome, email, senha, funcao, status, redeId, isSuperadmin, polos } = dataToSave;
+            const result = await client.query(
+                'INSERT INTO usuarios (id, nome, email, senha, funcao, status, "redeId", "isSuperadmin", polos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+                [newId, nome, email, senha, funcao, status, redeId, isSuperadmin, polos]
+            );
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function deleteUsuario(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM usuarios WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}
+
+const defaultPermissions: UserPermissions = {
+    verDashboard: false, gerenciarMatriculas: false, verRelatoriosFinanceiros: false,
+    gerenciarCadastrosGerais: false, gerenciarUsuarios: false, realizarImportacoes: false,
+    verRanking: false,
+    polos: [], isSuperadmin: false, redeId: null
+};
+
+export async function getUserPermissionsById(userId: string, userObject?: Usuario): Promise<UserPermissions> {
+    const client = await pool.connect();
+    try {
+        const user = userObject || await getUserById(userId);
+        if (!user) return defaultPermissions;
+
+        if (user.isSuperadmin) {
+            return {
+                verDashboard: true, gerenciarMatriculas: true, verRelatoriosFinanceiros: true,
+                gerenciarCadastrosGerais: true, gerenciarUsuarios: true, realizarImportacoes: true,
+                verRanking: true,
+                polos: null, isSuperadmin: true, redeId: null
+            };
+        }
+
+        let finalPolos: string[] | null = null;
+        let finalPermissions: Permissoes = defaultPermissions;
+
+        const funcaoResult = await client.query(
+            'SELECT f.permissoes, f.polos as funcaoPolos FROM usuarios u JOIN funcoes f ON u."redeId" = f."redeId" AND u.funcao = f.nome WHERE u.id = $1',
+            [userId]
+        );
+
+        if (funcaoResult.rows.length > 0) {
+            const funcao = funcaoResult.rows[0];
+            finalPermissions = { ...defaultPermissions, ...(typeof funcao.permissoes === 'string' ? JSON.parse(funcao.permissoes) : funcao.permissoes) };
+
+            // Ensure verRanking is present if missing from DB JSON
+            if (finalPermissions.verRanking === undefined) finalPermissions.verRanking = false;
+
+            if (funcao.funcaopolos && funcao.funcaopolos.length > 0) {
+                finalPolos = funcao.funcaopolos;
+            }
+        }
+
+        if (finalPolos === null) {
+            const redes = await getRedes();
+            const userRede = redes.find(r => r.id === user.redeId);
+            finalPolos = userRede?.polos || [];
+
+            // Enforce Network Modules Logic
+            // If the network has specific modules enabled, we must filter the user's permissions accordingly.
+            // If modulos is empty/null, we assume legacy behavior (all enabled) OR we could be strict. 
+            // Given the user wants "modules", we should be strict if modulos exists.
+            if (userRede && userRede.modulos && userRede.modulos.length > 0) {
+                const modulos = userRede.modulos;
+                const moduleMap: Record<string, string[]> = {
+                    'dashboard': ['verDashboard', 'verRelatoriosFinanceiros'],
+                    'matriculas': ['gerenciarMatriculas', 'realizarImportacoes'],
+                    'financeiro': ['verRelatoriosFinanceiros'],
+                    'cadastros': ['gerenciarCadastrosGerais', 'gerenciarUsuarios'],
+                    'ranking': ['verRanking']
+                };
+
+                // Calculate set of allowed permissions based on enabled modules
+                const allowedPermissions = new Set<string>();
+                modulos.forEach(mod => {
+                    moduleMap[mod]?.forEach(p => allowedPermissions.add(p));
+                });
+
+                // Overwrite permissions that are not allowed
+                (Object.keys(finalPermissions) as (keyof Permissoes)[]).forEach(key => {
+                    // If the permission is required by a module system (i.e. it exists in our map values),
+                    // check if it's allowed. If it's a permission NOT in the map (legacy?), maybe keep it?
+                    // For safety, if it's in the map structure but not allowed, set to false.
+                    const isControlledPermission = Object.values(moduleMap).flat().includes(key);
+                    if (isControlledPermission && !allowedPermissions.has(key)) {
+                        finalPermissions[key] = false;
+                    }
+                });
+            }
+        }
+
+        return { ...finalPermissions, polos: finalPolos, isSuperadmin: false, redeId: user.redeId };
+    } finally {
+        client.release();
+    }
+}
+
+
+
+export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT *, "verRanking" FROM funcoes';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+
+        const [result, redesResult] = await Promise.all([
+            client.query(query, params),
+            redeId ? client.query('SELECT modulos FROM redes WHERE id = $1', [redeId]) : Promise.resolve({ rows: [] })
+        ]);
+
+        const redeModulos = redesResult.rows[0]?.modulos || [];
+        const hasModules = redeId && redeModulos.length > 0;
+
+        const moduleMap: Record<string, string[]> = {
+            'dashboard': ['verDashboard', 'verRelatoriosFinanceiros'],
+            'matriculas': ['gerenciarMatriculas', 'realizarImportacoes'],
+            'financeiro': ['verRelatoriosFinanceiros'],
+            'cadastros': ['gerenciarCadastrosGerais', 'gerenciarUsuarios'],
+            'ranking': ['verRanking']
+        };
+
+        const allowedPermissions = new Set<string>();
+        if (hasModules) {
+            redeModulos.forEach((mod: string) => {
+                moduleMap[mod]?.forEach(p => allowedPermissions.add(p));
+            });
+        }
+
+        return result.rows.map(row => {
+            let permissoes = typeof row.permissoes === 'string' ? JSON.parse(row.permissoes) : row.permissoes;
+            // Ensure object structure if null
+            if (!permissoes) permissoes = {};
+
+            // If modules are active, strict filter permissions
+            if (hasModules) {
+                (Object.keys(permissoes) as (keyof Permissoes)[]).forEach(key => {
+                    const isControlled = Object.values(moduleMap).flat().includes(key);
+                    if (isControlled && !allowedPermissions.has(key)) {
+                        permissoes[key] = false;
+                    }
+                });
+            }
+
+            return {
+                id: row.id,
+                nome: row.nome,
+                permissoes,
+                redeId: row.redeId,
+                polos: row.polos
+            };
+        });
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveFuncao(data: Partial<Funcao>): Promise<Funcao> {
+    const client = await pool.connect();
+    try {
+        const permissoes = JSON.stringify(data.permissoes);
+        const { id, nome, redeId, polos } = data;
+
+        if (id) {
+            const result = await client.query(
+                'UPDATE funcoes SET nome = $1, permissoes = $2, "redeId" = $3, polos = $4 WHERE id = $5 RETURNING *',
+                [nome, permissoes, redeId, polos, id]
+            );
+            const row = result.rows[0];
+            return {
+                id: row.id,
+                nome: row.nome,
+                permissoes: typeof row.permissoes === 'string' ? JSON.parse(row.permissoes) : row.permissoes,
+                redeId: row.redeId,
+                polos: row.polos
+            };
+        } else {
+            const newId = uuidv4();
+            const result = await client.query(
+                'INSERT INTO funcoes (id, nome, permissoes, "redeId", polos) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [newId, nome, permissoes, redeId, polos]
+            );
+            const row = result.rows[0];
+            return {
+                id: row.id,
+                nome: row.nome,
+                permissoes: typeof row.permissoes === 'string' ? JSON.parse(row.permissoes) : row.permissoes,
+                redeId: row.redeId,
+                polos: row.polos
+            };
+        }
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function deleteFuncao(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM funcoes WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function getRedes(): Promise<Rede[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM redes');
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getRedeById(id: string): Promise<Rede | null> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM redes WHERE id = $1', [id]);
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
+    const client = await pool.connect();
+    try {
+        if (rede.id) {
+            const result = await client.query('UPDATE redes SET nome = $2, polos = $3, modulos = $4 WHERE id = $1 RETURNING *', [rede.id, rede.nome, rede.polos || [], rede.modulos || []]);
+            return result.rows[0];
+        } else {
+            const newId = uuidv4();
+            const result = await client.query('INSERT INTO redes (id, nome, polos, modulos) VALUES ($1, $2, $3, $4) RETURNING *', [newId, rede.nome, rede.polos || [], rede.modulos || []]);
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteRede(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM redes WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function getDistinctValues(permissions: UserPermissions): Promise<any> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT DISTINCT polo, categoria, referencia_ano FROM financial_records';
+        const values = [];
+
+        const whereConditions = [];
+        if (permissions.redeId) {
+            whereConditions.push(`"redeId" = $${values.length + 1}`);
+            values.push(permissions.redeId);
+        }
+        if (permissions.polos) {
+            whereConditions.push(`polo = ANY($${values.length + 1})`);
+            values.push(permissions.polos);
+        }
+
+        if (whereConditions.length > 0) {
+            query += ' WHERE ' + whereConditions.join(' AND ');
+        }
+
+        const result = await client.query(query, values);
+
+        const poloSet = new Set<string>();
+
+        // Add poles defined in the network
+        if (permissions.redeId) {
+            const redeResult = await client.query('SELECT unnest(polos) as polo FROM redes WHERE id = $1', [permissions.redeId]);
+            redeResult.rows.forEach(r => {
+                if (!permissions.polos || permissions.polos.includes(r.polo)) {
+                    poloSet.add(r.polo);
+                }
+            });
+        }
+
+        const categoriaSet = new Set<string>();
+        const anoSet = new Set<number>();
+        const cidadeSet = new Set<string>();
+        const estadoSet = new Set<string>();
+        const parsedPolos: { original: string, cidade: string, unidade?: string, estado: string }[] = [];
+
+        result.rows.forEach(r => {
+            // Since we are already filtering by permissions in the query, we don't need to double-filter here.
+            poloSet.add(r.polo);
+            categoriaSet.add(r.categoria);
+            anoSet.add(r.referencia_ano);
+
+            const parts = r.polo.split(' - ');
+            const cidade = parts[0];
+            const estado = parts.length > 1 ? parts[parts.length - 1] : 'N/A';
+            const unidade = parts.length > 2 ? parts.slice(1, -1).join(' - ') : undefined;
+
+            cidadeSet.add(cidade);
+            estadoSet.add(estado);
+            parsedPolos.push({ original: r.polo, cidade, estado, unidade });
+        });
+
+        return {
+            polos: Array.from(poloSet).sort(),
+            categorias: Array.from(categoriaSet).sort(),
+            anos: Array.from(anoSet).sort((a, b) => b - a),
+            cidades: Array.from(cidadeSet).sort(),
+            estados: Array.from(estadoSet).sort(),
+            parsedPolos,
+        };
+    } finally {
+        client.release();
+    }
+}
+
+export async function getImports(permissions: UserPermissions): Promise<ImportInfo[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM import_logs';
+        const values = [];
+        if (permissions.redeId) {
+            query += ' WHERE "redeId" = $1';
+            values.push(permissions.redeId);
+        }
+        query += ' ORDER BY data_importacao DESC';
+        const result = await client.query(query, values);
+
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getCanais(redeId?: string): Promise<(Canal & { rede: string })[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT c.*, r.nome as rede FROM canais c JOIN redes r ON c."redeId" = r.id';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE c."redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getCampanhas(redeId?: string): Promise<(Campanha & { rede: string })[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT c.*, r.nome as rede FROM campanhas c JOIN redes r ON c."redeId" = r.id';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE c."redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getProcessosSeletivos(redeId?: string): Promise<(ProcessoSeletivo & { rede: string })[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT ps.*, r.nome as rede FROM processos_seletivos ps JOIN redes r ON ps."redeId" = r.id';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE ps."redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getTiposCurso(redeId?: string): Promise<TipoCurso[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM tipos_curso';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getCursos(redeId?: string): Promise<Curso[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM cursos';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getDespesas(filters: { polo?: string | string[], referencia_ano?: number, referencia_mes?: number, redeId?: string }): Promise<Despesa[]> {
+    const client = await pool.connect();
+    try {
+        const conditions: string[] = [];
+        const values: any[] = [];
+        let paramIndex = 1;
+
+        if (filters.polo) {
+            const poloList = Array.isArray(filters.polo) ? filters.polo : [filters.polo];
+            if (poloList.length > 0) {
+                conditions.push(`polo = ANY($${paramIndex++})`);
+                values.push(poloList);
+            }
+        }
+        if (filters.referencia_ano) {
+            conditions.push(`EXTRACT(YEAR FROM data) = $${paramIndex++}`);
+            values.push(filters.referencia_ano);
+        }
+        if (filters.referencia_mes) {
+            conditions.push(`EXTRACT(MONTH FROM data) = $${paramIndex++}`);
+            values.push(filters.referencia_mes);
+        }
+        if (filters.redeId) {
+            conditions.push(`"redeId" = $${paramIndex++}`);
+            values.push(filters.redeId);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+        const result = await client.query(`SELECT * FROM despesas ${whereClause}`, values);
+
+        return result.rows.map(row => {
+            const rowData = new Date(row.data);
+            return {
+                id: row.id,
+                polo: row.polo,
+                descricao: row.descricao,
+                valor: parseFloat(row.valor),
+                referencia_ano: rowData.getFullYear(),
+                referencia_mes: rowData.getMonth() + 1,
+                tipo_despesa: row.tipo_despesa,
+                sigla_curso: row.sigla_curso,
+                nicho_curso: row.nicho_curso,
+            };
+        });
+    } finally {
+        client.release();
+    }
+}
+
+export async function addDespesa(data: Omit<Despesa, 'id'>): Promise<Despesa> {
+    const client = await pool.connect();
+    try {
+        const newId = uuidv4();
+        const date = new Date(data.referencia_ano, data.referencia_mes - 1, 15);
+
+        const result = await client.query(
+            'INSERT INTO despesas (id, polo, data, descricao, valor, tipo_despesa, sigla_curso, nicho_curso, "redeId") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [newId, data.polo, date, data.descricao, data.valor, data.tipo_despesa, data.sigla_curso, data.nicho_curso, data.redeId]
+        );
+
+        const newRow = result.rows[0];
+        const newRowData = new Date(newRow.data);
+        return {
+            id: newRow.id,
+            polo: newRow.polo,
+            referencia_ano: newRowData.getFullYear(),
+            referencia_mes: newRowData.getMonth() + 1,
+            tipo_despesa: newRow.tipo_despesa,
+            sigla_curso: newRow.sigla_curso,
+            nicho_curso: newRow.nicho_curso,
+            descricao: newRow.descricao,
+            valor: parseFloat(newRow.valor),
+            redeId: newRow.redeId,
+        };
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteDespesa(id: string, redeId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM despesas WHERE id = $1 AND "redeId" = $2', [id, redeId]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteDespesasByPeriod(referencia_ano: number, referencia_mes: number, redeId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM despesas WHERE EXTRACT(YEAR FROM data) = $1 AND EXTRACT(MONTH FROM data) = $2 AND "redeId" = $3', [referencia_ano, referencia_mes, redeId]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function clearFinancialRecordsByImportId(importId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM financial_records WHERE import_id = $1', [importId]);
+        await client.query('DELETE FROM import_logs WHERE import_id = $1', [importId]);
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function deleteFinancialRecord(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM financial_records WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteFinancialRecords(ids: string[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM financial_records WHERE id = ANY($1)', [ids]);
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteFinancialRecordsByFilter(filters: Filters, permissions: UserPermissions): Promise<{ deletedCount: number }> {
+    const client = await pool.connect();
+    try {
+        const whereClause = buildWhereClause(filters, permissions.polos, permissions.redeId);
+        const query = `DELETE FROM financial_records ${whereClause.text} RETURNING *`;
+        const result = await client.query(query, whereClause.values);
+        return { deletedCount: result.rowCount || 0 };
+    } finally {
+        client.release();
+    }
+}
+
+async function genericSave<T extends { id?: string, redeId?: string }>(tableName: string, data: Partial<T>): Promise<T> {
+    const client = await pool.connect();
+    try {
+        if (data.id) {
+            const { id, ...updateFields } = data;
+            const fieldEntries = Object.entries(updateFields).filter(([_, value]) => value !== undefined);
+            const fieldNames = fieldEntries.map(([key], i) => `"${key}"=$${i + 2}`).join(', ');
+            const fieldValues = fieldEntries.map(([_, value]) => value);
+
+            if ((data as any).polo && (data as any).redeId) {
+                await ensurePoloExistsInRede(client, (data as any).polo, (data as any).redeId);
+            }
+
+            // Should verify redeId ownership here if strict security needed, but for now we trust the caller passes correct redeId
+            const query = `UPDATE ${tableName} SET ${fieldNames} WHERE id = $1 RETURNING *`;
+            const result = await client.query(query, [id, ...fieldValues]);
+            return result.rows[0];
+        } else {
+            const newId = uuidv4();
+            const { columns, placeholders, values } = Object.entries(data).reduce((acc, [key, value]) => {
+                if (key === 'id' || value === undefined) return acc;
+                acc.columns.push(`"${key}"`);
+                acc.values.push(value);
+                acc.placeholders.push(`$${acc.values.length}`);
+                return acc;
+            }, { columns: ['"id"'], placeholders: ['$1'], values: [newId] as any[] });
+
+            if ((data as any).polo && (data as any).redeId) {
+                await ensurePoloExistsInRede(client, (data as any).polo, (data as any).redeId);
+            }
+
+            const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+            const result = await client.query(query, values);
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+
+async function genericDelete(tableName: string, id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query(`DELETE FROM ${tableName} WHERE id = $1`, [id]);
+    } finally {
+        client.release();
+    }
+}
+
+export const saveCanal = async (data: Partial<Canal>) => genericSave<Canal>('canais', { ...data });
+export const deleteCanal = async (id: string) => genericDelete('canais', id);
+
+export const saveCampanha = async (data: Partial<Campanha>) => genericSave<Campanha>('campanhas', data);
+export const deleteCampanha = async (id: string) => genericDelete('campanhas', id);
+
+export const saveProcessoSeletivo = async (data: Partial<ProcessoSeletivo>) => genericSave<ProcessoSeletivo>('processos_seletivos', data);
+export const deleteProcessoSeletivo = async (id: string) => genericDelete('processos_seletivos', id);
+
+export const saveNumeroProcessoSeletivo = async (data: Partial<NumeroProcessoSeletivo>) => genericSave<NumeroProcessoSeletivo>('numeros_processo_seletivo', data);
+export const deleteNumeroProcessoSeletivo = async (id: string) => genericDelete('numeros_processo_seletivo', id);
+
+export const saveMeta = async (data: Partial<Meta>) => genericSave<Meta>('metas', data);
+export const deleteMeta = async (id: string) => genericDelete('metas', id);
+
+export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo'>[], redeId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2', [processoSeletivo, redeId]);
+        for (const sp of spacepoints) {
+            await client.query(
+                'INSERT INTO spacepoints (id, "processoSeletivo", date, percentage, "redeId") VALUES ($1, $2, $3, $4, $5)',
+                [uuidv4(), processoSeletivo, sp.date, sp.percentage, redeId]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<TipoCurso>('tipos_curso', data);
+export const deleteTipoCurso = async (id: string) => genericDelete('tipos_curso', id);
+
+
+export async function getMetas(redeId?: string): Promise<Meta[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM metas';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getSpacepoints(redeId?: string): Promise<Spacepoint[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM spacepoints';
+        const params: any[] = [];
+
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+
+        query += ' ORDER BY date';
+
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getAllNumerosProcessoSeletivo(redeId?: string): Promise<(NumeroProcessoSeletivo & { rede: string })[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT ps.*, r.nome as rede FROM numeros_processo_seletivo ps JOIN redes r ON ps."redeId" = r.id';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE ps."redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function upsertCursos(cursos: Omit<Curso, 'id'>[], redeId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        for (const curso of cursos) {
+            await client.query(
+                `INSERT INTO cursos (id, sigla, nome, tipo, sigla_alternativa, nicho, ativo, "redeId") 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                 ON CONFLICT (sigla, "redeId") 
+                 DO UPDATE SET 
+                    nome = EXCLUDED.nome, 
+                    tipo = EXCLUDED.tipo, 
+                    sigla_alternativa = EXCLUDED.sigla_alternativa,
+                    nicho = EXCLUDED.nicho,
+                    ativo = EXCLUDED.ativo`,
+                [
+                    uuidv4(),
+                    curso.sigla,
+                    curso.nome,
+                    curso.tipo,
+                    curso.sigla_alternativa || null,
+                    curso.nicho || null,
+                    curso.ativo ?? true,
+                    redeId
+                ]
+            );
+        }
+
+        if (cursos.length > 0) {
+            const importId = uuidv4();
+            await client.query(
+                'INSERT INTO import_logs (id, import_id, total_registros, tipo_importacao, data_importacao, "redeId") VALUES ($1, $1, $2, $3, NOW(), $4)',
+                [importId, cursos.length, 'Cursos', redeId]
+            );
+        }
+
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
+
+export async function upsertCurso(data: Curso, originalSigla?: string): Promise<Curso> {
+    const client = await pool.connect();
+    try {
+        const { id, sigla, nome, tipo, sigla_alternativa, nicho, ativo, redeId } = data;
+
+        if (!sigla) {
+            throw new Error("A sigla é obrigatória para salvar o curso.");
+        }
+
+        if (!redeId) {
+            throw new Error("O redeId é obrigatório para salvar o curso.");
+        }
+
+        if (originalSigla && originalSigla !== sigla) {
+            const result = await client.query(
+                'UPDATE cursos SET sigla = $1, nome = $2, tipo = $3, sigla_alternativa = $4, nicho = $5, ativo = $6 WHERE sigla = $7 AND "redeId" = $8 RETURNING *',
+                [sigla, nome, tipo, sigla_alternativa, nicho, ativo ?? true, originalSigla, redeId]
+            );
+            if (result.rows.length === 0) {
+                throw new Error("Curso a ser atualizado não encontrado.");
+            }
+            return result.rows[0];
+        } else {
+            const result = await client.query(
+                `INSERT INTO cursos (id, sigla, nome, tipo, sigla_alternativa, nicho, ativo, "redeId") 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (sigla, "redeId") 
+         DO UPDATE SET 
+            nome = EXCLUDED.nome, 
+            tipo = EXCLUDED.tipo, 
+            sigla_alternativa = EXCLUDED.sigla_alternativa,
+            nicho = EXCLUDED.nicho,
+            ativo = EXCLUDED.ativo
+         RETURNING *`,
+                [id || uuidv4(), sigla, nome, tipo, sigla_alternativa || null, nicho || null, ativo ?? true, redeId]
+            );
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+
+export const deleteCursos = async (siglas: string[], redeId: string) => {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM cursos WHERE sigla = ANY($1) AND "redeId" = $2', [siglas, redeId]);
+    } finally {
+        client.release();
+    }
+};
+
+export const deleteCurso = async (sigla: string, redeId: string) => {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM cursos WHERE sigla = $1 AND "redeId" = $2', [sigla, redeId]);
+    } finally {
+        client.release();
+    }
+};
+
+
+
+// ==========================================================================
+// MATRICULAS
+// ==========================================================================
+
+export const getMatriculas = async (redeId: string): Promise<Matricula[]> => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM matriculas WHERE "redeId" = $1 ORDER BY "dataMatricula" DESC',
+            [redeId]
+        );
+        return result.rows;
+    } finally {
+        client.release();
+    }
+};
+
+export const saveMatricula = async (data: Partial<Matricula>) => genericSave<Matricula>('matriculas', data);
+
+export type RankingItem = {
+    userId: string;
+    nome: string;
+    avatarUrl?: string; // If we add avatars later
+    count: number;
+    position: number;
+};
+
+export async function getEnrollmentRanking(
+    redeId: string,
+    period: 'today' | 'month' | 'campaign',
+    campaignId?: string
+): Promise<RankingItem[]> {
+    const client = await pool.connect();
+    try {
+        let dateFilter = '';
+        const params: any[] = [redeId];
+        let paramIndex = 2;
+
+        if (period === 'today') {
+            dateFilter = `AND DATE("dataMatricula") = CURRENT_DATE`;
+        } else if (period === 'month') {
+            dateFilter = `AND EXTRACT(MONTH FROM "dataMatricula") = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM "dataMatricula") = EXTRACT(YEAR FROM CURRENT_DATE)`;
+        } else if (period === 'campaign' && campaignId) {
+            dateFilter = `AND "campanhaId" = $${paramIndex++}`;
+            params.push(campaignId);
+        }
+
+        const query = `
+            SELECT 
+                u.id as "userId",
+                u.nome,
+                COUNT(m.id) as count
+            FROM matriculas m
+            JOIN usuarios u ON m."usuarioId" = u.id
+            WHERE m."redeId" = $1 ${dateFilter}
+            GROUP BY u.id, u.nome
+            ORDER BY count DESC
+        `;
+
+        const result = await client.query(query, params);
+
+        return result.rows.map((row, index) => ({
+            userId: row.userId,
+            nome: row.nome,
+            count: parseInt(row.count, 10),
+            position: index + 1
+        }));
+    } finally {
+        client.release();
+    }
+}
+
+export type DailyStats = {
+    total: number;
+    byType: { name: string; count: number }[];
+    byPolo: {
+        polo: string;
+        total: number;
+        users: {
+            nome: string;
+            count: number;
+            types: string[];
+        }[];
+    }[];
+};
+
+export async function getEnrollmentStats(redeId: string): Promise<DailyStats> {
+    const client = await pool.connect();
+    try {
+        // Query to get Total counts by Type (including zeros)
+        const typeQuery = `
+            SELECT 
+                tc.nome as tipo_nome,
+                COUNT(m.id) as count
+            FROM tipos_curso tc
+            LEFT JOIN matriculas m ON tc.id = m."tipoCursoId" AND DATE(m."dataMatricula") = CURRENT_DATE
+            WHERE tc."redeId" = $1
+            GROUP BY tc.nome
+            ORDER BY count DESC, tc.nome ASC
+        `;
+
+        // Query to get detailed breakdown: Polo -> User -> Type
+        const detailQuery = `
+            SELECT 
+                m.polo,
+                u.nome as user_nome,
+                tc.nome as tipo_nome
+            FROM matriculas m
+            LEFT JOIN usuarios u ON m."usuarioId" = u.id
+            LEFT JOIN tipos_curso tc ON m."tipoCursoId" = tc.id
+            WHERE m."redeId" = $1 AND DATE(m."dataMatricula") = CURRENT_DATE
+        `;
+
+        const [typeResult, detailResult] = await Promise.all([
+            client.query(typeQuery, [redeId]),
+            client.query(detailQuery, [redeId])
+        ]);
+
+        // Process Global Type Stats
+        let total = 0;
+        const byType = typeResult.rows.map(row => {
+            const count = parseInt(row.count, 10);
+            total += count;
+            return { name: row.tipo_nome || 'Outros', count };
+        });
+
+        // Helper to map type name to abbreviation
+        const getAbbr = (name: string) => {
+            if (!name) return '?';
+            const n = name.toLowerCase();
+            if (n.includes('gradua')) return 'G';
+            if (n.includes('pós') || n.includes('pos')) return 'P';
+            if (n.includes('semi')) return 'S';
+            if (n.includes('téc') || n.includes('tec')) return 'T';
+            if (n.includes('prof')) return 'PR';
+            return name.substring(0, 1).toUpperCase();
+        };
+
+        // Process Hierarchical Stats: Polo -> User -> Types
+        const poloMap = new Map<string, Map<string, string[]>>();
+
+        detailResult.rows.forEach(row => {
+            const polo = row.polo || 'Sem Polo';
+            const user = row.user_nome || 'Desconhecido';
+            const type = getAbbr(row.tipo_nome);
+
+            if (!poloMap.has(polo)) {
+                poloMap.set(polo, new Map());
+            }
+
+            const userMap = poloMap.get(polo)!;
+            if (!userMap.has(user)) {
+                userMap.set(user, []);
+            }
+
+            userMap.get(user)!.push(type);
+        });
+
+        // Convert Map to Array structure
+        const byPolo = Array.from(poloMap.entries()).map(([polo, userMap]) => {
+            const users = Array.from(userMap.entries()).map(([nome, types]) => ({
+                nome,
+                count: types.length,
+                types
+            })).sort((a, b) => b.count - a.count); // Sort users by count desc
+
+            const poloTotal = users.reduce((sum, u) => sum + u.count, 0);
+
+            return {
+                polo,
+                total: poloTotal,
+                users
+            };
+        }).sort((a, b) => b.total - a.total); // Sort polos by total desc
+
+        return { total, byType, byPolo };
+    } finally {
+        client.release();
+    }
+}
+
+export type LatestEnrollment = {
+    id: string;
+    nomeAluno: string;
+    curso: string;
+    polo: string;
+    usuarioNome: string;
+    dataMatricula: Date;
+};
+
+export async function getLastEnrollment(redeId: string): Promise<LatestEnrollment | null> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            SELECT 
+                m.id,
+                m."nomeAluno",
+                m.polo,
+                m."dataMatricula",
+                u.nome as usuario_nome,
+                tc.nome as curso_nome
+            FROM matriculas m
+            LEFT JOIN usuarios u ON m."usuarioId" = u.id
+            LEFT JOIN tipos_curso tc ON m."tipoCursoId" = tc.id
+            WHERE m."redeId" = $1
+            ORDER BY m."criadoEm" DESC
+            LIMIT 1
+        `;
+
+        const result = await client.query(query, [redeId]);
+
+        if (result.rows.length === 0) return null;
+
+        const row = result.rows[0];
+        return {
+            id: row.id,
+            nomeAluno: row.nomeAluno,
+            curso: row.curso_nome || 'Curso',
+            polo: row.polo,
+            usuarioNome: row.usuario_nome || 'Alguém',
+            dataMatricula: row.dataMatricula
+        };
+    } finally {
+        client.release();
+    }
+}
+
+export const deleteMatricula = async (id: string, redeId: string) => {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM matriculas WHERE id = $1 AND "redeId" = $2', [id, redeId]);
+    } finally {
+        client.release();
+    }
+};
+
+export const getMatriculaById = async (id: string, redeId: string): Promise<Matricula | null> => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM matriculas WHERE id = $1 AND "redeId" = $2',
+            [id, redeId]
+        );
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+};
+export async function getDespesasAgrupadasPorPolo(permissions: UserPermissions, filters: { ano: number; mes: number }): Promise<{ polo: string; total: number }[]> {
+    if (!permissions.redeId) return [];
+    const client = await pool.connect();
+    try {
+        const query = `
+            WITH combined_polos AS (
+                -- Poles defined in the network
+                SELECT unnest(polos) as polo_name
+                FROM redes
+                WHERE id = $1
+                UNION
+                -- Poles that actually have financial records
+                SELECT DISTINCT polo as polo_name
+                FROM financial_records
+                WHERE "redeId" = $1
+            )
+            SELECT 
+                p.polo_name as polo,
+                COALESCE(SUM(d.valor), 0) as total
+            FROM combined_polos p
+            LEFT JOIN despesas d ON p.polo_name = d.polo 
+                AND EXTRACT(YEAR FROM d.data) = $2 
+                AND EXTRACT(MONTH FROM d.data) = $3
+                AND d."redeId" = $1
+            WHERE ($4::text[] IS NULL OR p.polo_name = ANY($4))
+            GROUP BY p.polo_name
+            ORDER BY p.polo_name;
+        `;
+        const params = [permissions.redeId, filters.ano, filters.mes, permissions.polos];
+        const result = await client.query(query, params);
+        return result.rows.map(row => ({
+            polo: row.polo,
+            total: parseFloat(row.total || '0')
+        }));
+    } finally {
+        client.release();
+    }
+}
+
+// --- Ranking Configuration & Messages ---
+
+export async function getRankingConfig(redeId: string): Promise<RankingConfig | null> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM ranking_config WHERE "redeId" = $1', [redeId]);
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveRankingConfig(config: Partial<RankingConfig>): Promise<RankingConfig> {
+    const client = await pool.connect();
+    try {
+        const query = `
+            INSERT INTO ranking_config ("redeId", "voiceEnabled", "voiceSpeed", "alertMode", "soundEnabled", "soundUrl", "manualAlertSoundUrl", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            ON CONFLICT ("redeId") 
+            DO UPDATE SET 
+                "voiceEnabled" = EXCLUDED."voiceEnabled",
+                "voiceSpeed" = EXCLUDED."voiceSpeed",
+                "alertMode" = EXCLUDED."alertMode",
+                "soundEnabled" = EXCLUDED."soundEnabled",
+                "soundUrl" = EXCLUDED."soundUrl",
+                "manualAlertSoundUrl" = EXCLUDED."manualAlertSoundUrl",
+                "updatedAt" = NOW()
+            RETURNING *
+        `;
+        const result = await client.query(query, [
+            config.redeId,
+            config.voiceEnabled ?? true,
+            config.voiceSpeed ?? 1.1,
+            config.alertMode ?? 'confetti',
+            config.soundEnabled ?? true,
+            config.soundUrl ?? null,
+            (config as any).manualAlertSoundUrl ?? null
+        ]);
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+}
+
+export async function createRankingMessage(redeId: string, message: string): Promise<RankingMessage> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'INSERT INTO ranking_messages (id, "redeId", message, "createdAt") VALUES ($1, $2, $3, NOW()) RETURNING *',
+            [uuidv4(), redeId, message]
+        );
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+}
+
+export async function getLastRankingMessage(redeId: string): Promise<RankingMessage | null> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM ranking_messages WHERE "redeId" = $1 ORDER BY "createdAt" DESC LIMIT 1',
+            [redeId]
+        );
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+// Sound Library Functions
+
+export interface SavedSound {
+    id: string;
+    redeId: string;
+    name: string;
+    url: string;
+    createdAt: Date;
+}
+
+export async function getSavedSounds(redeId: string): Promise<SavedSound[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM saved_sounds WHERE "redeId" = $1 ORDER BY "createdAt" DESC',
+            [redeId]
+        );
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveSound(redeId: string, name: string, url: string): Promise<SavedSound> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'INSERT INTO saved_sounds (id, "redeId", name, url, "createdAt") VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
+            [uuidv4(), redeId, name, url]
+        );
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteSound(id: string, redeId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            'DELETE FROM saved_sounds WHERE id = $1 AND "redeId" = $2',
+            [id, redeId]
+        );
+    } finally {
+        client.release();
+    }
+}
+
+export async function getSuperAdminStats(): Promise<SuperAdminStats> {
+    const client = await pool.connect();
+    try {
+        const [redesResult, usuariosResult, funcoesResult] = await Promise.all([
+            client.query('SELECT COUNT(*) FROM redes'),
+            client.query('SELECT COUNT(*) FROM usuarios'),
+            client.query('SELECT COUNT(*) FROM funcoes')
+        ]);
+
+        return {
+            totalRedes: parseInt(redesResult.rows[0].count),
+            totalUsuarios: parseInt(usuariosResult.rows[0].count),
+            totalFuncoes: parseInt(funcoesResult.rows[0].count)
+        };
+    } finally {
+        client.release();
+    }
+}
+
+export async function getAllSuperAdmins(): Promise<Omit<Usuario, 'senha'>[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT id, nome, email, funcao, status, "redeId", "isSuperadmin", polos FROM usuarios WHERE "isSuperadmin" = true ORDER BY nome ASC');
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export type SystemConfig = {
+    appName: string;
+    appLogo: string;
+};
+
+export async function getSystemConfig(): Promise<SystemConfig> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM system_config');
+        const config: SystemConfig = { appName: 'VirtuaFinance', appLogo: '' };
+
+        result.rows.forEach(row => {
+            if (row.key === 'APP_NAME') config.appName = row.value;
+            if (row.key === 'APP_LOGO') config.appLogo = row.value;
+        });
+
+        return config;
+    } catch (e) {
+        // Table might not exist yet, return default
+        return { appName: 'Sistema', appLogo: '' };
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveSystemConfig(config: SystemConfig): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('INSERT INTO system_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2', ['APP_NAME', config.appName]);
+        await client.query('INSERT INTO system_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2', ['APP_LOGO', config.appLogo]);
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}

@@ -1,0 +1,142 @@
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 10% 95%; /* Light grey background */
+    --foreground: 222 47% 11%;
+
+    --card: 220 10% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 220 10% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    --primary: 225 73% 57%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 220 10% 90%;
+    --secondary-foreground: 222 47% 11%;
+    
+    --muted: 220 10% 90%;
+    --muted-foreground: 220 10% 45%;
+    
+    --accent: 145 58% 54%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 10% 85%;
+    --input: 220 10% 85%;
+    --ring: 225 73% 57%;
+
+    --radius: 0.75rem; /* Bolder radius for glass effect */
+    
+    --sidebar-background: 220 10% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-border: 220 10% 85%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 225 73% 57%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 145 58% 54%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 225 73% 57%;
+
+    --sidebar-background: 222 47% 15%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 25%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  .react-grid-item.react-grid-placeholder {
+    background: hsl(var(--primary) / 0.2) !important;
+    border-radius: var(--radius);
+    border: 2px dashed hsl(var(--primary));
+    opacity: 0.6;
+    transition-duration: 100ms;
+    z-index: 2;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+  }
+
+  .react-resizable-handle::after {
+    content: "";
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 5px;
+    height: 5px;
+    border-right: 2px solid hsl(var(--foreground) / 0.4);
+    border-bottom: 2px solid hsl(var(--foreground) / 0.4);
+  }
+}
+
+@layer components {
+  /* Glassmorphism Effect */
+  .glass-effect {
+    @apply bg-card/60 backdrop-blur-lg border;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .card {
+    @apply glass-effect;
+  }
+  
+  [data-sidebar="sidebar"] > div {
+    border-color: hsl(var(--sidebar-border) / 0.5);
+    @apply glass-effect;
+  }
+  
+  /* Make the floating sidebar's main container transparent */
+  [data-variant="floating"][data-sidebar="sidebar"] {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .popover-content {
+    @apply glass-effect;
+  }
+  .dialog-content {
+    @apply glass-effect;
+  }
+}

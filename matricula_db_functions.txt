@@ -1,0 +1,24 @@
+import { Matricula } from './types';
+export const getMatriculas = async (redeId: string): Promise<Matricula[]> => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT * FROM matriculas WHERE "redeId" = $1 ORDER BY "dataMatricula" DESC',
+            [redeId]
+        );
+        return result.rows;
+    } finally {
+        client.release();
+    }
+};
+
+export const saveMatricula = async (data: Partial<Matricula>) => genericSave<Matricula>('matriculas', data);
+
+export const deleteMatricula = async (id: string, redeId: string) => {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM matriculas WHERE id = $1 AND "redeId" = $2', [id, redeId]);
+    } finally {
+        client.release();
+    }
+};

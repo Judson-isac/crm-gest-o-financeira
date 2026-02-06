@@ -1,0 +1,31 @@
+import { getMatriculaById, getCursos, getCampanhas, getProcessosSeletivos, getTiposCurso, getCanais } from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+export default async function VerMatriculaPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    
+    const [matricula, courses, campaigns, processes, courseTypes, channels] = await Promise.all([
+        getMatriculaById(id),
+        getCursos(),
+        getCampanhas(),
+        getProcessosSeletivos(),
+        getTiposCurso(),
+        getCanais(),
+    ]);
+
+    if (!matricula) {
+        notFound();
+    }
+
+    const curso = courses.find(c => c.sigla === matricula.cursoSigla);
+    const campanha = campaigns.find(c => c.id === matricula.campanhaId);
+    const processo = processes.find(p => p.id === matricula.processoSeletivoId);
+    const tipoCurso = courseTypes.find(t => t.id === matricula.tipoCursoId);
+    const canal = channels.find(c => c.id === matricula.canalId);

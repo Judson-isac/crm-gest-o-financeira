@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Next.js
+.next
+out
+dist
+
+# Environment
+.env
+.env*.local
+.env.production
+
+# IDE
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.turbo
+*.pem
+
+# arquivos grandes/desnecessários
+download.zip
+download (1).zip
+*.zip
+backup.sql
+
+# Build artifacts
+build

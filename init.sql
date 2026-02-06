@@ -1,0 +1,23 @@
+CREATE TABLE redes (
+    id VARCHAR(255) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    polos TEXT[]
+);
+
+CREATE TABLE funcoes (
+    id VARCHAR(255) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    permissoes JSONB,
+    "redeId" VARCHAR(255) NOT NULL REFERENCES redes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE usuarios (
+    id VARCHAR(255) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    funcao VARCHAR(255),
+    status VARCHAR(255),
+    "avatarUrl" VARCHAR(255),
+    "redeId" VARCHAR(255) NOT NULL REFERENCES redes(id) ON DELETE SET NULL
+);

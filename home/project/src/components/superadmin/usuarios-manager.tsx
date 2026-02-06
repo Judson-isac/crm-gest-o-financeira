@@ -1,0 +1,314 @@
+
+'use client';
+
+import { useState, useTransition, useEffect } from 'react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Pencil, Trash2, Loader2, Save } from 'lucide-react';
+import type { Usuario, Rede, Funcao } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from '@/components/ui/table';
+import { saveUsuarioAction, deleteUsuarioAction } from '@/app/superadmin/(app)/usuarios/actions';
+import { MultiSelect } from '../ui/multi-select';
+
+const getInitials = (name: string) => {
+    if (!name) return '';
+    const names = name.split(' ');
+    const initials = names.map(n => n[0]).join('');
+    return initials.length > 2 ? initials.substring(0, 2) : initials;
+}
+
+interface SuperAdminUsuariosManagerProps {
+    initialUsuarios: Omit<Usuario, 'senha'>[];
+    redes: Rede[];
+    funcoes: Funcao[];
+    allPolos: string[];
+}
+
+export function SuperAdminUsuariosManager({ initialUsuarios, redes, funcoes, allPolos }: SuperAdminUsuariosManagerProps) {
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUsuario, setEditingUsuario] = useState<Partial<Usuario> | null>(null);
+  const [selectedRedeId, setSelectedRedeId] = useState<string | undefined>(editingUsuario?.redeId);
+  const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
+  
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [usuarioToDelete, setUsuarioToDelete] = useState<Omit<Usuario, 'senha'> | null>(null);
+  const [redeFilter, setRedeFilter] = useState<string>('all');
+
+  useEffect(() => {
+    if (editingUsuario) {
+        setSelectedRedeId(editingUsuario.redeId);
+        setSelectedPolos(editingUsuario.polos || []);
+    } else {
+        setSelectedRedeId(undefined);
+        setSelectedPolos([]);
+    }
+  }, [editingUsuario]);
+
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const redeId = formData.get('redeId') as string;
+    const data: Partial<Usuario> = {
+      id: editingUsuario?.id,
+      nome: formData.get('nome') as string,
+      email: formData.get('email') as string,
+      funcao: formData.get('funcao') as string,
+      rede: redes.find(r => r.id === redeId)?.nome,
+      redeId: redeId,
+      status: 'Verificado',
+      polos: selectedPolos,
+    };
+    
+    const senha = formData.get('senha') as string;
+    if (senha) {
+        data.senha = senha;
+    }
+
+    if (!redeId) {
+        toast({ variant: 'destructive', title: 'Erro!', description: 'A rede é obrigatória.' });
+        return;
+    }
+
+    startTransition(async () => {
+      const result = await saveUsuarioAction(data);
+      if (result.success) {
+        toast({ title: editingUsuario ? 'Usuário atualizado!' : 'Usuário criado!' });
+        setIsFormOpen(false);
+        setEditingUsuario(null);
+      } else {
+        toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+      }
+    });
+  };
+
+  const handleDelete = (usuario: Omit<Usuario, 'senha'>) => {
+    setUsuarioToDelete(usuario);
+    setDeleteConfirmOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (!usuarioToDelete?.id) return;
+
+    startTransition(async () => {
+      const result = await deleteUsuarioAction(usuarioToDelete.id! );
+      if (result.success) {
+        toast({ title: `Usuário "${usuarioToDelete.nome}" removido.` });
+      } else {
+        toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+      }
+      setDeleteConfirmOpen(false);
+      setUsuarioToDelete(null);
+    });
+  };
+  
+  const handleOpenForm = (user: Partial<Usuario> | null) => {
+      setEditingUsuario(user);
+      setIsFormOpen(true);
+  }
+
+  const filteredUsuarios = initialUsuarios.filter(user =>
+    redeFilter === 'all' || user.redeId === redeFilter
+  );
+  
+  const availableFuncoes = funcoes.filter(f => f.redeId === selectedRedeId);
+  const availablePolos = redes.find(r => r.id === selectedRedeId)?.polos || [];
+  const poloOptions = availablePolos.map(p => ({ label: p, value: p }));
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Gerenciamento de Usuários</CardTitle>
+            <Button onClick={() => handleOpenForm(null)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Usuário
+            </Button>
+          </div>
+          <CardDescription>
+            Crie, edite e remova usuários, definindo suas redes, funções e acesso a polos.
+          </CardDescription>
+          <div className="pt-4">
+            <Label htmlFor="rede-filter">Filtrar por Rede</Label>
+            <Select value={redeFilter} onValueChange={setRedeFilter}>
+              <SelectTrigger id="rede-filter" className="max-w-sm">
+                <SelectValue placeholder="Filtrar por rede..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Redes</SelectItem>
+                {redes.map(rede => (
+                  <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+             <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Rede</TableHead>
+                        <TableHead>Função</TableHead>
+                        <TableHead>Polos Permitidos</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {filteredUsuarios.map(user => (
+                        <TableRow key={user.id}>
+                            <TableCell>
+                                <div className="flex items-center gap-4">
+                                    <Avatar>
+                                        <AvatarImage src={user.avatarUrl} />
+                                        <AvatarFallback>{getInitials(user.nome)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{user.nome}</p>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    </div>
+                                </div>
+                            </TableCell>
+                            <TableCell>{user.rede}</TableCell>
+                            <TableCell>{user.funcao}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                                {user.polos && user.polos.length > 0
+                                ? (user.polos.length > 2 ? `${user.polos.slice(0,2).join(', ')} e mais ${user.polos.length - 2}` : user.polos.join(', '))
+                                : 'Todos da Rede'}
+                            </TableCell>
+                            <TableCell className="text-green-600">{user.status}</TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleOpenForm(user)}>
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(user)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                    {filteredUsuarios.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center h-24">Nenhum usuário encontrado para esta rede.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+             </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+         <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>{editingUsuario ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+                <DialogDescription>Preencha os detalhes do usuário abaixo.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSave}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nome">Nome Completo</Label>
+                            <Input id="nome" name="nome" defaultValue={editingUsuario?.nome || ''} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">E-mail</Label>
+                            <Input id="email" name="email" type="email" defaultValue={editingUsuario?.email || ''} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="senha">Senha</Label>
+                            <Input id="senha" name="senha" type="password" placeholder={editingUsuario ? 'Deixe em branco para não alterar' : ''} required={!editingUsuario} />
+                        </div>
+                    </div>
+                     <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="rede">Rede</Label>
+                            <Select name="redeId" defaultValue={editingUsuario?.redeId} onValueChange={setSelectedRedeId} required>
+                                <SelectTrigger><SelectValue placeholder="Selecione uma rede..." /></SelectTrigger>
+                                <SelectContent>
+                                    {redes.map(rede => <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="funcao">Função</Label>
+                            <Select name="funcao" defaultValue={editingUsuario?.funcao} disabled={!selectedRedeId}>
+                                <SelectTrigger><SelectValue placeholder="Selecione uma função..." /></SelectTrigger>
+                                <SelectContent>
+                                    {availableFuncoes.map(funcao => <SelectItem key={funcao.id} value={funcao.nome}>{funcao.nome}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Polos Permitidos</Label>
+                             <MultiSelect
+                                options={poloOptions}
+                                onValueChange={setSelectedPolos}
+                                defaultValue={selectedPolos}
+                                placeholder="Todos os polos da rede"
+                                className="w-full"
+                                disabled={!selectedRedeId}
+                            />
+                            <p className="text-xs text-muted-foreground">Se nenhum for selecionado, terá acesso a todos os polos da rede.</p>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={isPending || !selectedRedeId}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Salvar
+                    </Button>
+                </DialogFooter>
+            </form>
+         </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                   Esta ação não pode ser desfeita. O usuário será removido permanentemente.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} disabled={isPending} className={buttonVariants({ variant: "destructive" })}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
