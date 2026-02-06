@@ -225,10 +225,13 @@ docker-compose.prod.yml
 
 ```env
 DATABASE_URL=postgresql://user:password@host:5432/database
+JWT_SECRET_KEY=seu_secret_aqui
 NEXTAUTH_URL=https://seu-dominio.com
 NEXTAUTH_SECRET=seu_secret_aqui
 DOMAIN=seu-dominio.com
 ```
+
+> ⚠️ **IMPORTANTE:** `JWT_SECRET_KEY` e `NEXTAUTH_SECRET` devem ser secrets fortes. Use `openssl rand -base64 32` para gerar.
 
 ---
 
@@ -302,6 +305,7 @@ cd seu-projeto
 ```bash
 cat > .env <<EOF
 DATABASE_URL=postgresql://crm_user:SenhaForte123!@pgvector:5432/crm_gestao
+JWT_SECRET_KEY=$(openssl rand -base64 32)
 NEXTAUTH_URL=https://seu-dominio.com
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 DOMAIN=seu-dominio.com

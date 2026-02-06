@@ -287,7 +287,7 @@ VALUES (
     'user_superadmin',
     'Administrador',
     'admin@crm.com',
-    '$2b$10$N9qo8uLOickgx2ZMRZoMye/5SYI3vYrsFYmSsz2C5iGt0dP1PaM5u',
+    '$2b$10$tE49hpY3W2ct8fA5fFZ.Wuz35tBjBvT42yDm.fY2mmbqQOuE7ut.G',
     'Superadministrador',
     'ativo',
     'rede_default',
