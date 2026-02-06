@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering (no static generation during build)
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useRef } from 'react';
 import { getRankingAction, saveRankingConfigAction } from '@/actions/ranking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
