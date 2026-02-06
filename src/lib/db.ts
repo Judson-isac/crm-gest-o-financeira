@@ -6,11 +6,7 @@ import bcrypt from 'bcrypt';
 import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, RankingConfig, RankingMessage, SuperAdminStats } from './types';
 
 const pool = new Pool({
-    user: process.env.PGUSER || 'postgres',
-    host: process.env.PGHOST || 'localhost',
-    database: process.env.PGDATABASE || 'postgres',
-    password: process.env.PGPASSWORD || 'mysecretpassword',
-    port: parseInt(process.env.PGPORT || '5432', 10),
+    connectionString: process.env.DATABASE_URL,
 });
 
 const SALT_ROUNDS = 10;
