@@ -147,6 +147,9 @@ export type SystemConfig = {
   appLogo: string;
   appFavicon?: string;
   appLogoHeight?: string; // e.g. "h-12", "h-16" or pixel value "48px" stored as string
+  appLogoSidebarWidth?: string; // e.g. "150px" for sidebar expanded
+  appLogoIconHeight?: string; // e.g. "32px" for sidebar collapsed
+  appLogoLoginScale?: string; // e.g. "1" (100%), "1.5" (150%) for login page
 };
 
 export type Meta = {

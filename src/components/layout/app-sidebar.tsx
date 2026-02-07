@@ -44,12 +44,14 @@ export default function AppSidebar({
   appName,
   appLogo,
   appLogoHeight,
+  appLogoIconHeight,
   logoVerticalUrl
 }: {
   permissions: Permissoes,
   appName: string,
   appLogo: string,
   appLogoHeight?: string,
+  appLogoIconHeight?: string,
   logoVerticalUrl?: string
 }) {
   const pathname = usePathname();
@@ -99,7 +101,8 @@ export default function AppSidebar({
               <img
                 src={logoVerticalUrl || appLogo}
                 alt="Icon"
-                className="h-8 w-8 object-contain shrink-0 mx-auto"
+                style={{ height: `${appLogoIconHeight || '32'}px` }}
+                className="w-auto object-contain shrink-0 mx-auto"
               />
             ) : (
               <Landmark className="text-primary h-6 w-6 shrink-0 mx-auto" />

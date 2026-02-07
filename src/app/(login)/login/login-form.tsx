@@ -20,7 +20,7 @@ function LoginButton() {
   );
 }
 
-export default function LoginForm({ appName, appLogo, appLogoHeight }: { appName: string, appLogo: string, appLogoHeight?: string }) {
+export default function LoginForm({ appName, appLogo, appLogoHeight, appLogoLoginScale }: { appName: string, appLogo: string, appLogoHeight?: string, appLogoLoginScale?: string }) {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -45,7 +45,10 @@ export default function LoginForm({ appName, appLogo, appLogoHeight }: { appName
             <img
               src={appLogo}
               alt="Logo"
-              style={{ height: `${appLogoHeight || '48'}px` }}
+              style={{
+                height: `${appLogoHeight || '48'}px`,
+                transform: `scale(${appLogoLoginScale || '1'})`
+              }}
               className="w-auto max-w-full object-contain mx-auto transition-all duration-300"
             />
           ) : (

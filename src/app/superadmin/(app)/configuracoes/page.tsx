@@ -15,6 +15,9 @@ interface SystemConfig {
     appLogo: string;
     appFavicon: string;
     appLogoHeight?: string;
+    appLogoSidebarWidth?: string;
+    appLogoIconHeight?: string;
+    appLogoLoginScale?: string;
 }
 
 export default function SystemConfigPage() {
@@ -25,6 +28,10 @@ export default function SystemConfigPage() {
         appName: '',
         appLogo: '',
         appFavicon: '',
+        appLogoHeight: '48',
+        appLogoSidebarWidth: 'auto',
+        appLogoIconHeight: '32',
+        appLogoLoginScale: '1',
     });
 
     useEffect(() => {
@@ -81,7 +88,10 @@ export default function SystemConfigPage() {
                 appName: config.appName,
                 appLogo: appLogo,
                 appFavicon: appFavicon,
-                appLogoHeight: config.appLogoHeight
+                appLogoHeight: config.appLogoHeight,
+                appLogoSidebarWidth: config.appLogoSidebarWidth,
+                appLogoIconHeight: config.appLogoIconHeight,
+                appLogoLoginScale: config.appLogoLoginScale
             });
 
             if (result.success) {
@@ -169,11 +179,12 @@ export default function SystemConfigPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 pt-2 border-t">
-                            <Label>Aparência</Label>
+                        <div className="space-y-4 pt-4 border-t">
+                            <Label className="text-lg font-semibold">Aparência da Logo</Label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Sidebar Expanded Logo Height (Main Logo) */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="logoHeight">Altura da Logo (px)</Label>
+                                    <Label htmlFor="logoHeight">Altura da Logo - Sidebar Aberta (px)</Label>
                                     <div className="flex items-center gap-4">
                                         <Input
                                             id="logoHeight"
@@ -184,31 +195,102 @@ export default function SystemConfigPage() {
                                             onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
                                             className="max-w-[100px]"
                                         />
-                                        <div className="flex-1">
-                                            <input
-                                                type="range"
-                                                min="20"
-                                                max="150"
-                                                value={config.appLogoHeight || '48'}
-                                                onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
-                                                className="w-full"
-                                            />
-                                        </div>
+                                        <input
+                                            type="range"
+                                            min="20"
+                                            max="150"
+                                            value={config.appLogoHeight || '48'}
+                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                            className="flex-1"
+                                        />
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Ajuste o tamanho da logo para caber melhor no layout.</p>
+                                    <p className="text-xs text-muted-foreground">Define a altura da logo quando o menu lateral está expandido.</p>
+                                </div>
 
-                                    {config.appLogo && (
-                                        <div className="mt-4 p-4 border rounded-lg bg-slate-50 flex flex-col items-center">
-                                            <span className="text-xs font-medium text-muted-foreground mb-2">Pré-visualização de Tamanho</span>
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={config.appLogo}
-                                                alt="Logo Size Preview"
-                                                style={{ height: `${config.appLogoHeight || '48'}px` }}
-                                                className="object-contain transition-all duration-300"
-                                            />
-                                        </div>
-                                    )}
+                                {/* Sidebar Collapsed Icon Height */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="iconHeight">Altura do Ícone - Sidebar Fechada (px)</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="iconHeight"
+                                            type="number"
+                                            min="16"
+                                            max="64"
+                                            value={config.appLogoIconHeight || '32'}
+                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="16"
+                                            max="64"
+                                            value={config.appLogoIconHeight || '32'}
+                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Define o tamanho do ícone (vertical) quando o menu está recolhido.</p>
+                                </div>
+
+                                {/* Login Logo Scale */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="loginScale">Escala da Logo no Login</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="loginScale"
+                                            type="number"
+                                            min="0.5"
+                                            max="3"
+                                            step="0.1"
+                                            value={config.appLogoLoginScale || '1'}
+                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="3"
+                                            step="0.1"
+                                            value={config.appLogoLoginScale || '1'}
+                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Ajusta o tamanho da logo na tela de login (1 = Original, 1.5 = 50% maior).</p>
+                                </div>
+
+                                {/* Preview Area */}
+                                <div className="col-span-1 md:col-span-2">
+                                    <Label>Pré-visualização (Aproximada)</Label>
+                                    <div className="mt-2 p-4 border rounded-lg bg-slate-50 flex flex-wrap gap-8 items-center justify-center min-h-[100px]">
+                                        {config.appLogo && (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <span className="text-[10px] text-muted-foreground">Sidebar Aberta</span>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={config.appLogo}
+                                                    alt="Logo Sidebar"
+                                                    style={{ height: `${config.appLogoHeight || '48'}px` }}
+                                                    className="object-contain border border-dashed border-gray-300"
+                                                />
+                                            </div>
+                                        )}
+                                        {config.appLogo && (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <span className="text-[10px] text-muted-foreground">Login (Escala {config.appLogoLoginScale})</span>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={config.appLogo}
+                                                    alt="Logo Login"
+                                                    style={{
+                                                        height: `${config.appLogoHeight || '48'}px`,
+                                                        transform: `scale(${config.appLogoLoginScale || 1})`
+                                                    }}
+                                                    className="object-contain border border-dashed border-gray-300"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
