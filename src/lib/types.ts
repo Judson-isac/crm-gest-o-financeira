@@ -150,6 +150,8 @@ export type SystemConfig = {
   appLogoSidebarWidth?: string; // e.g. "150px" for sidebar expanded
   appLogoIconHeight?: string; // e.g. "32px" for sidebar collapsed
   appLogoLoginScale?: string; // e.g. "1" (100%), "1.5" (150%) for login page
+  appLogoLoginPosition?: 'center' | 'left' | 'right'; // Horizontal alignment for login logo
+  appLogoSidebarPosition?: 'left' | 'center' | 'right'; // Horizontal alignment for sidebar logo
 };
 
 export type Meta = {

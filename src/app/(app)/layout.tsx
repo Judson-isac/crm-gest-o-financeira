@@ -35,7 +35,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           appName={config.appName}
           appLogo={config.appLogo}
           appLogoHeight={config.appLogoHeight}
+          appLogoHeight={config.appLogoHeight}
           appLogoIconHeight={config.appLogoIconHeight}
+          appLogoSidebarPosition={config.appLogoSidebarPosition}
           logoVerticalUrl={logoVerticalUrl}
         />
       </Sidebar>

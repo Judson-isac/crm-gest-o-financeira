@@ -45,6 +45,7 @@ export default function AppSidebar({
   appLogo,
   appLogoHeight,
   appLogoIconHeight,
+  appLogoSidebarPosition,
   logoVerticalUrl
 }: {
   permissions: Permissoes,
@@ -52,6 +53,7 @@ export default function AppSidebar({
   appLogo: string,
   appLogoHeight?: string,
   appLogoIconHeight?: string,
+  appLogoSidebarPosition?: 'left' | 'center' | 'right',
   logoVerticalUrl?: string
 }) {
   const pathname = usePathname();
@@ -74,14 +76,22 @@ export default function AppSidebar({
       <SidebarHeader>
         <div className="flex h-12 items-center justify-start gap-2 overflow-hidden px-2 w-full transition-all duration-300">
           {/* Horizontal Logo (Visible when Expanded) */}
-          <div className="group-data-[state=collapsed]:hidden flex items-center justify-start flex-1 min-w-0">
+          <div className={cn(
+            "group-data-[state=collapsed]:hidden flex items-center flex-1 min-w-0 transition-all duration-300",
+            appLogoSidebarPosition === 'center' ? 'justify-center' :
+              appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
+          )}>
             {appLogo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={appLogo}
                 alt="Logo"
                 style={{ height: `${appLogoHeight || '32'}px`, maxHeight: '40px' }}
-                className="w-auto object-contain object-left shrink-0 transition-all duration-300"
+                className={cn(
+                  "w-auto object-contain shrink-0 transition-all duration-300",
+                  // Remove object-left forcing if we are controlling position via flex container
+                  "object-contain"
+                )}
               />
             ) : (
               <Landmark className="text-primary h-8 w-8 shrink-0" />
