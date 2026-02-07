@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getSystemConfigAction, saveSystemConfigAction } from '@/actions/superadmin';
 import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 export default function SystemConfigPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSaving, startTransition] = useTransition();
     const [config, setConfig] = useState({
         appName: '',
         appLogo: '',
@@ -30,24 +31,55 @@ export default function SystemConfigPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-        const result = await saveSystemConfigAction(config);
-        if (result.success) {
-            toast({
-                title: "Configuração atualizada!",
-                description: "As alterações podem levar alguns instantes para aparecer."
+        const formData = new FormData(e.target as HTMLFormElement);
+
+        // Helper to read file as base64
+        const readFile = (file: File): Promise<string> => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
-            // Force refresh to update layout if needed, though revalidatePath handles server side.
-            // Client side layout might need window reload to see logo change immediately if it relies on server fetch.
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Erro",
-                description: result.message
+        };
+
+        startTransition(async () => {
+            let appLogo = config.appLogo;
+            const logoFile = formData.get('logoFile') as File;
+
+            if (logoFile && logoFile.size > 0) {
+                try {
+                    appLogo = await readFile(logoFile);
+                } catch (error) {
+                    toast({
+                        variant: "destructive",
+                        title: "Erro ao ler arquivo",
+                        description: "Não foi possível processar a imagem selecionada."
+                    });
+                    return;
+                }
+            }
+
+            const result = await saveSystemConfigAction({
+                appName: config.appName,
+                appLogo: appLogo
             });
-        }
-        setIsSaving(false);
+
+            if (result.success) {
+                setConfig(prev => ({ ...prev, appLogo }));
+                toast({
+                    title: "Configuração atualizada!",
+                    description: "As alterações podem levar alguns instantes para aparecer."
+                });
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: result.message
+                });
+            }
+        });
     };
 
     if (isLoading) {
@@ -69,8 +101,10 @@ export default function SystemConfigPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Nome da Aplicação</label>
+                            <Label htmlFor="appName">Nome da Aplicação</Label>
                             <Input
+                                id="appName"
+                                name="appName"
                                 required
                                 value={config.appName}
                                 onChange={e => setConfig({ ...config, appName: e.target.value })}
@@ -80,18 +114,25 @@ export default function SystemConfigPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Logo URL</label>
-                            <Input
-                                value={config.appLogo}
-                                onChange={e => setConfig({ ...config, appLogo: e.target.value })}
-                                placeholder="https://..."
-                            />
-                            <p className="text-xs text-muted-foreground">URL direta para a imagem da logo (PNG/SVG transparente recomendado).</p>
+                            <Label htmlFor="logoFile">Logo do Sistema (Upload)</Label>
+                            <div className="flex gap-4 items-start">
+                                <div className="flex-1">
+                                    <Input
+                                        id="logoFile"
+                                        name="logoFile"
+                                        type="file"
+                                        accept="image/*"
+                                        className="cursor-pointer"
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">Recomendado: PNG transparente (aprox. 200x50px).</p>
+                                </div>
+                            </div>
                         </div>
 
                         {config.appLogo && (
                             <div className="p-4 border rounded-lg bg-slate-50 flex flex-col gap-2 items-center">
-                                <span className="text-xs font-medium text-muted-foreground">Pré-visualização</span>
+                                <span className="text-xs font-medium text-muted-foreground">Pré-visualização Atual</span>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={config.appLogo} alt="Logo Preview" className="h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
                             </div>
                         )}

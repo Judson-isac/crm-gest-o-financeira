@@ -8,14 +8,28 @@ export const revalidate = 0;
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 
-import { getSystemConfig } from '@/lib/db';
+import { getSystemConfig, getRedeById } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/api';
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSystemConfig();
+  const user = await getAuthenticatedUser();
+
+  let iconUrl = config.appLogo;
+
+  if (user?.redeId) {
+    const rede = await getRedeById(user.redeId);
+    if (rede?.logoVerticalUrl) {
+      iconUrl = rede.logoVerticalUrl;
+    } else if (rede?.logoUrl) {
+      iconUrl = rede.logoUrl;
+    }
+  }
+
   return {
     title: config.appName || 'Gestão Financeira e CRM',
     description: 'Sistema de gestão financeira e dashboards analíticos',
-    icons: config.appLogo ? { icon: config.appLogo } : undefined
+    icons: iconUrl ? { icon: iconUrl } : undefined
   };
 }
 
