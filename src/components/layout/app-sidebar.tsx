@@ -105,16 +105,15 @@ export default function AppSidebar({
               <Landmark className="text-primary h-6 w-6 shrink-0 mx-auto" />
             )}
           </div>
-        </div>
 
-        <h2 className={cn(
-          "text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-all duration-300 ease-in-out",
-          "group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden"
-        )}>
-          {appName}
-        </h2>
-      </div>
-    </SidebarHeader >
+          <h2 className={cn(
+            "text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-all duration-300 ease-in-out",
+            "group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden"
+          )}>
+            {appName}
+          </h2>
+        </div>
+      </SidebarHeader >
       <SidebarContent>
         <SidebarMenu>
           {permissions.gerenciarMatriculas && (
