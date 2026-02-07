@@ -6,12 +6,20 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { getAuthenticatedUser, getAuthenticatedUserPermissions } from "@/lib/api";
-import { getSystemConfig } from "@/lib/db";
+import { getSystemConfig, getRedeById } from "@/lib/db";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
   const permissions = await getAuthenticatedUserPermissions();
   const config = await getSystemConfig();
+
+  // Override logo if network has one
+  if (user?.redeId) {
+    const rede = await getRedeById(user.redeId);
+    if (rede?.logoUrl) {
+      config.appLogo = rede.logoUrl;
+    }
+  }
 
   return (
     <SidebarProvider defaultOpen={false}>

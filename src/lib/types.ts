@@ -244,7 +244,6 @@ export type RankingConfig = {
 
 export type RankingMessage = {
   id: string;
-  id: string;
   redeId: string;
   message: string;
   createdAt: Date;
