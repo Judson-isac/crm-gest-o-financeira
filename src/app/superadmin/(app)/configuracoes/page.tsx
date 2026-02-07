@@ -1,3 +1,13 @@
+'use client';
+
+import { useState, useEffect, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { getSystemConfigAction, saveSystemConfigAction } from '@/actions/superadmin';
+import { Loader2, Save } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Define SystemConfig type based on usage
@@ -120,7 +130,7 @@ export default function SystemConfigPage() {
                 <div className="space-y-1">
                     <span className="text-[10px] text-muted-foreground block">Sidebar Aberta ({config.appLogoSidebarPosition === 'left' ? 'Esquerda' : config.appLogoSidebarPosition === 'center' ? 'Centro' : 'Direita'})</span>
                     <div className={`flex w-64 border border-dashed border-gray-300 p-2 bg-white ${config.appLogoSidebarPosition === 'center' ? 'justify-center' :
-                            config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
+                        config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
                         }`}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -136,7 +146,7 @@ export default function SystemConfigPage() {
                 <div className="space-y-1">
                     <span className="text-[10px] text-muted-foreground block">Login ({config.appLogoLoginPosition === 'left' ? 'Esquerda' : config.appLogoLoginPosition === 'center' ? 'Centro' : 'Direita'})</span>
                     <div className={`flex w-full border border-dashed border-gray-300 p-4 bg-white ${config.appLogoLoginPosition === 'center' ? 'justify-center' :
-                            config.appLogoLoginPosition === 'right' ? 'justify-end' : 'justify-start'
+                        config.appLogoLoginPosition === 'right' ? 'justify-end' : 'justify-start'
                         }`}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
