@@ -146,6 +146,7 @@ export type SystemConfig = {
   appName: string;
   appLogo: string;
   appFavicon?: string;
+  appLogoHeight?: string; // e.g. "h-12", "h-16" or pixel value "48px" stored as string
 };
 
 export type Meta = {

@@ -14,6 +14,7 @@ interface SystemConfig {
     appName: string;
     appLogo: string;
     appFavicon: string;
+    appLogoHeight?: string;
 }
 
 export default function SystemConfigPage() {
@@ -79,7 +80,8 @@ export default function SystemConfigPage() {
             const result = await saveSystemConfigAction({
                 appName: config.appName,
                 appLogo: appLogo,
-                appFavicon: appFavicon
+                appFavicon: appFavicon,
+                appLogoHeight: config.appLogoHeight
             });
 
             if (result.success) {
@@ -164,6 +166,50 @@ export default function SystemConfigPage() {
                                         <img src={config.appFavicon} alt="Favicon" className="h-8 w-8 object-contain" />
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 pt-2 border-t">
+                            <Label>Aparência</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="logoHeight">Altura da Logo (px)</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="logoHeight"
+                                            type="number"
+                                            min="20"
+                                            max="150"
+                                            value={config.appLogoHeight || '48'}
+                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <div className="flex-1">
+                                            <input
+                                                type="range"
+                                                min="20"
+                                                max="150"
+                                                value={config.appLogoHeight || '48'}
+                                                onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Ajuste o tamanho da logo para caber melhor no layout.</p>
+
+                                    {config.appLogo && (
+                                        <div className="mt-4 p-4 border rounded-lg bg-slate-50 flex flex-col items-center">
+                                            <span className="text-xs font-medium text-muted-foreground mb-2">Pré-visualização de Tamanho</span>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={config.appLogo}
+                                                alt="Logo Size Preview"
+                                                style={{ height: `${config.appLogoHeight || '48'}px` }}
+                                                className="object-contain transition-all duration-300"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

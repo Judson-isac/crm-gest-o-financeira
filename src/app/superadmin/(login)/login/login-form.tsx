@@ -20,25 +20,33 @@ function LoginButton() {
   );
 }
 
-export default function SuperAdminLoginForm({ appName, appLogo }: { appName: string, appLogo: string }) {
+export default function SuperAdminLoginForm({ appName, appLogo, appLogoHeight }: { appName: string, appLogo: string, appLogoHeight?: string }) {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="inline-flex items-center justify-center rounded-lg p-3 mb-4 mx-auto w-fit">
+        <div className="flex items-center justify-center mb-6">
           {appLogo ? (
-            <img src={appLogo} alt="Logo" className="h-12 w-auto object-contain" />
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={appLogo}
+              alt="Logo"
+              style={{ height: `${appLogoHeight || '48'}px` }}
+              className="w-auto object-contain transition-all duration-300"
+            />
           ) : (
-            <div className="bg-primary p-3 rounded-lg">
+            <div className="bg-primary p-3 rounded-lg inline-flex">
               <ShieldCheck className="h-8 w-8 text-primary-foreground" />
             </div>
           )}
         </div>
         <CardTitle className="text-2xl">Acesso Super Admin</CardTitle>
         <CardDescription>
-          Entre com suas credenciais de super administrador do {appName}.
+          {appName
+            ? `Entre com suas credenciais de super administrador do ${appName}.`
+            : 'Entre com suas credenciais de super administrador.'}
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -1601,18 +1601,19 @@ export async function getSystemConfig(): Promise<SystemConfig> {
     const client = await pool.connect();
     try {
         const result = await client.query('SELECT * FROM system_config');
-        const config: SystemConfig = { appName: '', appLogo: '', appFavicon: '' }; // Defaults
+        const config: SystemConfig = { appName: '', appLogo: '', appFavicon: '', appLogoHeight: '48' }; // Default height 48px
 
         result.rows.forEach(row => {
             if (row.key === 'APP_NAME') config.appName = row.value;
             if (row.key === 'APP_LOGO') config.appLogo = row.value;
             if (row.key === 'APP_FAVICON') config.appFavicon = row.value;
+            if (row.key === 'APP_LOGO_HEIGHT') config.appLogoHeight = row.value;
         });
 
         return config;
     } catch (e) {
         // Table might not exist yet, return default
-        return { appName: 'Sistema', appLogo: '', appFavicon: '' };
+        return { appName: 'Sistema', appLogo: '', appFavicon: '', appLogoHeight: '48' };
     } finally {
         client.release();
     }
@@ -1637,6 +1638,11 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
             INSERT INTO system_config (key, value) VALUES ('APP_FAVICON', $1)
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         `, [config.appFavicon || '']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_HEIGHT', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoHeight || '48']);
 
         await client.query('COMMIT');
     } catch (e) {

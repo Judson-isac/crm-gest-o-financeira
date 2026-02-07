@@ -7,7 +7,7 @@ export default async function SuperAdminLoginPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SuperAdminLoginForm appName={config.appName} appLogo={config.appLogo} />
+      <SuperAdminLoginForm appName={config.appName} appLogo={config.appLogo} appLogoHeight={config.appLogoHeight} />
     </Suspense>
   );
 }
