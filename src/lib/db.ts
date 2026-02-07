@@ -553,11 +553,17 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     const client = await pool.connect();
     try {
         if (rede.id) {
-            const result = await client.query('UPDATE redes SET nome = $2, polos = $3, modulos = $4 WHERE id = $1 RETURNING *', [rede.id, rede.nome, rede.polos || [], rede.modulos || []]);
+            const result = await client.query(
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, "logoUrl" = $5, "logoVerticalUrl" = $6 WHERE id = $1 RETURNING *',
+                [rede.id, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl]
+            );
             return result.rows[0];
         } else {
             const newId = uuidv4();
-            const result = await client.query('INSERT INTO redes (id, nome, polos, modulos) VALUES ($1, $2, $3, $4) RETURNING *', [newId, rede.nome, rede.polos || [], rede.modulos || []]);
+            const result = await client.query(
+                'INSERT INTO redes (id, nome, polos, modulos, "logoUrl", "logoVerticalUrl") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [newId, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl]
+            );
             return result.rows[0];
         }
     } finally {

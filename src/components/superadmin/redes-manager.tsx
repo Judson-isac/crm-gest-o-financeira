@@ -154,16 +154,86 @@ export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {
             </Card>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingRede ? 'Editar Rede' : 'Nova Rede'}</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleSave}>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const nome = formData.get('nome') as string;
+                        const selectedModules = (formData as any).getAll ? (formData.getAll('modulos') as string[]) : [];
+
+                        // Helper to read file as base64
+                        const readFile = (file: File): Promise<string> => {
+                            return new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result as string);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(file);
+                            });
+                        };
+
+                        startTransition(async () => {
+                            const logoFile = (formData.get('logoUrl') as File);
+                            const logoVerticalFile = (formData.get('logoVerticalUrl') as File);
+
+                            let logoUrl = editingRede?.logoUrl;
+                            let logoVerticalUrl = editingRede?.logoVerticalUrl;
+
+                            if (logoFile && logoFile.size > 0) {
+                                logoUrl = await readFile(logoFile);
+                            }
+                            if (logoVerticalFile && logoVerticalFile.size > 0) {
+                                logoVerticalUrl = await readFile(logoVerticalFile);
+                            }
+
+                            const result = await saveRedeAction({
+                                id: editingRede?.id,
+                                nome,
+                                modulos: selectedModules,
+                                logoUrl,
+                                logoVerticalUrl
+                            });
+
+                            if (result.success) {
+                                toast({ title: editingRede ? 'Rede atualizada!' : 'Rede criada!' });
+                                setIsFormOpen(false);
+                                setEditingRede(null);
+                            } else {
+                                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+                            }
+                        });
+                    }}>
                         <div className="grid gap-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="nome">Nome da Rede</Label>
                                 <Input id="nome" name="nome" defaultValue={editingRede?.nome || ''} required />
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="logoUrl">Logo Principal (Horizontal)</Label>
+                                    <Input id="logoUrl" name="logoUrl" type="file" accept="image/*" />
+                                    {editingRede?.logoUrl && (
+                                        <div className="mt-2 border rounded p-2 bg-gray-50 flex justify-center">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={editingRede.logoUrl} alt="Logo Preview" className="h-12 object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="logoVerticalUrl">Logo Vertical / Ícone</Label>
+                                    <Input id="logoVerticalUrl" name="logoVerticalUrl" type="file" accept="image/*" />
+                                    {editingRede?.logoVerticalUrl && (
+                                        <div className="mt-2 border rounded p-2 bg-gray-50 flex justify-center">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={editingRede.logoVerticalUrl} alt="Icon Preview" className="h-12 object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label>Módulos Habilitados</Label>
                                 <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">

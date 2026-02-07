@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS public.redes (
     id TEXT PRIMARY KEY,
     nome TEXT UNIQUE,
     polos TEXT[],
-    modulos TEXT[] DEFAULT '{}'::TEXT[]
+    modulos TEXT[] DEFAULT '{}'::TEXT[],
+    "logoUrl" TEXT,
+    "logoVerticalUrl" TEXT
 );
 
 -- Funções/Perfis
