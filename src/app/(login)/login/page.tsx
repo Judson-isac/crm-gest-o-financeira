@@ -11,7 +11,7 @@ export default async function LoginPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <LoginForm appName={config.appName} appLogo={config.appLogo} />
+      <LoginForm appName={config.appName} appLogo={config.appLogo} appLogoHeight={config.appLogoHeight} />
     </Suspense>
   );
 }

@@ -39,7 +39,19 @@ const cadastrosSubItems = [
 ];
 
 
-export default function AppSidebar({ permissions, appName, appLogo }: { permissions: Permissoes, appName: string, appLogo: string }) {
+export default function AppSidebar({
+  permissions,
+  appName,
+  appLogo,
+  appLogoHeight,
+  logoVerticalUrl
+}: {
+  permissions: Permissoes,
+  appName: string,
+  appLogo: string,
+  appLogoHeight?: string,
+  logoVerticalUrl?: string
+}) {
   const pathname = usePathname();
   const { state, toggleSidebar } = useSidebar();
 
@@ -59,10 +71,38 @@ export default function AppSidebar({ permissions, appName, appLogo }: { permissi
     <>
       <SidebarHeader>
         <div className="flex h-12 items-center justify-start gap-2 overflow-hidden p-2 pl-3">
-          {appLogo ? <img src={appLogo} alt="Logo" className="h-8 w-auto object-contain shrink-0" /> : <Landmark className="text-primary h-8 w-8 shrink-0" />}
+          {/* Horizontal Logo (Visible when Expanded) */}
+          <div className="group-data-[state=collapsed]:hidden flex items-center">
+            {appLogo ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={appLogo}
+                alt="Logo"
+                style={{ height: `${appLogoHeight || '32'}px` }} // Default 32px for sidebar logic compliance
+                className="w-auto object-contain shrink-0 transition-all duration-300"
+              />
+            ) : (
+              <Landmark className="text-primary h-8 w-8 shrink-0" />
+            )}
+          </div>
+
+          {/* Vertical Logo (Visible when Collapsed) */}
+          <div className="hidden group-data-[state=collapsed]:flex items-center justify-center w-full">
+            {logoVerticalUrl || appLogo ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={logoVerticalUrl || appLogo}
+                alt="Icon"
+                className="h-8 w-8 object-contain shrink-0"
+              />
+            ) : (
+              <Landmark className="text-primary h-6 w-6 shrink-0" />
+            )}
+          </div>
+
           <h2 className={cn(
             "text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-all duration-300 ease-in-out",
-            "group-data-[state=collapsed]:group-data-[collapsible=icon]:opacity-0 group-data-[state=collapsed]:group-data-[collapsible=icon]:translate-x-[-10px]"
+            "group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden"
           )}>
             {appName}
           </h2>

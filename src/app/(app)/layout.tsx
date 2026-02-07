@@ -14,17 +14,29 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const config = await getSystemConfig();
 
   // Override logo if network has one
+  let logoVerticalUrl = config.appFavicon; // Fallback to favicon for vertical logo
   if (user?.redeId) {
     const rede = await getRedeById(user.redeId);
     if (rede?.logoUrl) {
       config.appLogo = rede.logoUrl;
+    }
+    if (rede?.logoVerticalUrl) {
+      logoVerticalUrl = rede.logoVerticalUrl;
+    } else if (rede?.faviconUrl) {
+      logoVerticalUrl = rede.faviconUrl;
     }
   }
 
   return (
     <SidebarProvider defaultOpen={false}>
       <Sidebar side="left" collapsible="icon" variant="floating">
-        <AppSidebar permissions={permissions} appName={config.appName} appLogo={config.appLogo} />
+        <AppSidebar
+          permissions={permissions}
+          appName={config.appName}
+          appLogo={config.appLogo}
+          appLogoHeight={config.appLogoHeight}
+          logoVerticalUrl={logoVerticalUrl}
+        />
       </Sidebar>
       <SidebarInset>
         <AppHeader user={user} appName={config.appName} />
