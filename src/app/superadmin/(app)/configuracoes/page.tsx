@@ -9,13 +9,21 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 
+// Define SystemConfig type based on usage
+interface SystemConfig {
+    appName: string;
+    appLogo: string;
+    appFavicon: string;
+}
+
 export default function SystemConfigPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, startTransition] = useTransition();
-    const [config, setConfig] = useState({
+    const [config, setConfig] = useState<SystemConfig>({
         appName: '',
         appLogo: '',
+        appFavicon: '',
     });
 
     useEffect(() => {
@@ -45,28 +53,37 @@ export default function SystemConfigPage() {
 
         startTransition(async () => {
             let appLogo = config.appLogo;
+            let appFavicon = config.appFavicon;
+
             const logoFile = formData.get('logoFile') as File;
+            const faviconFile = formData.get('faviconFile') as File;
 
             if (logoFile && logoFile.size > 0) {
                 try {
                     appLogo = await readFile(logoFile);
                 } catch (error) {
-                    toast({
-                        variant: "destructive",
-                        title: "Erro ao ler arquivo",
-                        description: "Não foi possível processar a imagem selecionada."
-                    });
+                    toast({ variant: "destructive", title: "Erro ao ler logo", description: "Falha ao processar arquivo da logo." });
+                    return;
+                }
+            }
+
+            if (faviconFile && faviconFile.size > 0) {
+                try {
+                    appFavicon = await readFile(faviconFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler favicon", description: "Falha ao processar arquivo do favicon." });
                     return;
                 }
             }
 
             const result = await saveSystemConfigAction({
                 appName: config.appName,
-                appLogo: appLogo
+                appLogo: appLogo,
+                appFavicon: appFavicon
             });
 
             if (result.success) {
-                setConfig(prev => ({ ...prev, appLogo }));
+                setConfig(prev => ({ ...prev, appLogo, appFavicon }));
                 toast({
                     title: "Configuração atualizada!",
                     description: "As alterações podem levar alguns instantes para aparecer."
@@ -105,37 +122,50 @@ export default function SystemConfigPage() {
                             <Input
                                 id="appName"
                                 name="appName"
-                                required
                                 value={config.appName}
                                 onChange={e => setConfig({ ...config, appName: e.target.value })}
-                                placeholder="Ex: Meu CRM"
+                                placeholder="Ex: Meu CRM (Deixe em branco para nenhum)"
                             />
-                            <p className="text-xs text-muted-foreground">Aparece no título da aba e no cabeçalho.</p>
+                            <p className="text-xs text-muted-foreground">Opcional. Aparece no título da aba e no cabeçalho.</p>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="logoFile">Logo do Sistema (Upload)</Label>
-                            <div className="flex gap-4 items-start">
-                                <div className="flex-1">
-                                    <Input
-                                        id="logoFile"
-                                        name="logoFile"
-                                        type="file"
-                                        accept="image/*"
-                                        className="cursor-pointer"
-                                    />
-                                    <p className="text-xs text-muted-foreground mt-1">Recomendado: PNG transparente (aprox. 200x50px).</p>
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="logoFile">Logo do Sistema</Label>
+                                <Input
+                                    id="logoFile"
+                                    name="logoFile"
+                                    type="file"
+                                    accept="image/*"
+                                    className="cursor-pointer"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">PNG transparente (200x50px).</p>
+                                {config.appLogo && (
+                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={config.appLogo} alt="Logo" className="h-8 object-contain" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="faviconFile">Favicon (Ícone da Aba)</Label>
+                                <Input
+                                    id="faviconFile"
+                                    name="faviconFile"
+                                    type="file"
+                                    accept="image/*"
+                                    className="cursor-pointer"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">PNG quadrado (32x32px ou 64x64px).</p>
+                                {config.appFavicon && (
+                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={config.appFavicon} alt="Favicon" className="h-8 w-8 object-contain" />
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        {config.appLogo && (
-                            <div className="p-4 border rounded-lg bg-slate-50 flex flex-col gap-2 items-center">
-                                <span className="text-xs font-medium text-muted-foreground">Pré-visualização Atual</span>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={config.appLogo} alt="Logo Preview" className="h-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                            </div>
-                        )}
 
                         <div className="pt-4">
                             <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">

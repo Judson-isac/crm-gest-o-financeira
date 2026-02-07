@@ -105,6 +105,7 @@ export type Rede = {
   modulos?: string[];
   logoUrl?: string;
   logoVerticalUrl?: string;
+  faviconUrl?: string;
 };
 
 // --- Cadastros ---
@@ -139,6 +140,12 @@ export type NumeroProcessoSeletivo = {
   id: string;
   numero: string;
   redeId: string;
+};
+
+export type SystemConfig = {
+  appName: string;
+  appLogo: string;
+  appFavicon?: string;
 };
 
 export type Meta = {

@@ -15,11 +15,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = await getSystemConfig();
   const user = await getAuthenticatedUser();
 
-  let iconUrl = config.appLogo;
+  // Default to system favicon or logo
+  let iconUrl = config.appFavicon || config.appLogo;
 
   if (user?.redeId) {
     const rede = await getRedeById(user.redeId);
-    if (rede?.logoVerticalUrl) {
+    // Priority: Network Favicon > Network Vertical Logo > Network Horizontal Logo > Default
+    if (rede?.faviconUrl) {
+      iconUrl = rede.faviconUrl;
+    } else if (rede?.logoVerticalUrl) {
       iconUrl = rede.logoVerticalUrl;
     } else if (rede?.logoUrl) {
       iconUrl = rede.logoUrl;

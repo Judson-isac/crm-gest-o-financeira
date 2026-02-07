@@ -554,15 +554,15 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     try {
         if (rede.id) {
             const result = await client.query(
-                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, "logoUrl" = $5, "logoVerticalUrl" = $6 WHERE id = $1 RETURNING *',
-                [rede.id, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl]
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, "logoUrl" = $5, "logoVerticalUrl" = $6, "faviconUrl" = $7 WHERE id = $1 RETURNING *',
+                [rede.id, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl, rede.faviconUrl]
             );
             return result.rows[0];
         } else {
             const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO redes (id, nome, polos, modulos, "logoUrl", "logoVerticalUrl") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [newId, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl]
+                'INSERT INTO redes (id, nome, polos, modulos, "logoUrl", "logoVerticalUrl", "faviconUrl") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                [newId, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl, rede.faviconUrl]
             );
             return result.rows[0];
         }
@@ -1601,17 +1601,18 @@ export async function getSystemConfig(): Promise<SystemConfig> {
     const client = await pool.connect();
     try {
         const result = await client.query('SELECT * FROM system_config');
-        const config: SystemConfig = { appName: 'VirtuaFinance', appLogo: '' };
+        const config: SystemConfig = { appName: '', appLogo: '', appFavicon: '' }; // Defaults
 
         result.rows.forEach(row => {
             if (row.key === 'APP_NAME') config.appName = row.value;
             if (row.key === 'APP_LOGO') config.appLogo = row.value;
+            if (row.key === 'APP_FAVICON') config.appFavicon = row.value;
         });
 
         return config;
     } catch (e) {
         // Table might not exist yet, return default
-        return { appName: 'Sistema', appLogo: '' };
+        return { appName: 'Sistema', appLogo: '', appFavicon: '' };
     } finally {
         client.release();
     }
@@ -1621,8 +1622,22 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        await client.query('INSERT INTO system_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2', ['APP_NAME', config.appName]);
-        await client.query('INSERT INTO system_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2', ['APP_LOGO', config.appLogo]);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_NAME', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appName]);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogo]);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_FAVICON', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appFavicon || '']);
+
         await client.query('COMMIT');
     } catch (e) {
         await client.query('ROLLBACK');

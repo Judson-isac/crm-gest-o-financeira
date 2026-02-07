@@ -17,14 +17,21 @@ echo "🛠️ Aplicando correção no banco de dados..."
 
 docker exec -i $CONTAINER_ID psql -U postgres -d crm_gestao <<EOF
 -- Adiciona colunas se não existirem (re-executa migration de forma segura)
+
+-- Tabela REDES
 ALTER TABLE public.redes 
 ADD COLUMN IF NOT EXISTS "logoUrl" TEXT,
-ADD COLUMN IF NOT EXISTS "logoVerticalUrl" TEXT;
+ADD COLUMN IF NOT EXISTS "logoVerticalUrl" TEXT,
+ADD COLUMN IF NOT EXISTS "faviconUrl" TEXT;
+
+-- Tabela SYSTEM_CONFIG (Verificar se precisamos adicionar campos especificos ou usar chave-valor)
+-- O sistema atual usa chave-valor na tabela system_config, então não precisa de ALTER TABLE aqui,
+-- apenas garantir que o código lide com as chaves APP_FAVICON, etc.
 
 -- Verifica se foi criado
 SELECT column_name, data_type 
 FROM information_schema.columns 
-WHERE table_name = 'redes' AND column_name IN ('logoUrl', 'logoVerticalUrl');
+WHERE table_name = 'redes' AND column_name IN ('logoUrl', 'logoVerticalUrl', 'faviconUrl');
 EOF
 
 echo "✅ Correção aplicada com sucesso!"
