@@ -46,7 +46,7 @@ export default function LoginForm({ appName, appLogo, appLogoHeight }: { appName
               src={appLogo}
               alt="Logo"
               style={{ height: `${appLogoHeight || '48'}px` }}
-              className="w-auto object-contain transition-all duration-300"
+              className="w-auto max-w-full object-contain mx-auto transition-all duration-300"
             />
           ) : (
             <div className="bg-primary p-3 rounded-lg inline-flex">

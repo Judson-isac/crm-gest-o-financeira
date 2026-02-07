@@ -70,20 +70,26 @@ export default function AppSidebar({
   return (
     <>
       <SidebarHeader>
-        <div className="flex h-12 items-center justify-start gap-2 overflow-hidden p-2 pl-3">
+        <div className="flex h-12 items-center justify-start gap-2 overflow-hidden px-2 w-full transition-all duration-300">
           {/* Horizontal Logo (Visible when Expanded) */}
-          <div className="group-data-[state=collapsed]:hidden flex items-center">
+          <div className="group-data-[state=collapsed]:hidden flex items-center justify-start flex-1 min-w-0">
             {appLogo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={appLogo}
                 alt="Logo"
-                style={{ height: `${appLogoHeight || '32'}px` }} // Default 32px for sidebar logic compliance
-                className="w-auto object-contain shrink-0 transition-all duration-300"
+                style={{ height: `${appLogoHeight || '32'}px`, maxHeight: '40px' }}
+                className="w-auto object-contain object-left shrink-0 transition-all duration-300"
               />
             ) : (
               <Landmark className="text-primary h-8 w-8 shrink-0" />
             )}
+            <h2 className={cn(
+              "text-lg font-semibold text-sidebar-foreground whitespace-nowrap ml-2 opacity-100 transition-opacity duration-300",
+              appLogo ? "sr-only" : "" // Hide text if logo exists to prevent clutter, or keep it if design permits
+            )}>
+              {!appLogo && appName}
+            </h2>
           </div>
 
           {/* Vertical Logo (Visible when Collapsed) */}
@@ -93,21 +99,22 @@ export default function AppSidebar({
               <img
                 src={logoVerticalUrl || appLogo}
                 alt="Icon"
-                className="h-8 w-8 object-contain shrink-0"
+                className="h-8 w-8 object-contain shrink-0 mx-auto"
               />
             ) : (
-              <Landmark className="text-primary h-6 w-6 shrink-0" />
+              <Landmark className="text-primary h-6 w-6 shrink-0 mx-auto" />
             )}
           </div>
-
-          <h2 className={cn(
-            "text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-all duration-300 ease-in-out",
-            "group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden"
-          )}>
-            {appName}
-          </h2>
         </div>
-      </SidebarHeader>
+
+        <h2 className={cn(
+          "text-lg font-semibold text-sidebar-foreground whitespace-nowrap transition-all duration-300 ease-in-out",
+          "group-data-[state=collapsed]:group-data-[collapsible=icon]:hidden"
+        )}>
+          {appName}
+        </h2>
+      </div>
+    </SidebarHeader >
       <SidebarContent>
         <SidebarMenu>
           {permissions.gerenciarMatriculas && (
