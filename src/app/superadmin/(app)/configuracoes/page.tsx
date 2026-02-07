@@ -39,127 +39,323 @@ export default function SystemConfigPage() {
         appLogoSidebarPosition: 'left',
     });
 
-    // ... (useEffect and handleSubmit unchanged up to default values) ...
-    // Note: I will need to replace the entire component or careful chunks to avoid context loss.
-    // Ideally, I should just update the interface and the JSX.
+    useEffect(() => {
+        const load = async () => {
+            const result = await getSystemConfigAction();
+            if (result.success && result.data) {
+                setConfig(result.data);
+            }
+            setIsLoading(false);
+        };
+        load();
+    }, []);
 
-    // ... inside handleSubmit ...
-    const result = await saveSystemConfigAction({
-        appName: config.appName,
-        appLogo: appLogo,
-        appFavicon: appFavicon,
-        appLogoHeight: config.appLogoHeight,
-        appLogoSidebarWidth: config.appLogoSidebarWidth,
-        appLogoIconHeight: config.appLogoIconHeight,
-        appLogoLoginScale: config.appLogoLoginScale,
-        appLogoLoginPosition: config.appLogoLoginPosition,
-        appLogoSidebarPosition: config.appLogoSidebarPosition
-    });
-    // ...
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const formData = new FormData(e.target as HTMLFormElement);
 
-    // ... inside JSX ...
-    {/* Login Logo Scale */ }
-    <div className="space-y-2">
-        <Label htmlFor="loginScale">Escala da Logo no Login</Label>
-        <div className="flex items-center gap-4">
-            <Input
-                id="loginScale"
-                type="number"
-                min="0.5"
-                max="3"
-                step="0.1"
-                value={config.appLogoLoginScale || '1'}
-                onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
-                className="max-w-[100px]"
-            />
-            <input
-                type="range"
-                min="0.5"
-                max="3"
-                step="0.1"
-                value={config.appLogoLoginScale || '1'}
-                onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
-                className="flex-1"
-            />
+        // Helper to read file as base64
+        const readFile = (file: File): Promise<string> => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        startTransition(async () => {
+            let appLogo = config.appLogo;
+            let appFavicon = config.appFavicon;
+
+            const logoFile = formData.get('logoFile') as File;
+            const faviconFile = formData.get('faviconFile') as File;
+
+            if (logoFile && logoFile.size > 0) {
+                try {
+                    appLogo = await readFile(logoFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler logo", description: "Falha ao processar arquivo da logo." });
+                    return;
+                }
+            }
+
+            if (faviconFile && faviconFile.size > 0) {
+                try {
+                    appFavicon = await readFile(faviconFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler favicon", description: "Falha ao processar arquivo do favicon." });
+                    return;
+                }
+            }
+
+            const result = await saveSystemConfigAction({
+                appName: config.appName,
+                appLogo: appLogo,
+                appFavicon: appFavicon,
+                appLogoHeight: config.appLogoHeight,
+                appLogoSidebarWidth: config.appLogoSidebarWidth,
+                appLogoIconHeight: config.appLogoIconHeight,
+                appLogoLoginScale: config.appLogoLoginScale,
+                appLogoLoginPosition: config.appLogoLoginPosition,
+                appLogoSidebarPosition: config.appLogoSidebarPosition
+            });
+
+            if (result.success) {
+                setConfig(prev => ({ ...prev, appLogo, appFavicon }));
+                toast({
+                    title: "Configuração atualizada!",
+                    description: "As alterações podem levar alguns instantes para aparecer."
+                });
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: result.message
+                });
+            }
+        });
+    };
+
+    if (isLoading) {
+        return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+    }
+
+    return (
+        <div className="space-y-6 max-w-2xl mx-auto">
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h2>
+                <p className="text-muted-foreground">Personalize a identidade visual do CRM.</p>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>White-labeling</CardTitle>
+                    <CardDescription>Altere o nome e a logo que aparecem em todo o sistema.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="appName">Nome da Aplicação</Label>
+                            <Input
+                                id="appName"
+                                name="appName"
+                                value={config.appName}
+                                onChange={e => setConfig({ ...config, appName: e.target.value })}
+                                placeholder="Ex: Meu CRM (Deixe em branco para nenhum)"
+                            />
+                            <p className="text-xs text-muted-foreground">Opcional. Aparece no título da aba e no cabeçalho.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="logoFile">Logo do Sistema</Label>
+                                <Input
+                                    id="logoFile"
+                                    name="logoFile"
+                                    type="file"
+                                    accept="image/*"
+                                    className="cursor-pointer"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">PNG transparente (200x50px).</p>
+                                {config.appLogo && (
+                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={config.appLogo} alt="Logo" className="h-8 object-contain" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="faviconFile">Favicon (Ícone da Aba)</Label>
+                                <Input
+                                    id="faviconFile"
+                                    name="faviconFile"
+                                    type="file"
+                                    accept="image/*"
+                                    className="cursor-pointer"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">PNG quadrado (32x32px ou 64x64px).</p>
+                                {config.appFavicon && (
+                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={config.appFavicon} alt="Favicon" className="h-8 w-8 object-contain" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 pt-4 border-t">
+                            <Label className="text-lg font-semibold">Aparência da Logo</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Sidebar Expanded Logo Height (Main Logo) */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="logoHeight">Altura da Logo - Sidebar Aberta (px)</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="logoHeight"
+                                            type="number"
+                                            min="20"
+                                            max="150"
+                                            value={config.appLogoHeight || '48'}
+                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="20"
+                                            max="150"
+                                            value={config.appLogoHeight || '48'}
+                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Define a altura da logo quando o menu lateral está expandido.</p>
+                                </div>
+
+                                {/* Sidebar Collapsed Icon Height */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="iconHeight">Altura do Ícone - Sidebar Fechada (px)</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="iconHeight"
+                                            type="number"
+                                            min="16"
+                                            max="64"
+                                            value={config.appLogoIconHeight || '32'}
+                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="16"
+                                            max="64"
+                                            value={config.appLogoIconHeight || '32'}
+                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Define o tamanho do ícone (vertical) quando o menu está recolhido.</p>
+                                </div>
+
+                                {/* Login Logo Scale */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="loginScale">Escala da Logo no Login</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            id="loginScale"
+                                            type="number"
+                                            min="0.5"
+                                            max="3"
+                                            step="0.1"
+                                            value={config.appLogoLoginScale || '1'}
+                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                            className="max-w-[100px]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="3"
+                                            step="0.1"
+                                            value={config.appLogoLoginScale || '1'}
+                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                            className="flex-1"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Ajusta o tamanho da logo na tela de login.</p>
+                                </div>
+
+                                {/* Login Logo Position */}
+                                <div className="space-y-2">
+                                    <Label>Posição da Logo no Login</Label>
+                                    <Select
+                                        value={config.appLogoLoginPosition || 'center'}
+                                        onValueChange={(val: any) => setConfig({ ...config, appLogoLoginPosition: val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a posição" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="left">Esquerda</SelectItem>
+                                            <SelectItem value="center">Centro</SelectItem>
+                                            <SelectItem value="right">Direita</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Sidebar Logo Position */}
+                                <div className="space-y-2">
+                                    <Label>Posição da Logo na Sidebar</Label>
+                                    <Select
+                                        value={config.appLogoSidebarPosition || 'left'}
+                                        onValueChange={(val: any) => setConfig({ ...config, appLogoSidebarPosition: val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a posição" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="left">Esquerda</SelectItem>
+                                            <SelectItem value="center">Centro</SelectItem>
+                                            <SelectItem value="right">Direita</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">Alinhamento da logo quando a sidebar está aberta.</p>
+                                </div>
+
+                                {/* Preview Area */}
+                                <div className="col-span-1 md:col-span-2">
+                                    <Label>Pré-visualização (Aproximada)</Label>
+                                    <div className="mt-2 p-4 border rounded-lg bg-slate-50 flex flex-col gap-6">
+                                        {config.appLogo && (
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] text-muted-foreground block">Sidebar Aberta ({config.appLogoSidebarPosition === 'left' ? 'Esquerda' : config.appLogoSidebarPosition === 'center' ? 'Centro' : 'Direita'})</span>
+                                                <div className={`flex w-64 border border-dashed border-gray-300 p-2 bg-white ${config.appLogoSidebarPosition === 'center' ? 'justify-center' :
+                                                        config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
+                                                    }`}>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={config.appLogo}
+                                                        alt="Logo Sidebar"
+                                                        style={{ height: `${config.appLogoHeight || '48'}px` }}
+                                                        className="object-contain"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        {config.appLogo && (
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] text-muted-foreground block">Login ({config.appLogoLoginPosition === 'left' ? 'Esquerda' : config.appLogoLoginPosition === 'center' ? 'Centro' : 'Direita'})</span>
+                                                <div className={`flex w-full border border-dashed border-gray-300 p-4 bg-white ${config.appLogoLoginPosition === 'center' ? 'justify-center' :
+                                                        config.appLogoLoginPosition === 'right' ? 'justify-end' : 'justify-start'
+                                                    }`}>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={config.appLogo}
+                                                        alt="Logo Login"
+                                                        style={{
+                                                            height: `${config.appLogoHeight || '48'}px`,
+                                                            transform: `scale(${config.appLogoLoginScale || 1})`
+                                                        }}
+                                                        className="object-contain"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Salvar Alterações
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
-        <p className="text-xs text-muted-foreground">Ajusta o tamanho da logo na tela de login.</p>
-    </div>
-
-    {/* Login Logo Position */ }
-    <div className="space-y-2">
-        <Label>Posição da Logo no Login</Label>
-        <Select
-            value={config.appLogoLoginPosition || 'center'}
-            onValueChange={(val: any) => setConfig({ ...config, appLogoLoginPosition: val })}
-        >
-            <SelectTrigger>
-                <SelectValue placeholder="Selecione a posição" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="left">Esquerda</SelectItem>
-                <SelectItem value="center">Centro</SelectItem>
-                <SelectItem value="right">Direita</SelectItem>
-            </SelectContent>
-        </Select>
-    </div>
-
-    {/* Sidebar Logo Position */ }
-    <div className="space-y-2">
-        <Label>Posição da Logo na Sidebar</Label>
-        <Select
-            value={config.appLogoSidebarPosition || 'left'}
-            onValueChange={(val: any) => setConfig({ ...config, appLogoSidebarPosition: val })}
-        >
-            <SelectTrigger>
-                <SelectValue placeholder="Selecione a posição" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="left">Esquerda</SelectItem>
-                <SelectItem value="center">Centro</SelectItem>
-                <SelectItem value="right">Direita</SelectItem>
-            </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">Alinhamento da logo quando a sidebar está aberta.</p>
-    </div>
-
-    {/* Preview Area */ }
-    <div className="col-span-1 md:col-span-2">
-        <Label>Pré-visualização (Aproximada)</Label>
-        <div className="mt-2 p-4 border rounded-lg bg-slate-50 flex flex-col gap-6">
-            {config.appLogo && (
-                <div className="space-y-1">
-                    <span className="text-[10px] text-muted-foreground block">Sidebar Aberta ({config.appLogoSidebarPosition === 'left' ? 'Esquerda' : config.appLogoSidebarPosition === 'center' ? 'Centro' : 'Direita'})</span>
-                    <div className={`flex w-64 border border-dashed border-gray-300 p-2 bg-white ${config.appLogoSidebarPosition === 'center' ? 'justify-center' :
-                        config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
-                        }`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={config.appLogo}
-                            alt="Logo Sidebar"
-                            style={{ height: `${config.appLogoHeight || '48'}px` }}
-                            className="object-contain"
-                        />
-                    </div>
-                </div>
-            )}
-            {config.appLogo && (
-                <div className="space-y-1">
-                    <span className="text-[10px] text-muted-foreground block">Login ({config.appLogoLoginPosition === 'left' ? 'Esquerda' : config.appLogoLoginPosition === 'center' ? 'Centro' : 'Direita'})</span>
-                    <div className={`flex w-full border border-dashed border-gray-300 p-4 bg-white ${config.appLogoLoginPosition === 'center' ? 'justify-center' :
-                        config.appLogoLoginPosition === 'right' ? 'justify-end' : 'justify-start'
-                        }`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={config.appLogo}
-                            alt="Logo Login"
-                            style={{
-                                height: `${config.appLogoHeight || '48'}px`,
-                                transform: `scale(${config.appLogoLoginScale || 1})`
-                            }}
-                            className="object-contain"
-                        />
-                    </div>
-                </div>
-            )}
-        </div>
-    </div>
+    );
+}
