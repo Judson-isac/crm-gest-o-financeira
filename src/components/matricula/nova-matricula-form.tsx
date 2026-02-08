@@ -87,6 +87,7 @@ export function NovaMatriculaForm({
             const hasFiles = files.some(f => f instanceof File && f.size > 0);
 
             if (hasFiles) {
+                console.log(`[NovaMatriculaForm] Uploading ${files.length} files...`); // Log restaurado para garantir estabilidade
                 files.forEach((file) => fileFormData.append('files', file));
             }
 
@@ -97,6 +98,13 @@ export function NovaMatriculaForm({
             if (!uploadResult.success) {
                 toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
                 return; // Stop execution if upload fails
+            }
+
+            // Validação extra: Se enviamos arquivos mas o servidor não salvou nenhum
+            if (hasFiles && (!uploadResult.files || uploadResult.files.length === 0)) {
+                console.error('Erro: Arquivos detectados no formulário mas não retornados pelo servidor.');
+                toast({ variant: 'destructive', title: 'Erro no processamento', description: 'O servidor não identificou os arquivos enviados. Tente novamente.' });
+                return;
             }
 
             const newAttachments = uploadResult.files || [];
