@@ -7,7 +7,15 @@ export default async function SuperAdminLoginPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SuperAdminLoginForm appName={config.appName} appLogo={config.appLogo} appLogoHeight={config.appLogoHeight} />
+      <SuperAdminLoginForm
+        appName={config.appName}
+        appLogo={config.appLogo}
+        appLogoSuperAdminHeight={config.appLogoSuperAdminHeight}
+        appLogoSuperAdminScale={config.appLogoSuperAdminScale}
+        appLogoSuperAdminPosition={config.appLogoSuperAdminPosition}
+        appLogoSuperAdminOffsetX={config.appLogoSuperAdminOffsetX}
+        appLogoSuperAdminOffsetY={config.appLogoSuperAdminOffsetY}
+      />
     </Suspense>
   );
 }

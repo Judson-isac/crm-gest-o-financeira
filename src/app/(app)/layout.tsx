@@ -35,9 +35,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           appName={config.appName}
           appLogo={config.appLogo}
           appLogoHeight={config.appLogoHeight}
-          appLogoHeight={config.appLogoHeight}
           appLogoIconHeight={config.appLogoIconHeight}
+          appLogoSidebarScale={config.appLogoSidebarScale}
           appLogoSidebarPosition={config.appLogoSidebarPosition}
+          appLogoSidebarOffsetX={config.appLogoSidebarOffsetX}
+          appLogoSidebarOffsetY={config.appLogoSidebarOffsetY}
           logoVerticalUrl={logoVerticalUrl}
         />
       </Sidebar>

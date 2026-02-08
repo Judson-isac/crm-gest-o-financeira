@@ -9,6 +9,7 @@ import { ShieldCheck, Loader2, AlertTriangle } from 'lucide-react';
 import { loginAction } from '@/app/superadmin/actions';
 import { useSearchParams } from 'next/navigation';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { cn } from "@/lib/utils";
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -20,20 +21,44 @@ function LoginButton() {
   );
 }
 
-export default function SuperAdminLoginForm({ appName, appLogo, appLogoHeight }: { appName: string, appLogo: string, appLogoHeight?: string }) {
+export default function SuperAdminLoginForm({
+  appName,
+  appLogo,
+  appLogoSuperAdminHeight,
+  appLogoSuperAdminScale,
+  appLogoSuperAdminPosition,
+  appLogoSuperAdminOffsetX,
+  appLogoSuperAdminOffsetY
+}: {
+  appName: string,
+  appLogo: string,
+  appLogoSuperAdminHeight?: string,
+  appLogoSuperAdminScale?: string,
+  appLogoSuperAdminPosition?: 'center' | 'left' | 'right',
+  appLogoSuperAdminOffsetX?: number,
+  appLogoSuperAdminOffsetY?: number
+}) {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="flex items-center justify-center mb-6">
+        <div className={cn(
+          "flex items-center mb-6",
+          appLogoSuperAdminPosition === 'left' ? 'justify-start' :
+            appLogoSuperAdminPosition === 'right' ? 'justify-end' :
+              'justify-center'
+        )}>
           {appLogo ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={appLogo}
               alt="Logo"
-              style={{ height: `${appLogoHeight || '48'}px` }}
+              style={{
+                height: `${appLogoSuperAdminHeight || '48'}px`,
+                transform: `scale(${appLogoSuperAdminScale || '1'}) translate(${appLogoSuperAdminOffsetX || 0}px, ${appLogoSuperAdminOffsetY || 0}px)`
+              }}
               className="w-auto object-contain transition-all duration-300"
             />
           ) : (

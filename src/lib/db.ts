@@ -1608,6 +1608,27 @@ export async function getSystemConfig(): Promise<SystemConfig> {
             if (row.key === 'APP_LOGO') config.appLogo = row.value;
             if (row.key === 'APP_FAVICON') config.appFavicon = row.value;
             if (row.key === 'APP_LOGO_HEIGHT') config.appLogoHeight = row.value;
+
+            // New fields
+            if (row.key === 'APP_LOGO_SIDEBAR_WIDTH') config.appLogoSidebarWidth = row.value;
+            if (row.key === 'APP_LOGO_ICON_HEIGHT') config.appLogoIconHeight = row.value;
+            if (row.key === 'APP_LOGO_LOGIN_SCALE') config.appLogoLoginScale = row.value;
+            if (row.key === 'APP_LOGO_LOGIN_POSITION') config.appLogoLoginPosition = row.value as any;
+            if (row.key === 'APP_LOGO_SIDEBAR_POSITION') config.appLogoSidebarPosition = row.value as any;
+
+            if (row.key === 'APP_LOGO_LOGIN_OFFSET_X') config.appLogoLoginOffsetX = Number(row.value);
+            if (row.key === 'APP_LOGO_LOGIN_OFFSET_Y') config.appLogoLoginOffsetY = Number(row.value);
+            if (row.key === 'APP_LOGO_SIDEBAR_OFFSET_X') config.appLogoSidebarOffsetX = Number(row.value);
+            if (row.key === 'APP_LOGO_SIDEBAR_OFFSET_Y') config.appLogoSidebarOffsetY = Number(row.value);
+
+            if (row.key === 'APP_LOGO_LOGIN_HEIGHT') config.appLogoLoginHeight = row.value;
+            if (row.key === 'APP_LOGO_SIDEBAR_SCALE') config.appLogoSidebarScale = row.value;
+
+            if (row.key === 'APP_LOGO_SUPERADMIN_HEIGHT') config.appLogoSuperAdminHeight = row.value;
+            if (row.key === 'APP_LOGO_SUPERADMIN_SCALE') config.appLogoSuperAdminScale = row.value;
+            if (row.key === 'APP_LOGO_SUPERADMIN_POSITION') config.appLogoSuperAdminPosition = row.value as any;
+            if (row.key === 'APP_LOGO_SUPERADMIN_OFFSET_X') config.appLogoSuperAdminOffsetX = Number(row.value);
+            if (row.key === 'APP_LOGO_SUPERADMIN_OFFSET_Y') config.appLogoSuperAdminOffsetY = Number(row.value);
         });
 
         return config;
@@ -1643,6 +1664,86 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
             INSERT INTO system_config (key, value) VALUES ('APP_LOGO_HEIGHT', $1)
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         `, [config.appLogoHeight || '48']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_WIDTH', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSidebarWidth || 'auto']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_ICON_HEIGHT', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoIconHeight || '32']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_SCALE', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoLoginScale || '1']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_POSITION', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoLoginPosition || 'center']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_POSITION', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSidebarPosition || 'left']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_OFFSET_X', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoLoginOffsetX?.toString() || '0']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_OFFSET_Y', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoLoginOffsetY?.toString() || '0']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_OFFSET_X', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSidebarOffsetX?.toString() || '0']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_OFFSET_Y', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSidebarOffsetY?.toString() || '0']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_HEIGHT', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSuperAdminHeight || '48']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_HEIGHT', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoLoginHeight || '48']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_SCALE', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSidebarScale || '1']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_SCALE', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSuperAdminScale || '1']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_POSITION', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSuperAdminPosition || 'center']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_OFFSET_X', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSuperAdminOffsetX?.toString() || '0']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_OFFSET_Y', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appLogoSuperAdminOffsetY?.toString() || '0']);
 
         await client.query('COMMIT');
     } catch (e) {

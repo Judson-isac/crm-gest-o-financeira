@@ -14,8 +14,11 @@ export default async function LoginPage() {
       <LoginForm
         appName={config.appName}
         appLogo={config.appLogo}
-        appLogoHeight={config.appLogoHeight}
+        appLogoLoginHeight={config.appLogoLoginHeight}
         appLogoLoginScale={config.appLogoLoginScale}
+        appLogoLoginPosition={config.appLogoLoginPosition}
+        appLogoLoginOffsetX={config.appLogoLoginOffsetX}
+        appLogoLoginOffsetY={config.appLogoLoginOffsetY}
       />
     </Suspense>
   );

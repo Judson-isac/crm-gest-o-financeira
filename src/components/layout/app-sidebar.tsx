@@ -45,7 +45,10 @@ export default function AppSidebar({
   appLogo,
   appLogoHeight,
   appLogoIconHeight,
+  appLogoSidebarScale,
   appLogoSidebarPosition,
+  appLogoSidebarOffsetX,
+  appLogoSidebarOffsetY,
   logoVerticalUrl
 }: {
   permissions: Permissoes,
@@ -53,7 +56,10 @@ export default function AppSidebar({
   appLogo: string,
   appLogoHeight?: string,
   appLogoIconHeight?: string,
+  appLogoSidebarScale?: string,
   appLogoSidebarPosition?: 'left' | 'center' | 'right',
+  appLogoSidebarOffsetX?: number,
+  appLogoSidebarOffsetY?: number,
   logoVerticalUrl?: string
 }) {
   const pathname = usePathname();
@@ -86,7 +92,11 @@ export default function AppSidebar({
               <img
                 src={appLogo}
                 alt="Logo"
-                style={{ height: `${appLogoHeight || '32'}px`, maxHeight: '40px' }}
+                style={{
+                  height: `${appLogoHeight || '32'}px`,
+                  // Removed fixed maxHeight to allow user configuration
+                  transform: `scale(${appLogoSidebarScale || '1'}) translate(${appLogoSidebarOffsetX || 0}px, ${appLogoSidebarOffsetY || 0}px)`
+                }}
                 className={cn(
                   "w-auto object-contain shrink-0 transition-all duration-300",
                   // Remove object-left forcing if we are controlling position via flex container

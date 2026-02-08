@@ -9,6 +9,7 @@ import { Key, Loader2, AlertTriangle } from 'lucide-react';
 import { loginAction } from '@/app/auth-actions';
 import { useSearchParams } from 'next/navigation';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { cn } from "@/lib/utils";
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -20,7 +21,23 @@ function LoginButton() {
   );
 }
 
-export default function LoginForm({ appName, appLogo, appLogoHeight, appLogoLoginScale }: { appName: string, appLogo: string, appLogoHeight?: string, appLogoLoginScale?: string }) {
+export default function LoginForm({
+  appName,
+  appLogo,
+  appLogoLoginHeight,
+  appLogoLoginScale,
+  appLogoLoginPosition,
+  appLogoLoginOffsetX,
+  appLogoLoginOffsetY
+}: {
+  appName: string,
+  appLogo: string,
+  appLogoLoginHeight?: string,
+  appLogoLoginScale?: string,
+  appLogoLoginPosition?: 'center' | 'left' | 'right',
+  appLogoLoginOffsetX?: number,
+  appLogoLoginOffsetY?: number
+}) {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -39,17 +56,22 @@ export default function LoginForm({ appName, appLogo, appLogoHeight, appLogoLogi
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="flex items-center justify-center mb-6">
+        <div className={cn(
+          "flex items-center mb-6",
+          appLogoLoginPosition === 'left' ? 'justify-start' :
+            appLogoLoginPosition === 'right' ? 'justify-end' :
+              'justify-center'
+        )}>
           {appLogo ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={appLogo}
               alt="Logo"
               style={{
-                height: `${appLogoHeight || '48'}px`,
-                transform: `scale(${appLogoLoginScale || '1'})`
+                height: `${appLogoLoginHeight || '48'}px`,
+                transform: `scale(${appLogoLoginScale || '1'}) translate(${appLogoLoginOffsetX || 0}px, ${appLogoLoginOffsetY || 0}px)`
               }}
-              className="w-auto max-w-full object-contain mx-auto transition-all duration-300"
+              className="w-auto max-w-full object-contain transition-all duration-300"
             />
           ) : (
             <div className="bg-primary p-3 rounded-lg inline-flex">

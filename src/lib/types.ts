@@ -146,12 +146,28 @@ export type SystemConfig = {
   appName: string;
   appLogo: string;
   appFavicon?: string;
-  appLogoHeight?: string; // e.g. "h-12", "h-16" or pixel value "48px" stored as string
-  appLogoSidebarWidth?: string; // e.g. "150px" for sidebar expanded
-  appLogoIconHeight?: string; // e.g. "32px" for sidebar collapsed
-  appLogoLoginScale?: string; // e.g. "1" (100%), "1.5" (150%) for login page
-  appLogoLoginPosition?: 'center' | 'left' | 'right'; // Horizontal alignment for login logo
-  appLogoSidebarPosition?: 'left' | 'center' | 'right'; // Horizontal alignment for sidebar logo
+  // Sidebar
+  appLogoHeight?: string; // Used as Sidebar Open Height
+  appLogoIconHeight?: string; // Sidebar Collapsed Height
+  appLogoSidebarWidth?: string;
+  appLogoSidebarScale?: string; // New
+  appLogoSidebarPosition?: 'left' | 'center' | 'right';
+  appLogoSidebarOffsetX?: number;
+  appLogoSidebarOffsetY?: number;
+
+  // Login (Standard)
+  appLogoLoginHeight?: string; // New (was shared)
+  appLogoLoginScale?: string;
+  appLogoLoginPosition?: 'center' | 'left' | 'right';
+  appLogoLoginOffsetX?: number;
+  appLogoLoginOffsetY?: number;
+
+  // Login (Super Admin)
+  appLogoSuperAdminHeight?: string;
+  appLogoSuperAdminScale?: string; // New
+  appLogoSuperAdminPosition?: 'left' | 'center' | 'right'; // New
+  appLogoSuperAdminOffsetX?: number; // New
+  appLogoSuperAdminOffsetY?: number; // New
 };
 
 export type Meta = {

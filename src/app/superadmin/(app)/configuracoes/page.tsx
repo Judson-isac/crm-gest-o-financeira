@@ -5,22 +5,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getSystemConfigAction, saveSystemConfigAction } from '@/actions/superadmin';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Move, Monitor, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { SidebarPreviewWrapper } from './sidebar-preview';
 
 // Define SystemConfig type based on usage
 interface SystemConfig {
     appName: string;
     appLogo: string;
-    appFavicon: string;
+    appFavicon?: string;
     appLogoHeight?: string;
     appLogoSidebarWidth?: string;
+    appLogoSidebarScale?: string;
     appLogoIconHeight?: string;
+
+    appLogoLoginHeight?: string;
     appLogoLoginScale?: string;
     appLogoLoginPosition?: 'center' | 'left' | 'right';
-    appLogoSidebarPosition?: 'left' | 'center' | 'right';
+    appLogoLoginOffsetX?: number;
+    appLogoLoginOffsetY?: number;
+
+    appLogoSuperAdminHeight?: string;
+    appLogoSuperAdminScale?: string;
+    appLogoSuperAdminPosition?: 'left' | 'center' | 'right';
+    appLogoSuperAdminOffsetX?: number;
+    appLogoSuperAdminOffsetY?: number;
 }
 
 export default function SystemConfigPage() {
@@ -34,9 +47,22 @@ export default function SystemConfigPage() {
         appLogoHeight: '48',
         appLogoSidebarWidth: 'auto',
         appLogoIconHeight: '32',
+        appLogoSidebarScale: '1',
+        appLogoSidebarPosition: 'left',
+        appLogoSidebarOffsetX: 0,
+        appLogoSidebarOffsetY: 0,
+
+        appLogoLoginHeight: '48',
         appLogoLoginScale: '1',
         appLogoLoginPosition: 'center',
-        appLogoSidebarPosition: 'left',
+        appLogoLoginOffsetX: 0,
+        appLogoLoginOffsetY: 0,
+
+        appLogoSuperAdminHeight: '48',
+        appLogoSuperAdminScale: '1',
+        appLogoSuperAdminPosition: 'center',
+        appLogoSuperAdminOffsetX: 0,
+        appLogoSuperAdminOffsetY: 0,
     });
 
     useEffect(() => {
@@ -90,15 +116,9 @@ export default function SystemConfigPage() {
             }
 
             const result = await saveSystemConfigAction({
-                appName: config.appName,
+                ...config,
                 appLogo: appLogo,
                 appFavicon: appFavicon,
-                appLogoHeight: config.appLogoHeight,
-                appLogoSidebarWidth: config.appLogoSidebarWidth,
-                appLogoIconHeight: config.appLogoIconHeight,
-                appLogoLoginScale: config.appLogoLoginScale,
-                appLogoLoginPosition: config.appLogoLoginPosition,
-                appLogoSidebarPosition: config.appLogoSidebarPosition
             });
 
             if (result.success) {
@@ -123,239 +143,444 @@ export default function SystemConfigPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h2>
-                <p className="text-muted-foreground">Personalize a identidade visual do CRM.</p>
+        <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h2>
+                    <p className="text-muted-foreground">Personalize a identidade visual e posicionamento.</p>
+                </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>White-labeling</CardTitle>
-                    <CardDescription>Altere o nome e a logo que aparecem em todo o sistema.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="appName">Nome da Aplicação</Label>
-                            <Input
-                                id="appName"
-                                name="appName"
-                                value={config.appName}
-                                onChange={e => setConfig({ ...config, appName: e.target.value })}
-                                placeholder="Ex: Meu CRM (Deixe em branco para nenhum)"
-                            />
-                            <p className="text-xs text-muted-foreground">Opcional. Aparece no título da aba e no cabeçalho.</p>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column: Form Controls */}
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Identidade Visual</CardTitle>
+                            <CardDescription>Logos e Ícones</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form id="config-form" onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="appName">Nome da Aplicação</Label>
+                                    <Input
+                                        id="appName"
+                                        name="appName"
+                                        value={config.appName}
+                                        onChange={e => setConfig({ ...config, appName: e.target.value })}
+                                        placeholder="Ex: Meu CRM"
+                                    />
+                                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="logoFile">Logo do Sistema</Label>
-                                <Input
-                                    id="logoFile"
-                                    name="logoFile"
-                                    type="file"
-                                    accept="image/*"
-                                    className="cursor-pointer"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">PNG transparente (200x50px).</p>
-                                {config.appLogo && (
-                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={config.appLogo} alt="Logo" className="h-8 object-contain" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="logoFile">Logo</Label>
+                                        <Input id="logoFile" name="logoFile" type="file" accept="image/*" />
                                     </div>
-                                )}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="faviconFile">Favicon / Ícone Sidebar Fechada</Label>
+                                        <Input id="faviconFile" name="faviconFile" type="file" accept="image/*" />
+                                    </div>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <LayoutDashboard className="h-5 w-5" /> Sidebar (Menu Lateral)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Altura Logo Sidebar (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={config.appLogoHeight || '48'}
+                                        onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Altura Ícone Fechado (px)</Label>
+                                    <Input
+                                        type="number"
+                                        value={config.appLogoIconHeight || '32'}
+                                        onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="faviconFile">Favicon (Ícone da Aba)</Label>
+                                <Label>Escala (Zoom)</Label>
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={config.appLogoSidebarScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoSidebarScale: e.target.value })}
+                                        className="w-20"
+                                    />
+                                    <input
+                                        type="range" min="0.5" max="3.0" step="0.1"
+                                        value={config.appLogoSidebarScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoSidebarScale: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label>Alinhamento Horizontal</Label>
+                                <Select
+                                    value={config.appLogoSidebarPosition || 'left'}
+                                    onValueChange={(val: any) => setConfig({ ...config, appLogoSidebarPosition: val })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="left">Esquerda</SelectItem>
+                                        <SelectItem value="center">Centro</SelectItem>
+                                        <SelectItem value="right">Direita</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-md">
+                                <div className="space-y-2">
+                                    <Label className="text-xs">Deslocamento X (Horizontal)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground rotate-90" />
+                                        <Input
+                                            type="number"
+                                            value={config.appLogoSidebarOffsetX || 0}
+                                            onChange={e => setConfig({ ...config, appLogoSidebarOffsetX: Number(e.target.value) })}
+                                            className="h-8"
+                                        />
+                                        <span className="text-xs text-muted-foreground">px</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs">Deslocamento Y (Vertical)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground" />
+                                        <Input
+                                            type="number"
+                                            value={config.appLogoSidebarOffsetY || 0}
+                                            onChange={e => setConfig({ ...config, appLogoSidebarOffsetY: Number(e.target.value) })}
+                                            className="h-8"
+                                        />
+                                        <span className="text-xs text-muted-foreground">px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Monitor className="h-5 w-5" /> Tela de Login
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Altura Logo (px)</Label>
                                 <Input
-                                    id="faviconFile"
-                                    name="faviconFile"
-                                    type="file"
-                                    accept="image/*"
-                                    className="cursor-pointer"
+                                    type="number"
+                                    value={config.appLogoLoginHeight || '48'}
+                                    onChange={e => setConfig({ ...config, appLogoLoginHeight: e.target.value })}
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">PNG quadrado (32x32px ou 64x64px).</p>
-                                {config.appFavicon && (
-                                    <div className="mt-2 p-2 border rounded bg-slate-50 flex justify-center">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={config.appFavicon} alt="Favicon" className="h-8 w-8 object-contain" />
-                                    </div>
-                                )}
                             </div>
-                        </div>
 
-                        <div className="space-y-4 pt-4 border-t">
-                            <Label className="text-lg font-semibold">Aparência da Logo</Label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Sidebar Expanded Logo Height (Main Logo) */}
+                            <div className="space-y-2">
+                                <Label>Escala (Zoom)</Label>
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={config.appLogoLoginScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                        className="w-20"
+                                    />
+                                    <input
+                                        type="range" min="0.5" max="3.0" step="0.1"
+                                        value={config.appLogoLoginScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label>Alinhamento Horizontal</Label>
+                                <Select
+                                    value={config.appLogoLoginPosition || 'center'}
+                                    onValueChange={(val: any) => setConfig({ ...config, appLogoLoginPosition: val })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="left">Esquerda</SelectItem>
+                                        <SelectItem value="center">Centro</SelectItem>
+                                        <SelectItem value="right">Direita</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-md">
                                 <div className="space-y-2">
-                                    <Label htmlFor="logoHeight">Altura da Logo - Sidebar Aberta (px)</Label>
-                                    <div className="flex items-center gap-4">
+                                    <Label className="text-xs">Deslocamento X (Horizontal)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground rotate-90" />
                                         <Input
-                                            id="logoHeight"
                                             type="number"
-                                            min="20"
-                                            max="150"
-                                            value={config.appLogoHeight || '48'}
-                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
-                                            className="max-w-[100px]"
+                                            value={config.appLogoLoginOffsetX || 0}
+                                            onChange={e => setConfig({ ...config, appLogoLoginOffsetX: Number(e.target.value) })}
+                                            className="h-8"
                                         />
-                                        <input
-                                            type="range"
-                                            min="20"
-                                            max="150"
-                                            value={config.appLogoHeight || '48'}
-                                            onChange={e => setConfig({ ...config, appLogoHeight: e.target.value })}
-                                            className="flex-1"
-                                        />
+                                        <span className="text-xs text-muted-foreground">px</span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Define a altura da logo quando o menu lateral está expandido.</p>
                                 </div>
-
-                                {/* Sidebar Collapsed Icon Height */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="iconHeight">Altura do Ícone - Sidebar Fechada (px)</Label>
-                                    <div className="flex items-center gap-4">
+                                    <Label className="text-xs">Deslocamento Y (Vertical)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground" />
                                         <Input
-                                            id="iconHeight"
                                             type="number"
-                                            min="16"
-                                            max="64"
-                                            value={config.appLogoIconHeight || '32'}
-                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
-                                            className="max-w-[100px]"
+                                            value={config.appLogoLoginOffsetY || 0}
+                                            onChange={e => setConfig({ ...config, appLogoLoginOffsetY: Number(e.target.value) })}
+                                            className="h-8"
                                         />
-                                        <input
-                                            type="range"
-                                            min="16"
-                                            max="64"
-                                            value={config.appLogoIconHeight || '32'}
-                                            onChange={e => setConfig({ ...config, appLogoIconHeight: e.target.value })}
-                                            className="flex-1"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Define o tamanho do ícone (vertical) quando o menu está recolhido.</p>
-                                </div>
-
-                                {/* Login Logo Scale */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="loginScale">Escala da Logo no Login</Label>
-                                    <div className="flex items-center gap-4">
-                                        <Input
-                                            id="loginScale"
-                                            type="number"
-                                            min="0.5"
-                                            max="3"
-                                            step="0.1"
-                                            value={config.appLogoLoginScale || '1'}
-                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
-                                            className="max-w-[100px]"
-                                        />
-                                        <input
-                                            type="range"
-                                            min="0.5"
-                                            max="3"
-                                            step="0.1"
-                                            value={config.appLogoLoginScale || '1'}
-                                            onChange={e => setConfig({ ...config, appLogoLoginScale: e.target.value })}
-                                            className="flex-1"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Ajusta o tamanho da logo na tela de login.</p>
-                                </div>
-
-                                {/* Login Logo Position */}
-                                <div className="space-y-2">
-                                    <Label>Posição da Logo no Login</Label>
-                                    <Select
-                                        value={config.appLogoLoginPosition || 'center'}
-                                        onValueChange={(val: any) => setConfig({ ...config, appLogoLoginPosition: val })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a posição" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="left">Esquerda</SelectItem>
-                                            <SelectItem value="center">Centro</SelectItem>
-                                            <SelectItem value="right">Direita</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Sidebar Logo Position */}
-                                <div className="space-y-2">
-                                    <Label>Posição da Logo na Sidebar</Label>
-                                    <Select
-                                        value={config.appLogoSidebarPosition || 'left'}
-                                        onValueChange={(val: any) => setConfig({ ...config, appLogoSidebarPosition: val })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a posição" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="left">Esquerda</SelectItem>
-                                            <SelectItem value="center">Centro</SelectItem>
-                                            <SelectItem value="right">Direita</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-xs text-muted-foreground">Alinhamento da logo quando a sidebar está aberta.</p>
-                                </div>
-
-                                {/* Preview Area */}
-                                <div className="col-span-1 md:col-span-2">
-                                    <Label>Pré-visualização (Aproximada)</Label>
-                                    <div className="mt-2 p-4 border rounded-lg bg-slate-50 flex flex-col gap-6">
-                                        {config.appLogo && (
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] text-muted-foreground block">Sidebar Aberta ({config.appLogoSidebarPosition === 'left' ? 'Esquerda' : config.appLogoSidebarPosition === 'center' ? 'Centro' : 'Direita'})</span>
-                                                <div className={`flex w-64 border border-dashed border-gray-300 p-2 bg-white ${config.appLogoSidebarPosition === 'center' ? 'justify-center' :
-                                                        config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
-                                                    }`}>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={config.appLogo}
-                                                        alt="Logo Sidebar"
-                                                        style={{ height: `${config.appLogoHeight || '48'}px` }}
-                                                        className="object-contain"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                        {config.appLogo && (
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] text-muted-foreground block">Login ({config.appLogoLoginPosition === 'left' ? 'Esquerda' : config.appLogoLoginPosition === 'center' ? 'Centro' : 'Direita'})</span>
-                                                <div className={`flex w-full border border-dashed border-gray-300 p-4 bg-white ${config.appLogoLoginPosition === 'center' ? 'justify-center' :
-                                                        config.appLogoLoginPosition === 'right' ? 'justify-end' : 'justify-start'
-                                                    }`}>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={config.appLogo}
-                                                        alt="Logo Login"
-                                                        style={{
-                                                            height: `${config.appLogoHeight || '48'}px`,
-                                                            transform: `scale(${config.appLogoLoginScale || 1})`
-                                                        }}
-                                                        className="object-contain"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
+                                        <span className="text-xs text-muted-foreground">px</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </CardContent>
+                    </Card>
 
-                        <div className="pt-4">
-                            <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Salvar Alterações
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5" /> Login Super Admin
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Altura Logo (px)</Label>
+                                <Input
+                                    type="number"
+                                    value={config.appLogoSuperAdminHeight || '48'}
+                                    onChange={e => setConfig({ ...config, appLogoSuperAdminHeight: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Escala (Zoom)</Label>
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={config.appLogoSuperAdminScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoSuperAdminScale: e.target.value })}
+                                        className="w-20"
+                                    />
+                                    <input
+                                        type="range" min="0.5" max="3.0" step="0.1"
+                                        value={config.appLogoSuperAdminScale || '1'}
+                                        onChange={e => setConfig({ ...config, appLogoSuperAdminScale: e.target.value })}
+                                        className="flex-1"
+                                    />
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label>Alinhamento Horizontal</Label>
+                                <Select
+                                    value={config.appLogoSuperAdminPosition || 'center'}
+                                    onValueChange={(val: any) => setConfig({ ...config, appLogoSuperAdminPosition: val })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="left">Esquerda</SelectItem>
+                                        <SelectItem value="center">Centro</SelectItem>
+                                        <SelectItem value="right">Direita</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-md">
+                                <div className="space-y-2">
+                                    <Label className="text-xs">Deslocamento X (Horizontal)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground rotate-90" />
+                                        <Input
+                                            type="number"
+                                            value={config.appLogoSuperAdminOffsetX || 0}
+                                            onChange={e => setConfig({ ...config, appLogoSuperAdminOffsetX: Number(e.target.value) })}
+                                            className="h-8"
+                                        />
+                                        <span className="text-xs text-muted-foreground">px</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs">Deslocamento Y (Vertical)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Move className="h-3 w-3 text-muted-foreground" />
+                                        <Input
+                                            type="number"
+                                            value={config.appLogoSuperAdminOffsetY || 0}
+                                            onChange={e => setConfig({ ...config, appLogoSuperAdminOffsetY: Number(e.target.value) })}
+                                            className="h-8"
+                                        />
+                                        <span className="text-xs text-muted-foreground">px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Button
+                        type="submit"
+                        form="config-form"
+                        disabled={isSaving}
+                        className="w-full"
+                        size="lg"
+                    >
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Salvar Todas Configurações
+                    </Button>
+                </div>
+
+                {/* Right Column: Realistic Preview */}
+                <div className="lg:sticky lg:top-6 space-y-6 h-fit">
+                    <Card className="overflow-hidden border-2 border-primary/20 shadow-lg">
+                        <CardHeader className="bg-muted/50 pb-2">
+                            <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">Preview Realista</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <Tabs defaultValue="login" className="w-full">
+                                <TabsList className="w-full rounded-none border-b grid grid-cols-3">
+                                    <TabsTrigger value="login">Login Padrão</TabsTrigger>
+                                    <TabsTrigger value="superadmin">Login Super Admin</TabsTrigger>
+                                    <TabsTrigger value="sidebar">Sidebar</TabsTrigger>
+                                </TabsList>
+
+                                <TabsContent value="login" className="m-0 p-0">
+                                    <div className="w-full h-[500px] bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                                        {/* Mock Login Page Background Pattern */}
+                                        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                                        {/* Mock Login Card */}
+                                        <div className="w-[350px] bg-white rounded-xl shadow-lg border p-6 space-y-6">
+                                            <div className="text-center space-y-2">
+                                                {/* Logo Container mimicking LoginForm structure */}
+                                                <div className={`flex items-center mb-6 transition-all duration-300 ${config.appLogoLoginPosition === 'left' ? 'justify-start' :
+                                                    config.appLogoLoginPosition === 'right' ? 'justify-end' :
+                                                        'justify-center'
+                                                    }`}>
+                                                    {config.appLogo ? (
+                                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                                        <img
+                                                            src={config.appLogo}
+                                                            alt="Logo"
+                                                            style={{
+                                                                height: `${config.appLogoLoginHeight || '48'}px`,
+                                                                transform: `scale(${config.appLogoLoginScale || '1'}) translate(${config.appLogoLoginOffsetX || 0}px, ${config.appLogoLoginOffsetY || 0}px)`
+                                                            }}
+                                                            className="w-auto object-contain transition-all duration-300"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 bg-primary/20 rounded flex items-center justify-center mx-auto">
+                                                            <span className="text-xs text-primary font-bold">LOGO</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="h-6 w-32 bg-slate-200 rounded mx-auto"></div>
+                                                <div className="h-4 w-48 bg-slate-100 rounded mx-auto"></div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-12 bg-slate-200 rounded"></div>
+                                                    <div className="h-10 w-full bg-slate-50 border rounded"></div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-12 bg-slate-200 rounded"></div>
+                                                    <div className="h-10 w-full bg-slate-50 border rounded"></div>
+                                                </div>
+                                                <div className="h-10 w-full bg-primary/20 rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="superadmin" className="m-0 p-0">
+                                    <div className="w-full h-[500px] bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                                        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                                        {/* Mock Super Admin Login Card */}
+                                        <Card className="w-full max-w-sm mx-4 shadow-xl border-border/50 bg-white/80 backdrop-blur-sm">
+                                            <CardHeader className="text-center pb-2">
+                                                <div className={`flex items-center mb-4 transition-all duration-300 ${config.appLogoSuperAdminPosition === 'left' ? 'justify-start' :
+                                                    config.appLogoSuperAdminPosition === 'right' ? 'justify-end' :
+                                                        'justify-center'
+                                                    }`}>
+                                                    {config.appLogo ? (
+                                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                                        <img
+                                                            src={config.appLogo}
+                                                            alt="Logo"
+                                                            style={{
+                                                                height: `${config.appLogoSuperAdminHeight || '48'}px`,
+                                                                transform: `scale(${config.appLogoSuperAdminScale || '1'}) translate(${config.appLogoSuperAdminOffsetX || 0}px, ${config.appLogoSuperAdminOffsetY || 0}px)`
+                                                            }}
+                                                            className="w-auto object-contain transition-all duration-300"
+                                                        />
+                                                    ) : (
+                                                        <div className="bg-primary/10 p-3 rounded-lg inline-flex">
+                                                            <ShieldCheck className="h-8 w-8 text-primary" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <CardTitle className="text-2xl">Acesso Super Admin</CardTitle>
+                                                <CardDescription>
+                                                    Entre com suas credenciais de super administrador.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Email</Label>
+                                                    <div className="h-9 w-full bg-muted/50 border rounded-md px-3 py-1 text-sm text-muted-foreground">admin@exemplo.com</div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Senha</Label>
+                                                    <div className="h-9 w-full bg-muted/50 border rounded-md px-3 py-1 flex items-center text-muted-foreground">••••••••</div>
+                                                </div>
+                                                <Button className="w-full" disabled>Entrar</Button>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="sidebar" className="m-0 p-0">
+                                    <SidebarPreviewWrapper config={config} />
+                                </TabsContent>
+                            </Tabs>
+                        </CardContent>
+                    </Card>
+
+                    <div className="text-sm text-muted-foreground text-center">
+                        <p>A pré-visualização opera com o componente real.</p>
+                        <p>Salve para aplicar globalmente.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
