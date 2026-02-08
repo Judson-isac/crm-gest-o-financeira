@@ -27,7 +27,15 @@ export async function saveMatriculaAction(data: Partial<Matricula>) {
         }
 
         data.redeId = redeId;
-        data.usuarioId = user.id; // Save who created this enrollment
+
+        // Allow admin/manager to set the Responsible User (usuarioId)
+        // If not provided or not allowed, default to current user
+        const canAssignUser = permissions.isSuperadmin || permissions.gerenciarUsuarios;
+        if (canAssignUser && data.usuarioId) {
+            // Keep the provided usuarioId
+        } else {
+            data.usuarioId = user.id;
+        }
         const saved = await db.saveMatricula(data);
         revalidatePath('/matricula/listar');
         revalidatePath('/matricula/nova');

@@ -238,6 +238,7 @@ export type Matricula = {
   id: string;
   redeId: string;
   usuarioId?: string;
+  usuarioNome?: string; // Nome do responsável (vendedor)
   dataMatricula: Date;
   processoSeletivoId?: string;
   polo: string;

@@ -1,5 +1,5 @@
 import { NovaMatriculaForm } from '@/components/matricula/nova-matricula-form';
-import { getCursos, getDistinctValues, getCampanhas, getProcessosSeletivos, getTiposCurso, getCanais } from '@/lib/api';
+import { getCursos, getDistinctValues, getCampanhas, getProcessosSeletivos, getTiposCurso, getCanais, getUsuarios } from '@/lib/api';
 
 import { getAuthenticatedUserPermissions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -19,6 +19,7 @@ export default async function NovaMatriculaPage() {
     selectionProcesses,
     courseTypes,
     marketingChannels,
+    usersList,
   ] = await Promise.all([
     getCursos(),
     getDistinctValues(),
@@ -26,12 +27,14 @@ export default async function NovaMatriculaPage() {
     getProcessosSeletivos(),
     getTiposCurso(),
     getCanais(),
+    (permissions.isSuperadmin || permissions.gerenciarUsuarios) ? getUsuarios() : Promise.resolve([]),
   ]);
 
   // Filter active items
   const activeCampaigns = campaigns.filter(c => c.status === 'Ativo');
   const activeProcesses = selectionProcesses.filter(p => p.ativo);
   const activeChannels = marketingChannels.filter(c => c.ativo);
+  const canAssignUser = permissions.isSuperadmin || permissions.gerenciarUsuarios;
 
   return (
     <NovaMatriculaForm
@@ -43,6 +46,8 @@ export default async function NovaMatriculaPage() {
       selectionProcesses={activeProcesses}
       courseTypes={courseTypes}
       marketingChannels={activeChannels}
+      users={usersList}
+      canAssignUser={canAssignUser}
     />
   );
 }

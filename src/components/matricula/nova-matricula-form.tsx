@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Separator } from '@/components/ui/separator';
-import type { Curso, Campanha, ProcessoSeletivo, TipoCurso, Canal, Matricula } from '@/lib/types';
+import type { Curso, Campanha, ProcessoSeletivo, TipoCurso, Canal, Matricula, Usuario } from '@/lib/types';
 import { saveMatriculaAction, uploadMatriculaFilesAction } from '@/actions/matriculas';
 
 type NovaMatriculaFormProps = {
@@ -43,6 +43,8 @@ type NovaMatriculaFormProps = {
     marketingChannels: Canal[];
     initialData?: Matricula;
     isEditing?: boolean;
+    users?: Omit<Usuario, 'senha'>[];
+    canAssignUser?: boolean;
 };
 
 export function NovaMatriculaForm({
@@ -56,6 +58,8 @@ export function NovaMatriculaForm({
     marketingChannels,
     initialData,
     isEditing = false,
+    users = [],
+    canAssignUser = false,
 }: NovaMatriculaFormProps) {
     const { toast } = useToast();
     const router = useRouter();
@@ -141,6 +145,7 @@ export function NovaMatriculaForm({
 
             const matriculaData = {
                 id: initialData?.id,
+                usuarioId: canAssignUser ? (formData.get('responsavel') as string || undefined) : undefined,
                 dataMatricula: dataMatricula,
                 processoSeletivoId: formData.get('processo-seletivo') as string || undefined,
                 polo: formData.get('polo') as string,
@@ -182,6 +187,36 @@ export function NovaMatriculaForm({
                 <form onSubmit={handleSubmit}>
                     <CardContent className="p-6 space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                            {canAssignUser && (
+                                <div className="space-y-2 md:col-span-1">
+                                    <Label htmlFor="responsavel">Responsável</Label>
+                                    <Select name="responsavel" defaultValue={initialData?.usuarioId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {users.map(user => (
+                                                <SelectItem key={user.id} value={user.id}>{user.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            {canAssignUser && (
+                                <div className="space-y-2 md:col-span-1">
+                                    <Label htmlFor="responsavel">Responsável</Label>
+                                    <Select name="responsavel" defaultValue={initialData?.usuarioId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {users.map(user => (
+                                                <SelectItem key={user.id} value={user.id}>{user.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="data-matricula">Data de Matrícula *</Label>
                                 <DatePicker value={dataMatricula} onValueChange={setDataMatricula} />

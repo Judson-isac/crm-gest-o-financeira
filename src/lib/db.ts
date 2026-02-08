@@ -1166,7 +1166,11 @@ export const getMatriculas = async (redeId: string): Promise<Matricula[]> => {
     const client = await pool.connect();
     try {
         const result = await client.query(
-            'SELECT * FROM matriculas WHERE "redeId" = $1 ORDER BY "dataMatricula" DESC',
+            `SELECT m.*, u.nome as "usuarioNome"
+             FROM matriculas m
+             LEFT JOIN usuarios u ON m."usuarioId" = u.id
+             WHERE m."redeId" = $1
+             ORDER BY m."dataMatricula" DESC`,
             [redeId]
         );
         return result.rows;

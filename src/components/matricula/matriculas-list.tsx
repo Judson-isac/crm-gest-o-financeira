@@ -181,6 +181,7 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                     <TableHead className="w-[50px] text-center" title="Comprovante"><Paperclip className="h-4 w-4 mx-auto" /></TableHead>
                                     <TableHead>DATA</TableHead>
                                     <TableHead>ALUNO</TableHead>
+                                    <TableHead>RESPONSÁVEL</TableHead>
                                     <TableHead>CURSO</TableHead>
                                     <TableHead>POLO / CAMPANHA / CANAL</TableHead>
                                     <TableHead className="text-right">AÇÕES</TableHead>
@@ -204,6 +205,7 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                             </TableCell>
                                             <TableCell>{format(new Date(matricula.dataMatricula), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                                             <TableCell className="font-medium">{matricula.nomeAluno}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{matricula.usuarioNome || '-'}</TableCell>
                                             <TableCell>{matricula.cursoSigla}</TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
                                                 {matricula.polo}
