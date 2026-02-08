@@ -203,17 +203,16 @@ export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                        <Button type="submit" disabled={isPending}>
-                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Salvar
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog >
+                        <DialogFooter>
+                            <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                            <Button type="submit" disabled={isPending}>
+                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Salvar
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog >
 
             <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
                 <AlertDialogContent>
