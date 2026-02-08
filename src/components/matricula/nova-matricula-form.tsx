@@ -81,7 +81,10 @@ export function NovaMatriculaForm({
             files.forEach((file) => fileFormData.append('files', file));
 
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
-            console.log('[NovaMatriculaForm] Upload result:', uploadResult);
+            console.log('[NovaMatriculaForm] Upload result (with debug):', uploadResult);
+            if (uploadResult.debug) {
+                console.log('[NovaMatriculaForm] Server received:', uploadResult.debug);
+            }
 
             const newAttachments = uploadResult.success ? uploadResult.files : [];
             const existingAttachments = initialData?.anexos || [];

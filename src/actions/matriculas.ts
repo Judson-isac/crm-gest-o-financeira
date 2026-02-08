@@ -62,15 +62,24 @@ export async function deleteMatriculaAction(id: string) {
 }
 
 export async function uploadMatriculaFilesAction(formData: FormData) {
+    const debugInfo: any = {
+        receivedKeys: Array.from(formData.keys()),
+        filesCount: 0,
+        fileSizes: []
+    };
+
     try {
         const permissions = await getAuthenticatedUserPermissions();
         if (!permissions.gerenciarMatriculas && !permissions.isSuperadmin) {
-            return { success: false, message: 'Sem permissão', files: [] };
+            return { success: false, message: 'Sem permissão', files: [], debug: debugInfo };
         }
 
         const files = formData.getAll('files') as File[];
+        debugInfo.filesCount = files.length;
+        debugInfo.fileSizes = files.map(f => f.size);
+
         if (files.length === 0) {
-            return { success: true, files: [] };
+            return { success: true, files: [], debug: debugInfo };
         }
 
         const uploadedPaths: string[] = [];
@@ -91,9 +100,9 @@ export async function uploadMatriculaFilesAction(formData: FormData) {
             uploadedPaths.push(`/uploads/matriculas/${filename}`);
         }
 
-        return { success: true, files: uploadedPaths };
+        return { success: true, files: uploadedPaths, debug: debugInfo };
     } catch (e: any) {
         console.error('Erro ao fazer upload:', e);
-        return { success: false, message: e.message, files: [] };
+        return { success: false, message: e.message, files: [], debug: debugInfo };
     }
 }
