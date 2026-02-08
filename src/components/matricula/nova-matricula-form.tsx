@@ -133,6 +133,7 @@ export function NovaMatriculaForm({
             }
 
             if (!uploadResult.success) {
+                toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message || 'Falha ao enviar arquivos.' });
                 return;
             }
 
@@ -202,21 +203,7 @@ export function NovaMatriculaForm({
                                     </Select>
                                 </div>
                             )}
-                            {canAssignUser && (
-                                <div className="space-y-2 md:col-span-1">
-                                    <Label htmlFor="responsavel">Responsável</Label>
-                                    <Select name="responsavel" defaultValue={initialData?.usuarioId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {users.map(user => (
-                                                <SelectItem key={user.id} value={user.id}>{user.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
+
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="data-matricula">Data de Matrícula *</Label>
                                 <DatePicker value={dataMatricula} onValueChange={setDataMatricula} />
