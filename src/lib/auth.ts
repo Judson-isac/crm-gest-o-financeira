@@ -58,7 +58,7 @@ async function getJwtPayload(token: string | undefined): Promise<DecodedJwtPaylo
         };
     } catch (error) {
         // Don't log on server for every failed verification, it's noisy.
-        // console.error("JWT Verification failed:", error);
+        console.error("JWT Verification failed:", error);
         return null;
     }
 }

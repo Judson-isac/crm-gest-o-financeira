@@ -8,6 +8,12 @@ echo "=========================================="
 echo "🚀 Iniciando atualização do CRM..."
 echo "=========================================="
 
+# Carregar variáveis de ambiente do .env se existir
+if [ -f .env ]; then
+  echo "🌍 Carregando variáveis de ambiente do .env..."
+  export $(grep -v '^#' .env | xargs)
+fi
+
 # 1. Puxar código atualizado
 echo "📥 1. Puxando código do Git..."
 git pull

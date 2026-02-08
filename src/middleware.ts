@@ -30,6 +30,9 @@ export async function middleware(request: NextRequest) {
   const hasPermission = await checkUserPermissionForPath(request);
 
   if (!hasPermission) {
+    console.log(`[Middleware] ACESSO NEGADO: ${pathname}`);
+    console.log(`[Middleware] Session:`, session ? { userId: session.userId, isSuperadmin: session.permissions.isSuperadmin } : 'NULA');
+
     // FALLBACK for Super Admins: 
     // If the token says "no", but the DB verifies they really ARE a super admin, allow it.
     // This handles stale tokens or payload issues.
@@ -38,7 +41,10 @@ export async function middleware(request: NextRequest) {
       const user = await getUserById(session.userId);
       if (user?.isSuperadmin) {
         // Allow access even if token permission check failed
+        console.log(`[Middleware] ACESSO PERMITIDO VIA FALLBACK DB: ${pathname}`);
         return NextResponse.next();
+      } else {
+        console.log(`[Middleware] FALLBACK DB FALHOU: User não é superadmin no DB.`);
       }
     }
 
