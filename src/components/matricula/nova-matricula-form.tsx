@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,9 +59,17 @@ export function NovaMatriculaForm({
     const { toast } = useToast();
     const router = useRouter();
     const [isSaving, startSaving] = useTransition();
+
+    // Fix hydration error: Initialize with undefined if no initialData, set to new Date() in effect
     const [dataMatricula, setDataMatricula] = useState<Date | undefined>(
-        initialData?.dataMatricula ? new Date(initialData.dataMatricula) : new Date()
+        initialData?.dataMatricula ? new Date(initialData.dataMatricula) : undefined
     );
+
+    useEffect(() => {
+        if (!initialData?.dataMatricula) {
+            setDataMatricula(new Date());
+        }
+    }, [initialData]);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -76,15 +84,9 @@ export function NovaMatriculaForm({
             // Upload files first
             const fileFormData = new FormData();
             const files = formData.getAll('anexos');
-            console.log(`[NovaMatriculaForm] Files found in input: ${files.length}`, files);
-
             files.forEach((file) => fileFormData.append('files', file));
 
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
-            console.log('[NovaMatriculaForm] Upload result (with debug):', uploadResult);
-            if (uploadResult.debug) {
-                console.log('[NovaMatriculaForm] Server received:', uploadResult.debug);
-            }
 
             const newAttachments = uploadResult.success ? uploadResult.files : [];
             const existingAttachments = initialData?.anexos || [];
