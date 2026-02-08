@@ -35,6 +35,8 @@ docker build \
 
 # 5. Deploy
 echo "🚀 5. Fazendo deploy..."
+# Garantir que o volume de uploads existe
+docker volume create crm_uploads || true
 docker stack deploy -c docker-compose.prod.yml crm
 
 # 6. Aguardar serviço estar pronto

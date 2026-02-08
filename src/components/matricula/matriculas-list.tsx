@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Loader2, Paperclip } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,15 +35,23 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
     const { toast } = useToast();
     const [matriculas] = useState(initialMatriculas);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedPolo, setSelectedPolo] = useState('all');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [matriculaToDelete, setMatriculaToDelete] = useState<string | null>(null);
     const [isDeleting, startDeleteTransition] = useTransition();
 
-    const filteredMatriculas = matriculas.filter(m =>
-        m.nomeAluno.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.ra?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.cursoSigla.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const uniquePolos = Array.from(new Set(matriculas.map(m => m.polo))).sort();
+
+    const filteredMatriculas = matriculas.filter(m => {
+        const matchesSearch =
+            m.nomeAluno.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.ra?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.cursoSigla.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesPolo = selectedPolo === 'all' || m.polo === selectedPolo;
+
+        return matchesSearch && matchesPolo;
+    });
 
     const handleDeleteClick = (id: string) => {
         setMatriculaToDelete(id);
@@ -92,6 +100,20 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                 />
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="filtro-polo">Polo</Label>
+                                <Select value={selectedPolo} onValueChange={setSelectedPolo}>
+                                    <SelectTrigger id="filtro-polo">
+                                        <SelectValue placeholder="Todos" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        {uniquePolos.map(polo => (
+                                            <SelectItem key={polo} value={polo}>{polo}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="processo-seletivo">Processo Seletivo</Label>
                                 <Select>
                                     <SelectTrigger id="processo-seletivo">
@@ -133,6 +155,7 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[50px]">#</TableHead>
+                                    <TableHead className="w-[50px] text-center" title="Comprovante"><Paperclip className="h-4 w-4 mx-auto" /></TableHead>
                                     <TableHead>DATA</TableHead>
                                     <TableHead>ALUNO</TableHead>
                                     <TableHead>CURSO</TableHead>
@@ -149,6 +172,13 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                             onClick={() => router.push(`/matricula/ver/${matricula.id}`)}
                                         >
                                             <TableCell>{index + 1}</TableCell>
+                                            <TableCell className="text-center">
+                                                {matricula.anexos && matricula.anexos.length > 0 ? (
+                                                    <div className="h-3 w-3 rounded-full bg-green-500 mx-auto" title="Com Anexos" />
+                                                ) : (
+                                                    <div className="h-3 w-3 rounded-full bg-red-500 mx-auto" title="Sem Anexos" />
+                                                )}
+                                            </TableCell>
                                             <TableCell>{format(new Date(matricula.dataMatricula), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                                             <TableCell className="font-medium">{matricula.nomeAluno}</TableCell>
                                             <TableCell>{matricula.cursoSigla}</TableCell>
