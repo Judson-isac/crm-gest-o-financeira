@@ -80,7 +80,7 @@ export default function AppSidebar({
   return (
     <>
       <SidebarHeader>
-        <div className="flex h-12 items-center justify-start gap-2 overflow-hidden px-2 w-full transition-all duration-300">
+        <div className="flex min-h-12 py-2 items-center justify-start gap-2 overflow-hidden px-2 w-full transition-all duration-300">
           {/* Horizontal Logo (Visible when Expanded) */}
           <div className={cn(
             "group-data-[state=collapsed]:hidden flex items-center flex-1 min-w-0 transition-all duration-300",
