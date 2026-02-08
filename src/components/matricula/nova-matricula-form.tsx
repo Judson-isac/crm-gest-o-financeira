@@ -76,10 +76,18 @@ export function NovaMatriculaForm({
             // Upload files first
             const fileFormData = new FormData();
             const files = formData.getAll('anexos');
+            console.log(`[NovaMatriculaForm] Files found in input: ${files.length}`, files);
+
             files.forEach((file) => fileFormData.append('files', file));
 
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
-            const anexos = uploadResult.success ? uploadResult.files : (initialData?.anexos || []);
+            console.log('[NovaMatriculaForm] Upload result:', uploadResult);
+
+            const newAttachments = uploadResult.success ? uploadResult.files : [];
+            const existingAttachments = initialData?.anexos || [];
+
+            // Merge existing and new attachments to avoid overwriting on edit
+            const anexos = [...existingAttachments, ...newAttachments];
 
             const matriculaData = {
                 id: initialData?.id,
