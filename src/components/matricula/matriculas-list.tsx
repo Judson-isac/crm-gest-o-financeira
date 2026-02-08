@@ -36,6 +36,7 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
     const [matriculas] = useState(initialMatriculas);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPolo, setSelectedPolo] = useState('all');
+    const [filtroAnexo, setFiltroAnexo] = useState('all');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [matriculaToDelete, setMatriculaToDelete] = useState<string | null>(null);
     const [isDeleting, startDeleteTransition] = useTransition();
@@ -50,7 +51,12 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
 
         const matchesPolo = selectedPolo === 'all' || m.polo === selectedPolo;
 
-        return matchesSearch && matchesPolo;
+        const matchesAnexo =
+            filtroAnexo === 'all' ||
+            (filtroAnexo === 'com_anexo' && m.anexos && m.anexos.length > 0) ||
+            (filtroAnexo === 'sem_anexo' && (!m.anexos || m.anexos.length === 0));
+
+        return matchesSearch && matchesPolo && matchesAnexo;
     });
 
     const handleDeleteClick = (id: string) => {
@@ -89,12 +95,12 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="border rounded-lg p-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                            <div className="space-y-2 md:col-span-2">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                            <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="busca">Busca</Label>
                                 <Input
                                     id="busca"
-                                    placeholder="Aluno, RA, Curso, Canal, Usuário..."
+                                    placeholder="Buscar..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -110,6 +116,19 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                         {uniquePolos.map(polo => (
                                             <SelectItem key={polo} value={polo}>{polo}</SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="filtro-anexo">Comprovante</Label>
+                                <Select value={filtroAnexo} onValueChange={setFiltroAnexo}>
+                                    <SelectTrigger id="filtro-anexo">
+                                        <SelectValue placeholder="Todos" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos</SelectItem>
+                                        <SelectItem value="com_anexo">Com Comprovante</SelectItem>
+                                        <SelectItem value="sem_anexo">Pendente</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -139,12 +158,16 @@ export function MatriculasList({ initialMatriculas }: MatriculasListProps) {
                                 </Select>
                             </div>
                             <div className="flex gap-2 items-end">
-                                <Button variant="secondary">
+                                <Button variant="secondary" className="w-full">
                                     <Search className="mr-2 h-4 w-4" />
                                     Filtrar
                                 </Button>
-                                <Button variant="destructive-outline" onClick={() => setSearchTerm('')}>
-                                    Limpar
+                                <Button variant="destructive-outline" size="icon" onClick={() => {
+                                    setSearchTerm('');
+                                    setSelectedPolo('all');
+                                    setFiltroAnexo('all');
+                                }}>
+                                    <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
