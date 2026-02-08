@@ -19,15 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
   let iconUrl = config.appFavicon || config.appLogo;
 
   if (user?.redeId) {
-    const rede = await getRedeById(user.redeId);
-    // Priority: Network Favicon > Network Vertical Logo > Network Horizontal Logo > Default
-    if (rede?.faviconUrl) {
-      iconUrl = rede.faviconUrl;
-    } else if (rede?.logoVerticalUrl) {
-      iconUrl = rede.logoVerticalUrl;
-    } else if (rede?.logoUrl) {
-      iconUrl = rede.logoUrl;
-    }
+    // Priority: user.redeId exists, but we removed network specific logos. 
+    // So we just use system config. 
+    // The previous logic for customized logos per network is removed.
+    // We can keep the block if we plan to add other network specific metadata later, 
+    // but for now, the iconUrl is decided by config.
   }
 
   return {

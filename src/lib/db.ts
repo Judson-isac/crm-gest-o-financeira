@@ -3,7 +3,7 @@
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, RankingConfig, RankingMessage, SuperAdminStats } from './types';
+import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig } from './types';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -554,15 +554,15 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     try {
         if (rede.id) {
             const result = await client.query(
-                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, "logoUrl" = $5, "logoVerticalUrl" = $6, "faviconUrl" = $7 WHERE id = $1 RETURNING *',
-                [rede.id, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl, rede.faviconUrl]
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4 WHERE id = $1 RETURNING *',
+                [rede.id, rede.nome, rede.polos || [], rede.modulos || []]
             );
             return result.rows[0];
         } else {
             const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO redes (id, nome, polos, modulos, "logoUrl", "logoVerticalUrl", "faviconUrl") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                [newId, rede.nome, rede.polos || [], rede.modulos || [], rede.logoUrl, rede.logoVerticalUrl, rede.faviconUrl]
+                'INSERT INTO redes (id, nome, polos, modulos) VALUES ($1, $2, $3, $4) RETURNING *',
+                [newId, rede.nome, rede.polos || [], rede.modulos || []]
             );
             return result.rows[0];
         }
@@ -1592,10 +1592,7 @@ export async function getAllSuperAdmins(): Promise<Omit<Usuario, 'senha'>[]> {
     }
 }
 
-export type SystemConfig = {
-    appName: string;
-    appLogo: string;
-};
+
 
 export async function getSystemConfig(): Promise<SystemConfig> {
     const client = await pool.connect();

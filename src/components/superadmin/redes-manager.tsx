@@ -164,42 +164,11 @@ export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {
                         const nome = formData.get('nome') as string;
                         const selectedModules = (formData as any).getAll ? (formData.getAll('modulos') as string[]) : [];
 
-                        // Helper to read file as base64
-                        const readFile = (file: File): Promise<string> => {
-                            return new Promise((resolve, reject) => {
-                                const reader = new FileReader();
-                                reader.onload = () => resolve(reader.result as string);
-                                reader.onerror = reject;
-                                reader.readAsDataURL(file);
-                            });
-                        };
-
                         startTransition(async () => {
-                            const logoFile = (formData.get('logoUrl') as File);
-                            const logoVerticalFile = (formData.get('logoVerticalUrl') as File);
-                            const faviconFile = (formData.get('faviconUrl') as File);
-
-                            let logoUrl = editingRede?.logoUrl;
-                            let logoVerticalUrl = editingRede?.logoVerticalUrl;
-                            let faviconUrl = editingRede?.faviconUrl;
-
-                            if (logoFile && logoFile.size > 0) {
-                                logoUrl = await readFile(logoFile);
-                            }
-                            if (logoVerticalFile && logoVerticalFile.size > 0) {
-                                logoVerticalUrl = await readFile(logoVerticalFile);
-                            }
-                            if (faviconFile && faviconFile.size > 0) {
-                                faviconUrl = await readFile(faviconFile);
-                            }
-
                             const result = await saveRedeAction({
                                 id: editingRede?.id,
                                 nome,
-                                modulos: selectedModules,
-                                logoUrl,
-                                logoVerticalUrl,
-                                faviconUrl
+                                modulos: selectedModules
                             });
 
                             if (result.success) {
@@ -215,42 +184,6 @@ export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {
                             <div className="space-y-2">
                                 <Label htmlFor="nome">Nome da Rede</Label>
                                 <Input id="nome" name="nome" defaultValue={editingRede?.nome || ''} required />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="logoUrl">Logo Principal (Horizontal)</Label>
-                                    <Input id="logoUrl" name="logoUrl" type="file" accept="image/*" />
-                                    <p className="text-[10px] text-muted-foreground mt-1">Se vazio, usa a do sistema.</p>
-                                    {editingRede?.logoUrl && (
-                                        <div className="mt-2 border rounded p-2 bg-gray-50 flex justify-center">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={editingRede.logoUrl} alt="Logo Preview" className="h-12 object-contain" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="logoVerticalUrl">Logo Vertical / Ícone</Label>
-                                    <Input id="logoVerticalUrl" name="logoVerticalUrl" type="file" accept="image/*" />
-                                    <p className="text-[10px] text-muted-foreground mt-1">Se vazio, usa o Favicon ou sistema.</p>
-                                    {editingRede?.logoVerticalUrl && (
-                                        <div className="mt-2 border rounded p-2 bg-gray-50 flex justify-center">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={editingRede.logoVerticalUrl} alt="Icon Preview" className="h-12 object-contain" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="faviconUrl">Favicon (Aba do Navegador)</Label>
-                                    <Input id="faviconUrl" name="faviconUrl" type="file" accept="image/*" />
-                                    <p className="text-[10px] text-muted-foreground mt-1">Se vazio, usa o sistema.</p>
-                                    {editingRede?.faviconUrl && (
-                                        <div className="mt-2 border rounded p-2 bg-gray-50 flex justify-center">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={editingRede.faviconUrl} alt="Favicon Preview" className="h-8 w-8 object-contain" />
-                                        </div>
-                                    )}
-                                </div>
                             </div>
 
                             <div className="space-y-2">

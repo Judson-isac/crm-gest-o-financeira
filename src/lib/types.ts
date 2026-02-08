@@ -103,9 +103,6 @@ export type Rede = {
   nome: string;
   polos: string[];
   modulos?: string[];
-  logoUrl?: string;
-  logoVerticalUrl?: string;
-  faviconUrl?: string;
 };
 
 // --- Cadastros ---

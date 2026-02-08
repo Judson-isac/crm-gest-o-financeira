@@ -13,19 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const permissions = await getAuthenticatedUserPermissions();
   const config = await getSystemConfig();
 
-  // Override logo if network has one
-  let logoVerticalUrl = config.appFavicon; // Fallback to favicon for vertical logo
-  if (user?.redeId) {
-    const rede = await getRedeById(user.redeId);
-    if (rede?.logoUrl) {
-      config.appLogo = rede.logoUrl;
-    }
-    if (rede?.logoVerticalUrl) {
-      logoVerticalUrl = rede.logoVerticalUrl;
-    } else if (rede?.faviconUrl) {
-      logoVerticalUrl = rede.faviconUrl;
-    }
-  }
+  const logoVerticalUrl = config.appFavicon; // Used for sidebar collapsed state
 
   return (
     <SidebarProvider defaultOpen={false}>

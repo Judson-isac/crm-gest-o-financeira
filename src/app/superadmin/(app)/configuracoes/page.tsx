@@ -14,27 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarPreviewWrapper } from './sidebar-preview';
 
 // Define SystemConfig type based on usage
-interface SystemConfig {
-    appName: string;
-    appLogo: string;
-    appFavicon?: string;
-    appLogoHeight?: string;
-    appLogoSidebarWidth?: string;
-    appLogoSidebarScale?: string;
-    appLogoIconHeight?: string;
-
-    appLogoLoginHeight?: string;
-    appLogoLoginScale?: string;
-    appLogoLoginPosition?: 'center' | 'left' | 'right';
-    appLogoLoginOffsetX?: number;
-    appLogoLoginOffsetY?: number;
-
-    appLogoSuperAdminHeight?: string;
-    appLogoSuperAdminScale?: string;
-    appLogoSuperAdminPosition?: 'left' | 'center' | 'right';
-    appLogoSuperAdminOffsetX?: number;
-    appLogoSuperAdminOffsetY?: number;
-}
+import { SystemConfig } from '@/lib/types';
 
 export default function SystemConfigPage() {
     const { toast } = useToast();
