@@ -332,7 +332,7 @@ export default function RankingPage() {
         if (currentSettings.alertMode === 'alert') {
             setIsRedAlert(true);
 
-            if (settings.soundEnabled && celebrationAudioRef.current) {
+            if (currentSettings.soundEnabled && celebrationAudioRef.current) {
                 celebrationAudioRef.current.currentTime = 0;
                 celebrationAudioRef.current.play().catch(e => console.error("Som celebração:", e));
             }
