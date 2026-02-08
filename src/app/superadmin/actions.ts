@@ -20,7 +20,7 @@ export async function loginAction(formData: FormData) {
         cookieStore.set('auth-token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60, // 1 hour
+            maxAge: 60 * 60 * 24, // 24 hours
             path: '/',
         });
         redirect('/superadmin/redes');
