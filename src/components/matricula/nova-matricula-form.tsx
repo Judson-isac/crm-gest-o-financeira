@@ -165,7 +165,7 @@ export function NovaMatriculaForm({
                             </div>
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="processo-seletivo">Processo Seletivo</Label>
-                                <Select name="processo-seletivo">
+                                <Select name="processo-seletivo" defaultValue={initialData?.processoSeletivoId}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="--------" />
                                     </SelectTrigger>
@@ -178,7 +178,7 @@ export function NovaMatriculaForm({
                             </div>
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="polo">Polo *</Label>
-                                <Select name="polo" required disabled={polos.length === 0}>
+                                <Select name="polo" required disabled={polos.length === 0} defaultValue={initialData?.polo}>
                                     <SelectTrigger>
                                         <SelectValue placeholder={polos.length === 0 ? 'Sem polos' : 'Selecione'} />
                                     </SelectTrigger>
@@ -193,7 +193,7 @@ export function NovaMatriculaForm({
                             </div>
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="estado">Estado *</Label>
-                                <Select name="estado" required disabled={estados.length === 0}>
+                                <Select name="estado" required disabled={estados.length === 0} defaultValue={initialData?.estado}>
                                     <SelectTrigger>
                                         <SelectValue placeholder={estados.length === 0 ? 'Sem estados' : 'Selecione'} />
                                     </SelectTrigger>
@@ -208,7 +208,7 @@ export function NovaMatriculaForm({
                             </div>
                             <div className="space-y-2 md:col-span-1">
                                 <Label htmlFor="cidade">Cidade *</Label>
-                                <Select name="cidade" required disabled={cidades.length === 0}>
+                                <Select name="cidade" required disabled={cidades.length === 0} defaultValue={initialData?.cidade}>
                                     <SelectTrigger>
                                         <SelectValue placeholder={cidades.length === 0 ? 'Sem cidades' : 'Selecione'} />
                                     </SelectTrigger>
@@ -250,7 +250,7 @@ export function NovaMatriculaForm({
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2 md:col-span-1">
                                     <Label htmlFor="tipo-curso">Tipo de Curso *</Label>
-                                    <Select name="tipo-curso" required disabled={courseTypes.length === 0}>
+                                    <Select name="tipo-curso" required disabled={courseTypes.length === 0} defaultValue={initialData?.tipoCursoId}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={courseTypes.length === 0 ? 'Nenhum tipo importado' : 'Selecione o tipo'} />
                                         </SelectTrigger>
@@ -263,7 +263,7 @@ export function NovaMatriculaForm({
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label htmlFor="curso">Curso *</Label>
-                                    <Select name="curso" required disabled={courses.length === 0}>
+                                    <Select name="curso" required disabled={courses.length === 0} defaultValue={initialData?.cursoSigla}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={courses.length === 0 ? 'Nenhum curso importado' : 'Selecione o curso'} />
                                         </SelectTrigger>
@@ -278,7 +278,7 @@ export function NovaMatriculaForm({
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label htmlFor="campanha">Campanha</Label>
-                                    <Select name="campanha" disabled={campaigns.length === 0}>
+                                    <Select name="campanha" disabled={campaigns.length === 0} defaultValue={initialData?.campanhaId || undefined}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="--------" />
                                         </SelectTrigger>
@@ -291,7 +291,7 @@ export function NovaMatriculaForm({
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label htmlFor="canal">Canal</Label>
-                                    <Select name="canal" disabled={marketingChannels.length === 0}>
+                                    <Select name="canal" disabled={marketingChannels.length === 0} defaultValue={initialData?.canalId || undefined}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="--------" />
                                         </SelectTrigger>
@@ -312,11 +312,11 @@ export function NovaMatriculaForm({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="r$-1a-mensalidade">R$ 1ª Mensalidade</Label>
-                                    <Input id="r$-1a-mensalidade" name="r$-1a-mensalidade" placeholder="R$ 0,00" />
+                                    <Input id="r$-1a-mensalidade" name="r$-1a-mensalidade" placeholder="R$ 0,00" defaultValue={initialData?.primeiraMensalidade} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="r$-2a-mensalidade">R$ 2ª Mensalidade *</Label>
-                                    <Input id="r$-2a-mensalidade" name="r$-2a-mensalidade" placeholder="R$ 0,00" required />
+                                    <Input id="r$-2a-mensalidade" name="r$-2a-mensalidade" placeholder="R$ 0,00" required defaultValue={initialData?.segundaMensalidade} />
                                 </div>
                             </div>
                         </div>
