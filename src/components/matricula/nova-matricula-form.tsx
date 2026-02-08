@@ -104,13 +104,19 @@ export function NovaMatriculaForm({
         startSaving(async () => {
             // Upload files first
             const fileFormData = new FormData();
-            const files = formData.getAll('anexos');
-            const hasFiles = files.some(f => f instanceof File && f.size > 0);
+            const files = formData.getAll('anexos').filter((f): f is File => f instanceof File);
+            const hasFiles = files.some(f => f.size > 0);
 
             if (hasFiles) {
                 setIsUploading(true);
-                console.log(`[NovaMatriculaForm] Uploading ${files.length} files...`); // Log restaurado para garantir estabilidade
-                files.forEach((file) => fileFormData.append('files', file));
+                files.forEach((file) => {
+                    fileFormData.append('files', file);
+                    console.log(`[NovaMatriculaForm] Appending file: ${file.name} (${file.size} bytes)`);
+                });
+
+                // Debug FormData content
+                const keys = Array.from((fileFormData as any).keys());
+                console.log(`[NovaMatriculaForm] FormData keys before sending:`, keys);
             }
 
             // Always call action to get potential empty list or handle logic, 

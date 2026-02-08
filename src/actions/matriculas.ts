@@ -80,8 +80,12 @@ export async function deleteMatriculaAction(id: string) {
 }
 
 export async function uploadMatriculaFilesAction(formData: FormData) {
+    console.log('[UploadAction] Received request');
+    const keys = Array.from(formData.keys());
+    console.log('[UploadAction] FormData keys:', keys);
+
     const debugInfo: any = {
-        receivedKeys: Array.from(formData.keys()),
+        receivedKeys: keys,
         filesCount: 0,
         fileSizes: []
     };
