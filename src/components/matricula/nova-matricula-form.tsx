@@ -123,57 +123,47 @@ export function NovaMatriculaForm({
             }
 
             if (!uploadResult.success) {
-                if (!uploadResult.success) {
-                    setIsUploading(false);
-                    toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
-                    return; // Stop execution if upload fails
-                }
+                return;
+            }
 
-                // Validação extra: Se enviamos arquivos mas o servidor não salvou nenhum
-                if (hasFiles && (!uploadResult.files || uploadResult.files.length === 0)) {
-                    console.error('Erro: Arquivos detectados no formulário mas não retornados pelo servidor.');
-                    toast({ variant: 'destructive', title: 'Erro no processamento', description: 'O servidor não identificou os arquivos enviados. Tente novamente.' });
-                    return;
-                }
+            const newAttachments = uploadResult.files || [];
+            // Use current state of existing attachments instead of initial data
+            const existingAttachments = existingAnexos;
 
-                const newAttachments = uploadResult.files || [];
-                // Use current state of existing attachments instead of initial data
-                const existingAttachments = existingAnexos;
+            // Merge existing and new attachments to avoid overwriting on edit
+            const anexos = [...existingAttachments, ...newAttachments];
 
-                // Merge existing and new attachments to avoid overwriting on edit
-                const anexos = [...existingAttachments, ...newAttachments];
+            const matriculaData = {
+                id: initialData?.id,
+                dataMatricula: dataMatricula,
+                processoSeletivoId: formData.get('processo-seletivo') as string || undefined,
+                polo: formData.get('polo') as string,
+                estado: formData.get('estado') as string,
+                cidade: formData.get('cidade') as string,
+                nomeAluno: formData.get('nome') as string,
+                telefone: formData.get('telefone') as string || undefined,
+                ra: formData.get('ra') as string || undefined,
+                tipoCursoId: formData.get('tipo-curso') as string || undefined,
+                cursoSigla: formData.get('curso') as string,
+                campanhaId: formData.get('campanha') as string || undefined,
+                canalId: formData.get('canal') as string || undefined,
+                canalId: formData.get('canal') as string || undefined,
+                primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat((formData.get('r$-1a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
+                segundaMensalidade: parseFloat((formData.get('r$-2a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')),
+                anexos,
+            };
 
-                const matriculaData = {
-                    id: initialData?.id,
-                    dataMatricula: dataMatricula,
-                    processoSeletivoId: formData.get('processo-seletivo') as string || undefined,
-                    polo: formData.get('polo') as string,
-                    estado: formData.get('estado') as string,
-                    cidade: formData.get('cidade') as string,
-                    nomeAluno: formData.get('nome') as string,
-                    telefone: formData.get('telefone') as string || undefined,
-                    ra: formData.get('ra') as string || undefined,
-                    tipoCursoId: formData.get('tipo-curso') as string || undefined,
-                    cursoSigla: formData.get('curso') as string,
-                    campanhaId: formData.get('campanha') as string || undefined,
-                    canalId: formData.get('canal') as string || undefined,
-                    canalId: formData.get('canal') as string || undefined,
-                    primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat((formData.get('r$-1a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
-                    segundaMensalidade: parseFloat((formData.get('r$-2a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')),
-                    anexos,
-                };
-
-                const result = await saveMatriculaAction(matriculaData);
-                if (result.success) {
-                    toast({
-                        title: isEditing ? 'Matrícula atualizada!' : 'Matrícula Realizada!',
-                        description: isEditing ? 'A matrícula foi atualizada com sucesso.' : 'O novo aluno foi matriculado com sucesso.',
-                    });
-                    router.push('/matricula/listar');
-                } else {
-                    toast({ variant: 'destructive', title: 'Erro!', description: result.message });
-                }
-            });
+            const result = await saveMatriculaAction(matriculaData);
+            if (result.success) {
+                toast({
+                    title: isEditing ? 'Matrícula atualizada!' : 'Matrícula Realizada!',
+                    description: isEditing ? 'A matrícula foi atualizada com sucesso.' : 'O novo aluno foi matriculado com sucesso.',
+                });
+                router.push('/matricula/listar');
+            } else {
+                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+            }
+        });
     };
 
     return (
