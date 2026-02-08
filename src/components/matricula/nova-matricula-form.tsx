@@ -84,11 +84,25 @@ export function NovaMatriculaForm({
             // Upload files first
             const fileFormData = new FormData();
             const files = formData.getAll('anexos');
-            files.forEach((file) => fileFormData.append('files', file));
+            const hasFiles = files.some(f => f instanceof File && f.size > 0);
 
+            console.log(`[NovaMatriculaForm] Files to upload: ${files.length}`, files);
+
+            if (hasFiles) {
+                files.forEach((file) => fileFormData.append('files', file));
+            }
+
+            // Always call action to get potential empty list or handle logic, 
+            // but if we have files, we expect success with files.
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
+            console.log('[NovaMatriculaForm] Upload result:', uploadResult);
 
-            const newAttachments = uploadResult.success ? uploadResult.files : [];
+            if (!uploadResult.success) {
+                toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
+                return; // Stop execution if upload fails
+            }
+
+            const newAttachments = uploadResult.files || [];
             const existingAttachments = initialData?.anexos || [];
 
             // Merge existing and new attachments to avoid overwriting on edit
