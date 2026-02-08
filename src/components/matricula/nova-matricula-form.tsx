@@ -328,12 +328,41 @@ export function NovaMatriculaForm({
                             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="anexos">Contrato e Documentação</Label>
+
+                                    {/* Lista de anexos existentes */}
+                                    {initialData?.anexos && initialData.anexos.length > 0 && (
+                                        <div className="mb-4 space-y-2">
+                                            <Label className="text-muted-foreground text-xs">Arquivos já anexados:</Label>
+                                            <ul className="space-y-2">
+                                                {initialData.anexos.map((anexo, index) => {
+                                                    const fileName = anexo.split('/').pop() || `Anexo ${index + 1}`;
+                                                    return (
+                                                        <li key={index} className="flex items-center gap-2 text-sm bg-muted/50 p-2 rounded-md">
+                                                            <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                                            <a
+                                                                href={anexo}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600 hover:underline truncate"
+                                                            >
+                                                                {fileName}
+                                                            </a>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-2">
                                         <Input id="anexos" name="anexos" type="file" multiple />
                                         <Button type="button" variant="outline" size="icon">
                                             <Paperclip className="h-4 w-4" />
                                         </Button>
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Selecione novos arquivos para adicionar. Os arquivos existentes serão mantidos.
+                                    </p>
                                 </div>
                             </div>
                         </div>
