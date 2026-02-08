@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  crm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: postgresql://crm_user:Crm@2024!Forte@pgvector:5432/crm_gestao
+    image: crm-app:latest
+    volumes:
+      - crm_uploads:/app/public/uploads
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://crm_user:Crm@2024!Forte@pgvector:5432/crm_gestao
+      - NEXTAUTH_URL=https://gestaofinanceira.ninjacrm.shop
+      - NEXTAUTH_SECRET=sKSatGC7FAZ1IEZ55r+RpbY8/icajvkwBF6U8uYByFA=
+      - JWT_SECRET_KEY=sKSatGC7FAZ1IEZ55r+RpbY8/icajvkwBF6U8uYByFA=
+    networks:
+      - UniCesumar
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.crm.rule=Host(`gestaofinanceira.ninjacrm.shop`)
+        - traefik.http.routers.crm.entrypoints=websecure
+        - traefik.http.routers.crm.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.crm.priority=1
+        - traefik.http.routers.crm.service=crm
+        - traefik.http.services.crm.loadbalancer.server.port=3000
+        - traefik.http.services.crm.loadbalancer.passHostHeader=true
+        - traefik.http.middlewares.sslheader-crm.headers.customrequestheaders.X-Forwarded-Proto=https
+        - traefik.http.routers.crm.middlewares=sslheader-crm
+
+networks:
+  UniCesumar:
+    external: true
+    name: UniCesumar
+volumes:
+  crm_uploads:
+    external: true
+    name: crm_uploads
