@@ -4,7 +4,7 @@ import * as db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import type { Matricula } from '@/lib/types';
 import { getAuthenticatedUserPermissions, getAuthenticatedUser } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 
 // ... (keep saveMatriculaAction and deleteMatriculaAction as is) ...
@@ -49,6 +49,24 @@ export async function deleteMatriculaAction(id: string) {
         const redeId = permissions.redeId;
         if (!redeId) {
             return { success: false, message: "Rede não identificada para este usuário." };
+        }
+
+        // Fetch matricula to get attachments
+        const matricula = await db.getMatriculaById(id, redeId);
+        if (matricula && matricula.anexos && matricula.anexos.length > 0) {
+            for (const anexoUrl of matricula.anexos) {
+                try {
+                    // Extract filename from URL (/uploads/matriculas/filename)
+                    const filename = anexoUrl.split('/').pop();
+                    if (filename) {
+                        const filePath = join(process.cwd(), 'public', 'uploads', 'matriculas', filename);
+                        await unlink(filePath);
+                    }
+                } catch (err) {
+                    console.error(`Erro ao deletar arquivo físico ${anexoUrl}:`, err);
+                    // Continue even if file delete fails (maybe file doesn't exist)
+                }
+            }
         }
 
         await db.deleteMatricula(id, redeId);
