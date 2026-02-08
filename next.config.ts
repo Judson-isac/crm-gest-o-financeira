@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: 'standalone', // Required for Docker
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb', // Increase limit for base64 audio uploads
+      bodySizeLimit: '50mb', // Increased limit for larger attachments
     },
   },
   /* config options here */
