@@ -30,7 +30,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Separator } from '@/components/ui/separator';
 import type { Curso, Campanha, ProcessoSeletivo, TipoCurso, Canal, Matricula, Usuario } from '@/lib/types';
-import { saveMatriculaAction, uploadMatriculaFilesAction } from '@/actions/matriculas';
+import { saveMatriculaAction } from '@/actions/matriculas';
 
 type NovaMatriculaFormProps = {
     courses: Curso[];
@@ -125,19 +125,34 @@ export function NovaMatriculaForm({
 
             // Always call action to get potential empty list or handle logic, 
             // but if we have files, we expect success with files.
-            const uploadResult = await uploadMatriculaFilesAction(fileFormData);
-            setIsUploading(false);
+            // Use API Route instead of Server Action for better reliability
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: fileFormData,
+                });
 
-            if (uploadResult.debug) {
-                console.log('[NovaMatriculaForm] Server received:', uploadResult.debug);
-            }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-            if (!uploadResult.success) {
-                toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message || 'Falha ao enviar arquivos.' });
+                const uploadResult = await response.json();
+
+                if (!uploadResult.success) {
+                    toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message || 'Falha ao enviar arquivos.' });
+                    setIsUploading(false);
+                    return;
+                }
+
+                var newAttachments = uploadResult.files || [];
+            } catch (error: any) {
+                console.error('Upload failed:', error);
+                toast({ variant: 'destructive', title: 'Erro no upload', description: 'Falha de comunicação com o servidor.' });
+                setIsUploading(false);
                 return;
             }
 
-            const newAttachments = uploadResult.files || [];
+            setIsUploading(false);
             // Use current state of existing attachments instead of initial data
             const existingAttachments = existingAnexos;
 
