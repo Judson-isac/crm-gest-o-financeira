@@ -328,15 +328,15 @@ export default function RankingPage() {
         // RESET Message 
         setCurrentMessage('');
 
+        // Sound - Play IMMEDIATELY (Regardless of mode)
+        if (currentSettings.soundEnabled && celebrationAudioRef.current) {
+            celebrationAudioRef.current.currentTime = 0;
+            celebrationAudioRef.current.play().catch(e => console.error("Som celebração:", e));
+        }
+
         // RED ALERT MODE
         if (currentSettings.alertMode === 'alert') {
             setIsRedAlert(true);
-
-            if (currentSettings.soundEnabled && celebrationAudioRef.current) {
-                celebrationAudioRef.current.currentTime = 0;
-                celebrationAudioRef.current.play().catch(e => console.error("Som celebração:", e));
-            }
-
             setTimeout(() => setIsRedAlert(false), 5000);
         }
         // CONFETTI MODE
