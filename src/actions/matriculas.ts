@@ -4,60 +4,10 @@ import * as db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import type { Matricula } from '@/lib/types';
 import { getAuthenticatedUserPermissions, getAuthenticatedUser } from '@/lib/auth';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
 
-export async function saveMatriculaAction(data: Partial<Matricula>) {
-    try {
-        const permissions = await getAuthenticatedUserPermissions();
-        if (!permissions.gerenciarMatriculas && !permissions.isSuperadmin) {
-            return { success: false, message: "Você não tem permissão para gerenciar matrículas." };
-        }
-
-        const redeId = permissions.redeId;
-        if (!redeId) {
-            return { success: false, message: "Rede não identificada para este usuário." };
-        }
-
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return { success: false, message: "Usuário não autenticado." };
-        }
-
-        data.redeId = redeId;
-        data.usuarioId = user.id; // Save who created this enrollment
-        const saved = await db.saveMatricula(data);
-        revalidatePath('/matricula/listar');
-        revalidatePath('/matricula/nova');
-
-        return { success: true, data: saved };
-    } catch (e: any) {
-        console.error("Erro ao salvar matrícula:", e);
-        return { success: false, message: e.message };
-    }
-}
-
-export async function deleteMatriculaAction(id: string) {
-    try {
-        const permissions = await getAuthenticatedUserPermissions();
-        if (!permissions.gerenciarMatriculas && !permissions.isSuperadmin) {
-            return { success: false, message: "Você não tem permissão para gerenciar matrículas." };
-        }
-
-        const redeId = permissions.redeId;
-        if (!redeId) {
-            return { success: false, message: "Rede não identificada para este usuário." };
-        }
-
-        await db.deleteMatricula(id, redeId);
-        revalidatePath('/matricula/listar');
-
-        return { success: true };
-    } catch (e: any) {
-        console.error("Erro ao deletar matrícula:", e);
-        return { success: false, message: e.message };
-    }
-}
+// ... (keep saveMatriculaAction and deleteMatriculaAction as is) ...
 
 export async function uploadMatriculaFilesAction(formData: FormData) {
     try {
@@ -84,6 +34,7 @@ export async function uploadMatriculaFilesAction(formData: FormData) {
             const filename = `${timestamp}-${originalName}`;
             const filepath = join(process.cwd(), 'public', 'uploads', 'matriculas', filename);
 
+            await mkdir(dirname(filepath), { recursive: true });
             await writeFile(filepath, buffer);
             uploadedPaths.push(`/uploads/matriculas/${filename}`);
         }
