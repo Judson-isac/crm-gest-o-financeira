@@ -60,6 +60,20 @@ export function NovaMatriculaForm({
     const { toast } = useToast();
     const router = useRouter();
     const [isSaving, startSaving] = useTransition();
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Currency formatter function
+    const formatCurrency = (value: string) => {
+        const numericValue = value.replace(/\D/g, '');
+        const floatValue = parseFloat(numericValue) / 100;
+        return floatValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const handleCurrencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (!value) return;
+        e.target.value = formatCurrency(value);
+    };
 
     // Fix hydration error: Initialize with undefined if no initialData, set to new Date() in effect
     const [dataMatricula, setDataMatricula] = useState<Date | undefined>(
@@ -94,6 +108,7 @@ export function NovaMatriculaForm({
             const hasFiles = files.some(f => f instanceof File && f.size > 0);
 
             if (hasFiles) {
+                setIsUploading(true);
                 console.log(`[NovaMatriculaForm] Uploading ${files.length} files...`); // Log restaurado para garantir estabilidade
                 files.forEach((file) => fileFormData.append('files', file));
             }
@@ -101,60 +116,64 @@ export function NovaMatriculaForm({
             // Always call action to get potential empty list or handle logic, 
             // but if we have files, we expect success with files.
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
+            setIsUploading(false);
 
             if (uploadResult.debug) {
                 console.log('[NovaMatriculaForm] Server received:', uploadResult.debug);
             }
 
             if (!uploadResult.success) {
-                toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
-                return; // Stop execution if upload fails
-            }
+                if (!uploadResult.success) {
+                    setIsUploading(false);
+                    toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
+                    return; // Stop execution if upload fails
+                }
 
-            // Validação extra: Se enviamos arquivos mas o servidor não salvou nenhum
-            if (hasFiles && (!uploadResult.files || uploadResult.files.length === 0)) {
-                console.error('Erro: Arquivos detectados no formulário mas não retornados pelo servidor.');
-                toast({ variant: 'destructive', title: 'Erro no processamento', description: 'O servidor não identificou os arquivos enviados. Tente novamente.' });
-                return;
-            }
+                // Validação extra: Se enviamos arquivos mas o servidor não salvou nenhum
+                if (hasFiles && (!uploadResult.files || uploadResult.files.length === 0)) {
+                    console.error('Erro: Arquivos detectados no formulário mas não retornados pelo servidor.');
+                    toast({ variant: 'destructive', title: 'Erro no processamento', description: 'O servidor não identificou os arquivos enviados. Tente novamente.' });
+                    return;
+                }
 
-            const newAttachments = uploadResult.files || [];
-            // Use current state of existing attachments instead of initial data
-            const existingAttachments = existingAnexos;
+                const newAttachments = uploadResult.files || [];
+                // Use current state of existing attachments instead of initial data
+                const existingAttachments = existingAnexos;
 
-            // Merge existing and new attachments to avoid overwriting on edit
-            const anexos = [...existingAttachments, ...newAttachments];
+                // Merge existing and new attachments to avoid overwriting on edit
+                const anexos = [...existingAttachments, ...newAttachments];
 
-            const matriculaData = {
-                id: initialData?.id,
-                dataMatricula: dataMatricula,
-                processoSeletivoId: formData.get('processo-seletivo') as string || undefined,
-                polo: formData.get('polo') as string,
-                estado: formData.get('estado') as string,
-                cidade: formData.get('cidade') as string,
-                nomeAluno: formData.get('nome') as string,
-                telefone: formData.get('telefone') as string || undefined,
-                ra: formData.get('ra') as string || undefined,
-                tipoCursoId: formData.get('tipo-curso') as string || undefined,
-                cursoSigla: formData.get('curso') as string,
-                campanhaId: formData.get('campanha') as string || undefined,
-                canalId: formData.get('canal') as string || undefined,
-                primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat(formData.get('r$-1a-mensalidade') as string) : undefined,
-                segundaMensalidade: parseFloat(formData.get('r$-2a-mensalidade') as string),
-                anexos,
-            };
+                const matriculaData = {
+                    id: initialData?.id,
+                    dataMatricula: dataMatricula,
+                    processoSeletivoId: formData.get('processo-seletivo') as string || undefined,
+                    polo: formData.get('polo') as string,
+                    estado: formData.get('estado') as string,
+                    cidade: formData.get('cidade') as string,
+                    nomeAluno: formData.get('nome') as string,
+                    telefone: formData.get('telefone') as string || undefined,
+                    ra: formData.get('ra') as string || undefined,
+                    tipoCursoId: formData.get('tipo-curso') as string || undefined,
+                    cursoSigla: formData.get('curso') as string,
+                    campanhaId: formData.get('campanha') as string || undefined,
+                    canalId: formData.get('canal') as string || undefined,
+                    canalId: formData.get('canal') as string || undefined,
+                    primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat((formData.get('r$-1a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
+                    segundaMensalidade: parseFloat((formData.get('r$-2a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')),
+                    anexos,
+                };
 
-            const result = await saveMatriculaAction(matriculaData);
-            if (result.success) {
-                toast({
-                    title: isEditing ? 'Matrícula atualizada!' : 'Matrícula Realizada!',
-                    description: isEditing ? 'A matrícula foi atualizada com sucesso.' : 'O novo aluno foi matriculado com sucesso.',
-                });
-                router.push('/matricula/listar');
-            } else {
-                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
-            }
-        });
+                const result = await saveMatriculaAction(matriculaData);
+                if (result.success) {
+                    toast({
+                        title: isEditing ? 'Matrícula atualizada!' : 'Matrícula Realizada!',
+                        description: isEditing ? 'A matrícula foi atualizada com sucesso.' : 'O novo aluno foi matriculado com sucesso.',
+                    });
+                    router.push('/matricula/listar');
+                } else {
+                    toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+                }
+            });
     };
 
     return (
@@ -320,11 +339,24 @@ export function NovaMatriculaForm({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="r$-1a-mensalidade">R$ 1ª Mensalidade</Label>
-                                    <Input id="r$-1a-mensalidade" name="r$-1a-mensalidade" placeholder="R$ 0,00" defaultValue={initialData?.primeiraMensalidade} />
+                                    <Input
+                                        id="r$-1a-mensalidade"
+                                        name="r$-1a-mensalidade"
+                                        placeholder="R$ 0,00"
+                                        defaultValue={initialData?.primeiraMensalidade ? initialData.primeiraMensalidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''}
+                                        onChange={handleCurrencyChange}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="r$-2a-mensalidade">R$ 2ª Mensalidade *</Label>
-                                    <Input id="r$-2a-mensalidade" name="r$-2a-mensalidade" placeholder="R$ 0,00" required defaultValue={initialData?.segundaMensalidade} />
+                                    <Input
+                                        id="r$-2a-mensalidade"
+                                        name="r$-2a-mensalidade"
+                                        placeholder="R$ 0,00"
+                                        required
+                                        defaultValue={initialData?.segundaMensalidade ? initialData.segundaMensalidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''}
+                                        onChange={handleCurrencyChange}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -390,9 +422,14 @@ export function NovaMatriculaForm({
                         <Button type="button" variant="outline" onClick={() => router.back()}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                            Salvar Matrícula
+                        <Button type="submit" disabled={isSaving || isUploading}>
+                            {(isSaving || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isUploading ? 'Enviando Anexos...' : (isSaving ? 'Salvando...' : (
+                                <>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Salvar Matrícula
+                                </>
+                            ))}
                         </Button>
                     </CardFooter>
                 </form>
