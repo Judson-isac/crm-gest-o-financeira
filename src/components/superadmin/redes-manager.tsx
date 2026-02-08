@@ -180,41 +180,40 @@ export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {
                             }
                         });
                     }}>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="nome">Nome da Rede</Label>
-                                <Input id="nome" name="nome" defaultValue={editingRede?.nome || ''} required />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nome">Nome da Rede</Label>
+                            <Input id="nome" name="nome" defaultValue={editingRede?.nome || ''} required />
+                        </div>
 
-                            <div className="space-y-2">
-                                <Label>Módulos Habilitados</Label>
-                                <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">
-                                    {availableModules.map((modulo) => (
-                                        <div key={modulo.id} className="flex items-center gap-2">
-                                            <Checkbox
-                                                id={`mod-${modulo.id}`}
-                                                name="modulos"
-                                                value={modulo.id}
-                                                defaultChecked={editingRede?.modulos?.includes(modulo.id)}
-                                            />
-                                            <Label htmlFor={`mod-${modulo.id}`} className="font-normal cursor-pointer">
-                                                {modulo.label}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="space-y-2">
+                            <Label>Módulos Habilitados</Label>
+                            <div className="grid grid-cols-2 gap-4 border p-4 rounded-md">
+                                {availableModules.map((modulo) => (
+                                    <div key={modulo.id} className="flex items-center gap-2">
+                                        <Checkbox
+                                            id={`mod-${modulo.id}`}
+                                            name="modulos"
+                                            value={modulo.id}
+                                            defaultChecked={editingRede?.modulos?.includes(modulo.id)}
+                                        />
+                                        <Label htmlFor={`mod-${modulo.id}`} className="font-normal cursor-pointer">
+                                            {modulo.label}
+                                        </Label>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                            <Button type="submit" disabled={isPending}>
-                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Salvar
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="secondary" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                        <Button type="submit" disabled={isPending}>
+                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Salvar
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog >
 
             <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
                 <AlertDialogContent>
