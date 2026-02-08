@@ -95,6 +95,10 @@ export function NovaMatriculaForm({
             // but if we have files, we expect success with files.
             const uploadResult = await uploadMatriculaFilesAction(fileFormData);
 
+            if (uploadResult.debug) {
+                console.log('[NovaMatriculaForm] Server received:', uploadResult.debug);
+            }
+
             if (!uploadResult.success) {
                 toast({ variant: 'destructive', title: 'Erro no upload', description: uploadResult.message });
                 return; // Stop execution if upload fails
