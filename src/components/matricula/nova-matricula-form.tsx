@@ -25,6 +25,7 @@ import {
     Loader2,
     UserPlus,
     Paperclip,
+    Trash2,
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Separator } from '@/components/ui/separator';
@@ -71,6 +72,12 @@ export function NovaMatriculaForm({
         }
     }, [initialData]);
 
+    const [existingAnexos, setExistingAnexos] = useState<string[]>(initialData?.anexos || []);
+
+    const handleRemoveAnexo = (indexToRemove: number) => {
+        setExistingAnexos(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -112,7 +119,8 @@ export function NovaMatriculaForm({
             }
 
             const newAttachments = uploadResult.files || [];
-            const existingAttachments = initialData?.anexos || [];
+            // Use current state of existing attachments instead of initial data
+            const existingAttachments = existingAnexos;
 
             // Merge existing and new attachments to avoid overwriting on edit
             const anexos = [...existingAttachments, ...newAttachments];
@@ -330,23 +338,34 @@ export function NovaMatriculaForm({
                                     <Label htmlFor="anexos">Contrato e Documentação</Label>
 
                                     {/* Lista de anexos existentes */}
-                                    {initialData?.anexos && initialData.anexos.length > 0 && (
+                                    {existingAnexos.length > 0 && (
                                         <div className="mb-4 space-y-2">
                                             <Label className="text-muted-foreground text-xs">Arquivos já anexados:</Label>
                                             <ul className="space-y-2">
-                                                {initialData.anexos.map((anexo, index) => {
+                                                {existingAnexos.map((anexo, index) => {
                                                     const fileName = anexo.split('/').pop() || `Anexo ${index + 1}`;
                                                     return (
-                                                        <li key={index} className="flex items-center gap-2 text-sm bg-muted/50 p-2 rounded-md">
-                                                            <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                                            <a
-                                                                href={anexo}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-blue-600 hover:underline truncate"
+                                                        <li key={index} className="flex items-center justify-between gap-2 text-sm bg-muted/50 p-2 rounded-md group">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                                <a
+                                                                    href={anexo}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-blue-600 hover:underline truncate"
+                                                                >
+                                                                    {fileName}
+                                                                </a>
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                                                onClick={() => handleRemoveAnexo(index)}
                                                             >
-                                                                {fileName}
-                                                            </a>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
                                                         </li>
                                                     );
                                                 })}
