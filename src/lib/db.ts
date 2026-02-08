@@ -564,6 +564,24 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                 'INSERT INTO redes (id, nome, polos, modulos) VALUES ($1, $2, $3, $4) RETURNING *',
                 [newId, rede.nome, rede.polos || [], rede.modulos || []]
             );
+
+            // Create default "Admin" role for this new network
+            const adminRoleId = uuidv4();
+            const adminPermissions = {
+                verDashboard: true,
+                gerenciarMatriculas: true,
+                verRelatoriosFinanceiros: true,
+                gerenciarCadastrosGerais: true,
+                gerenciarUsuarios: true,
+                realizarImportacoes: true,
+                verRanking: true
+            };
+
+            await client.query(
+                'INSERT INTO funcoes (id, nome, permissoes, "redeId", polos) VALUES ($1, $2, $3, $4, $5)',
+                [adminRoleId, 'Admin', JSON.stringify(adminPermissions), newId, []]
+            );
+
             return result.rows[0];
         }
     } finally {
