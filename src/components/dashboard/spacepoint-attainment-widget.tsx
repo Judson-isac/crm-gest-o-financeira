@@ -128,7 +128,7 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                             <TableHead key={sp.id} className={cn(
                                                 "text-center font-bold whitespace-nowrap transition-colors",
                                                 data.currentSpaceIndex + 1 === sp.numeroSpace
-                                                    ? "bg-primary/10 text-primary border-b-4 border-primary"
+                                                    ? "text-primary text-base"
                                                     : "text-muted-foreground"
                                             )}>
                                                 {sp.numeroSpace}º SPACE
@@ -138,7 +138,10 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                 </TableHeader>
                                 <TableBody>
                                     {data.stats.map(row => (
-                                        <TableRow key={row.product} className={cn(row.product === 'TOTAL' ? "bg-primary/10 font-bold" : "")}>
+                                        <TableRow key={row.product} className={cn(
+                                            "hover:bg-muted/50 transition-colors",
+                                            row.product === 'TOTAL' ? "bg-primary/10 font-bold border-t-2 border-primary/20" : "even:bg-muted/30"
+                                        )}>
                                             <TableCell className="text-center font-medium">
                                                 {data.currentSpaceIndex + 1}º
                                             </TableCell>
@@ -164,17 +167,21 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                                 const isPast = idx < data.currentSpaceIndex;
                                                 const realizedAtSpace = row.spaceRealized?.[idx] || 0; // Use new field
 
-                                                // Current Target: Show Target with Highlight (Subtle background + Bottom Border instead of full border)
+                                                // Current Target: Show Target with Highlight (Card Effect / Shadow)
                                                 if (isCurrentTarget) {
                                                     const isHit = row.realized >= target;
                                                     return (
-                                                        <TableCell key={idx} className={cn(
-                                                            "text-center font-bold border-b-4",
-                                                            isHit ? "border-green-500 bg-green-500/5 text-green-700 dark:text-green-400" : "border-primary bg-primary/5 text-primary"
-                                                        )}>
-                                                            <div className="flex flex-col items-center justify-center py-2">
-                                                                <span className="text-xs uppercase text-muted-foreground mb-1">Meta</span>
-                                                                <span className="text-lg">{formatQuantity(target)}</span>
+                                                        <TableCell key={idx} className="text-center p-0 relative h-full">
+                                                            {/* Card Container for Current Space */}
+                                                            <div className={cn(
+                                                                "mx-1 my-1 rounded-lg shadow-sm border flex flex-col items-center justify-center py-2 px-1 min-w-[80px]",
+                                                                "bg-card text-card-foreground", // Use theme card colors
+                                                                isHit ? "border-green-500/50 shadow-green-500/10 ring-1 ring-green-500/20" : "border-primary/50 shadow-primary/10 ring-1 ring-primary/20 bg-blue-50/10"
+                                                            )}>
+                                                                <span className="text-[9px] uppercase text-muted-foreground font-semibold tracking-wider">Meta</span>
+                                                                <span className={cn("text-xl font-black tracking-tight", isHit ? "text-green-600" : "text-primary")}>
+                                                                    {formatQuantity(target)}
+                                                                </span>
                                                             </div>
                                                         </TableCell>
                                                     );
