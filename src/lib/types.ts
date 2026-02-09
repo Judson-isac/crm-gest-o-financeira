@@ -126,6 +126,7 @@ export type Campanha = {
 
 export type ProcessoSeletivo = {
   id: string;
+  nome?: string; // Added nome
   numero: string;
   ano: number;
   dataInicial: Date;
