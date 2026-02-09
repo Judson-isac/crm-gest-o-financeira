@@ -91,7 +91,7 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }
                 <SelectItem value="all">Todos os Processos</SelectItem>
                 {distinctValues.processos.map(p => (
                   <SelectItem key={p.id || p} value={p.id || p}>
-                    {p.numero || p}
+                    {p.nome || p.numero || p}
                   </SelectItem>
                 ))}
               </SelectContent>

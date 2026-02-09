@@ -105,7 +105,7 @@ export function SpacepointAttainmentWidget({ onRemove, processoFilter, poloFilte
                         </SelectTrigger>
                         <SelectContent>
                             {processos.map(p => (
-                                <SelectItem key={p.id} value={p.id}>{p.numero}/{p.ano}</SelectItem>
+                                <SelectItem key={p.id} value={p.id}>{p.nome || `${p.numero}/${p.ano}`}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
