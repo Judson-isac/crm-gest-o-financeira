@@ -70,42 +70,63 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
     const poloOptions = polosSafe.map(p => ({ label: p, value: p }));
 
     return (
-        <div className="w-full max-w-4xl mb-8">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
-                <MultiSelect
-                    options={poloOptions}
-                    onValueChange={setPolos}
-                    defaultValue={polos}
-                    placeholder="Todos os Polos"
-                    className="w-full bg-slate-800 border-slate-700 text-slate-200"
-                    disabled={isPending}
-                />
+        <div className="flex flex-col gap-5 p-1">
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">
+                        Polo
+                    </label>
+                    <MultiSelect
+                        options={poloOptions}
+                        onValueChange={setPolos}
+                        defaultValue={polos}
+                        placeholder="Todos os Polos"
+                        className="w-full bg-slate-900/50 border-slate-800 text-slate-200"
+                        disabled={isPending}
+                    />
+                </div>
 
                 {processosSafe.length > 0 && (
-                    <Select value={processo} onValueChange={setProcesso} disabled={isPending}>
-                        <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200">
-                            <SelectValue placeholder="Todos os Processos" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700 text-slate-200">
-                            <SelectItem value="all">Todos os Processos</SelectItem>
-                            {processosSafe.map(p => (
-                                <SelectItem key={p.id || p} value={p.id || p}>
-                                    {p.nome ? p.nome : (p.numero && p.ano ? `${p.numero}/${p.ano}` : (p.numero || p))}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">
+                            Processo Seletivo
+                        </label>
+                        <Select value={processo} onValueChange={setProcesso} disabled={isPending}>
+                            <SelectTrigger className="bg-slate-900/50 border-slate-800 text-slate-200">
+                                <SelectValue placeholder="Todos os Processos" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                                <SelectItem value="all">Todos os Processos</SelectItem>
+                                {processosSafe.map(p => (
+                                    <SelectItem key={p.id || p} value={p.id || p}>
+                                        {p.nome ? p.nome : (p.numero && p.ano ? `${p.numero}/${p.ano}` : (p.numero || p))}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 )}
+            </div>
 
-                <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
-                    <Button onClick={handleFilterClick} disabled={isPending} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                        {isPending ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Filter className="w-4 h-4 mr-2" />}
-                        {isPending ? "..." : "Filtrar"}
-                    </Button>
-                    <Button onClick={handleClearClick} variant="outline" disabled={isPending} className="bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white">
-                        <X className="w-4 h-4" />
-                    </Button>
-                </div>
+            <div className="flex gap-2 pt-2 border-t border-slate-800/50">
+                <Button
+                    onClick={handleClearClick}
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    className="flex-1 bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"
+                >
+                    Limpar
+                </Button>
+                <Button
+                    onClick={handleFilterClick}
+                    size="sm"
+                    disabled={isPending}
+                    className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                >
+                    {isPending ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Filter className="w-4 h-4 mr-2" />}
+                    Aplicar
+                </Button>
             </div>
         </div>
     );
