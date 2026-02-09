@@ -82,13 +82,13 @@ function parseCurrency(value: string | undefined | null): number {
 
     const lastComma = cleanValue.lastIndexOf(',');
     const lastDot = cleanValue.lastIndexOf('.');
-    
+
     let numberString;
 
     // Format: 1.234,56 (BRL)
     if (lastComma > lastDot) {
         numberString = cleanValue.replace(/\./g, "").replace(",", ".");
-    } 
+    }
     // Format: 1,234.56 (USD) or 1234.56
     else {
         numberString = cleanValue.replace(/,/g, "");
@@ -114,7 +114,7 @@ function extractResumo(poloHtmlContent: string): ResumoCategorias {
             total: Array(5).fill({ pago: '0.00', repasse: '0.00' }),
         }
     };
-    
+
     const resumoAnchor = Array.from(doc.querySelectorAll('td')).find(
         el => el.textContent?.trim().toUpperCase() === 'RESUMO'
     );
@@ -133,10 +133,10 @@ function extractResumo(poloHtmlContent: string): ResumoCategorias {
         if (cells.length < 1) continue;
 
         const rowType = cells[0].textContent?.trim().toUpperCase() || '';
-        
+
         if (dataRowKeys.includes(rowType)) {
             const rowData: CategoriaResumoItem[] = [];
-            
+
             for (let i = 0; i < categoryCount; i++) {
                 const pagoIndex = (i * 2) + 1;
                 const repasseIndex = (i * 2) + 2;
@@ -147,10 +147,10 @@ function extractResumo(poloHtmlContent: string): ResumoCategorias {
                         repasse: getText(cells[repasseIndex])
                     });
                 } else {
-                     rowData.push({ pago: '0.00', repasse: '0.00' });
+                    rowData.push({ pago: '0.00', repasse: '0.00' });
                 }
             }
-            
+
             if (rowType === 'MENSALIDADE') {
                 resumo.detalhes!.mensalidade = rowData;
             } else if (rowType === 'SERVIÇO' || rowType === 'SERVICO') {
@@ -224,16 +224,16 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
                 discounts: [],
             };
             log(`[INFO] New polo started: ${currentPolo.nomePoloCidade}`);
-            poloHtmlContent = ''; 
+            poloHtmlContent = '';
         }
-        
+
         if (currentPolo) {
             poloHtmlContent += row.outerHTML;
         }
 
         const categoryTitleElement = row.querySelector('td[colspan="4"][style*="font-size:20px"]');
         const isSectionTitle = categoryTitleElement && (categoryTitleElement.style.fontWeight === 'bold' || categoryTitleElement.querySelector('b'));
-        
+
         if (isSectionTitle && getText(categoryTitleElement).toUpperCase() !== 'RESUMO') {
             const titleText = getText(categoryTitleElement).toUpperCase();
             log(`[INFO] Found section title: ${titleText}`);
@@ -254,7 +254,7 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
             }
 
             const contentRow = mainTableRows[++i];
-             if(contentRow && currentPolo) {
+            if (contentRow && currentPolo) {
                 poloHtmlContent += contentRow.outerHTML;
                 const nestedTable = contentRow.querySelector('table.rRelatorio');
 
@@ -276,7 +276,7 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
                             };
                             currentPolo?.discounts.push(discount);
                         } else if (currentCategory === 'RECEITA_UNIVERSO_EAD') {
-                             if (dataCells.length < 14) return;
+                            if (dataCells.length < 14) return;
                             const record: ExtractedRecord = {
                                 idSequencial: getText(dataCells[0]),
                                 raCodigo: getText(dataCells[1]), // CPF
@@ -299,7 +299,7 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
                             const siglaMatch = cursoCompleto.match(/\((.*?)\)/);
                             let siglaCurso: string | undefined;
                             let nomeCurso: string;
-                            
+
                             if (siglaMatch) {
                                 siglaCurso = siglaMatch[1];
                                 nomeCurso = cursoCompleto.replace(/\s*\(.*?\)\s*/, '').trim();
@@ -323,17 +323,17 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
                                 valorBruto: getText(dataCells[11]),
                                 valorLiquido: getText(dataCells[12])
                             };
-                            if(currentCategory === 'RECEITA_GRADUACAO') currentPolo?.revenues_graduacao.push(record);
-                            else if(currentCategory === 'RECEITA_POS_GRADUACAO') currentPolo?.revenues_pos_graduacao.push(record);
-                            else if(currentCategory === 'RECEITA_TECNICO') currentPolo?.revenues_tecnico.push(record);
-                            else if(currentCategory === 'RECEITA_PROFISSIONALIZANTE') currentPolo?.revenues_profissionalizante.push(record);
+                            if (currentCategory === 'RECEITA_GRADUACAO') currentPolo?.revenues_graduacao.push(record);
+                            else if (currentCategory === 'RECEITA_POS_GRADUACAO') currentPolo?.revenues_pos_graduacao.push(record);
+                            else if (currentCategory === 'RECEITA_TECNICO') currentPolo?.revenues_tecnico.push(record);
+                            else if (currentCategory === 'RECEITA_PROFISSIONALIZANTE') currentPolo?.revenues_profissionalizante.push(record);
                         }
                     });
                 } else {
-                     log(`[WARNING] No nested table found for category: ${currentCategory}`);
+                    log(`[WARNING] No nested table found for category: ${currentCategory}`);
                 }
-             }
-            continue; 
+            }
+            continue;
         }
 
         const boldCells = Array.from(row.querySelectorAll('td b'));
@@ -360,7 +360,7 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
         currentPolo.resumo_categorias = extractResumo(poloHtmlContent);
         result.polos.push(currentPolo);
     }
-    
+
     log("[SUCCESS] HTML parsing finished.");
     return result;
 }
@@ -368,41 +368,41 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
 
 // Helper to get month/year from a string like "JANEIRO/2024"
 function parseReferenceDate(refString: string | undefined): { mes: number; ano: number } {
-  if (!refString) {
-      // Default to current month/year if no string is provided.
-      return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
-  }
-  const monthMap: { [key: string]: number } = {
-    'janeiro': 1, 'fevereiro': 2, 'março': 3, 'marco': 3, 'abril': 4, 'maio': 5, 'junho': 6,
-    'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
-  };
-  
-  // Clean the string to remove the "REPASSE " prefix before splitting.
-  const cleanedRefString = refString.toLowerCase().replace('repasse', '').trim();
+    if (!refString) {
+        // Default to current month/year if no string is provided.
+        return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
+    }
+    const monthMap: { [key: string]: number } = {
+        'janeiro': 1, 'fevereiro': 2, 'março': 3, 'marco': 3, 'abril': 4, 'maio': 5, 'junho': 6,
+        'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
+    };
 
-  const parts = cleanedRefString.split('/');
-  if (parts.length < 2) {
-    // If split doesn't work, we can't parse it. Fallback to current month.
-    return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
-  }
+    // Clean the string to remove the "REPASSE " prefix before splitting.
+    const cleanedRefString = refString.toLowerCase().replace('repasse', '').trim();
 
-  const monthName = parts[0].trim();
-  const yearString = parts[1].trim();
-  
-  const parsedMonth = monthMap[monthName];
-  const parsedYear = parseInt(yearString, 10);
+    const parts = cleanedRefString.split(/[\/\s]+/);
+    if (parts.length < 2) {
+        // If split doesn't work, we can't parse it. Fallback to current month.
+        return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
+    }
 
-  return {
-    mes: parsedMonth || new Date().getMonth() + 1,
-    ano: parsedYear || new Date().getFullYear(),
-  };
+    const monthName = parts[0].trim();
+    const yearString = parts[1].trim();
+
+    const parsedMonth = monthMap[monthName];
+    const parsedYear = parseInt(yearString, 10);
+
+    return {
+        mes: parsedMonth || new Date().getMonth() + 1,
+        ano: parsedYear || new Date().getFullYear(),
+    };
 }
 
 export function parseAndTransformHtml(htmlContent: string, fileName: string, log: (message: string) => void): { records: Omit<FinancialRecord, 'id' | 'data_importacao'>[], errors: string[] } {
     const errors: string[] = [];
-    
+
     const extractedData = extractDataFromHtml(htmlContent, log);
-    
+
     const records: Omit<FinancialRecord, 'id' | 'data_importacao'>[] = [];
     const importId = `${fileName}_${new Date().getTime()}`;
     const { mes: referencia_mes, ano: referencia_ano } = parseReferenceDate(extractedData.mesReferencia);
@@ -441,7 +441,7 @@ export function parseAndTransformHtml(htmlContent: string, fileName: string, log
         processRevenues(polo.revenues_universo_ead, 'Outras Receitas');
 
         for (const discount of polo.discounts) {
-             records.push({
+            records.push({
                 polo: poloName,
                 categoria: 'Outras Receitas',
                 tipo: 'Descontos',
@@ -453,10 +453,10 @@ export function parseAndTransformHtml(htmlContent: string, fileName: string, log
                 import_id: importId,
                 nome_arquivo: fileName,
                 tipo_importacao: 'Arquivo',
-             });
+            });
         }
     }
-    
+
     if (records.length === 0) {
         const msg = "Nenhum registro foi extraído. Verifique o conteúdo do HTML.";
         errors.push(msg);
