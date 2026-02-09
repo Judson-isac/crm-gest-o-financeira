@@ -36,7 +36,9 @@ export async function getRankingAction(
             latestEnrollment,
             config,
             latestMessage,
-            distinctValues // Return filter options
+            distinctValues,
+            redeId: user.redeId,
+            redeNome: (await getRedeById(user.redeId))?.nome || 'Minha Rede'
         };
     } catch (error: any) {
         console.error("Erro ao buscar ranking:", error);

@@ -21,6 +21,20 @@ type RankingItem = {
     position: number;
 };
 
+type DailyStats = {
+    total: number;
+    byType: { name: string; count: number }[];
+    byPolo: {
+        polo: string;
+        total: number;
+        users: {
+            nome: string;
+            count: number;
+            types: string[];
+        }[];
+    }[];
+};
+
 type AppSettings = {
     voiceEnabled: boolean;
     voiceSpeed: number;
@@ -46,6 +60,11 @@ export default function RankingPage() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [isLoading, setIsLoading] = useState(true);
     const [distinctValues, setDistinctValues] = useState<{ polos: string[]; anos: number[]; processos?: any[] }>({ polos: [], anos: [] });
+    const [stats, setStats] = useState<DailyStats | null>(null);
+    const [redeId, setRedeId] = useState<string>('');
+    const [redeNome, setRedeNome] = useState<string>('');
+    const [lastSeenEnrollmentId, setLastSeenEnrollmentId] = useState<string | null>(null);
+    const [currentMessage, setCurrentMessage] = useState<string>('');
 
     // Settings State - Now synced from server
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -166,11 +185,14 @@ export default function RankingPage() {
                 if (result.stats) {
                     setStats(result.stats);
                 }
-                if ((result as any).redeNome) {
-                    setRedeNome((result as any).redeNome);
-                }
                 if (result.distinctValues) {
                     setDistinctValues(result.distinctValues);
+                }
+                if ((result as any).redeId) {
+                    setRedeId((result as any).redeId);
+                }
+                if ((result as any).redeNome) {
+                    setRedeNome((result as any).redeNome);
                 }
 
                 // ... Sync Settings code ...
@@ -284,7 +306,7 @@ export default function RankingPage() {
         setSettings(newSettings);
 
         try {
-            await saveRankingConfigAction({ ...newSettings, redeId: (ranking as any).redeId });
+            await saveRankingConfigAction({ ...newSettings, redeId: redeId });
         } catch (error) {
             console.error("Falha ao salvar som:", error);
             setSettings({ ...settings, soundEnabled: !newStatus });
