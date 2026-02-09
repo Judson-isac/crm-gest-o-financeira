@@ -14,8 +14,17 @@ if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-# 1. Puxar código atualizado
-echo "📥 1. Puxando código do Git..."
+# 1. Preparar Git (Resetar e Puxar)
+echo "📥 1. Sincronizando código do Git..."
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "🌿 Branch detectada: $BRANCH"
+
+echo "� Resetando mudanças locais para evitar conflitos..."
+git fetch --all
+git reset --hard origin/$BRANCH
+chmod +x scripts/*.sh
+
+echo "⬇️  Baixando atualizações..."
 git pull
 echo "🔖 Versão atual no servidor:"
 git log -1 --oneline

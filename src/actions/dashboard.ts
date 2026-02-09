@@ -168,7 +168,7 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
         nextSpaceDate: nextSpaceDate,
         daysRemaining,
         dailyTarget,
-        stats,
+        stats: otherStats,
         spaces: processSpacepoints
     };
 }
