@@ -1,12 +1,11 @@
-'use server';
-import { SpacepointsManager } from '@/components/cadastros/spacepoints-manager';
-import { getProcessosSeletivos, getSpacepoints } from '@/lib/api';
+import { getProcessosSeletivos, getSpacepoints, getTiposCurso } from '@/lib/api';
 
 export default async function SpacePointsPage() {
   const processosSeletivos = await getProcessosSeletivos();
   const spacepoints = await getSpacepoints();
+  const tiposCurso = await getTiposCurso();
 
-  const allDates = [...new Set(spacepoints.map(sp => sp.date.getTime()))]
+  const allDates = [...new Set(spacepoints.map(sp => sp.dataSpace.getTime()))]
     .sort((a, b) => a - b)
     .map(ts => new Date(ts));
 
@@ -14,5 +13,6 @@ export default async function SpacePointsPage() {
     processosSeletivos={processosSeletivos}
     allSpacepoints={spacepoints}
     allDates={allDates}
+    tiposCurso={tiposCurso}
   />;
 }

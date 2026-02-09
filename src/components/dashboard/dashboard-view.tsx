@@ -27,6 +27,7 @@ import { LucroLiquidoTable } from "./lucro-liquido-table";
 import { LucroLiquidoChart } from "./lucro-liquido-chart";
 import { TopCursosChart } from "./top-cursos-chart";
 import { TopCursosPorPoloTable } from "./top-cursos-por-polo-table";
+import { SpacepointAttainmentWidget } from "./spacepoint-attainment-widget";
 import { Button } from "@/components/ui/button";
 import type { Filters } from "@/lib/types";
 import { ColorPaletteSwitcher } from "./color-palette-switcher";
@@ -48,6 +49,7 @@ const WIDGET_CONFIG = {
   'receita-polo-tabela': { title: 'Receita por Polo', component: ReceitaPorPoloTable, defaultLayout: { i: "receita-polo-tabela", x: 0, y: 41, w: 12, h: 9, minW: 6, minH: 6 } },
   'top-5-cursos': { title: 'Top 5 Cursos (Geral)', component: TopCursosChart, defaultLayout: { i: "top-5-cursos", x: 0, y: 50, w: 6, h: 9, minW: 4, minH: 8 } },
   'top-5-cursos-polo': { title: 'Top 5 Cursos por Polo', component: TopCursosPorPoloTable, defaultLayout: { i: "top-5-cursos-polo", x: 6, y: 50, w: 6, h: 9, minW: 4, minH: 8 } },
+  'spacepoints-attainment': { title: 'Atingimento Spacepoints', component: SpacepointAttainmentWidget, defaultLayout: { i: "spacepoints-attainment", x: 0, y: 59, w: 12, h: 8, minW: 6, minH: 6 } },
 };
 
 const defaultWidgetKeys = Object.keys(WIDGET_CONFIG);
@@ -87,7 +89,7 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
   useEffect(() => {
     const savedLayouts = getFromLS("dashboard-layouts");
     const savedVisibleWidgets = getFromLS("dashboard-visible-widgets");
-    
+
     const validSavedWidgets = savedVisibleWidgets ? savedVisibleWidgets.filter((key: string) => WIDGET_CONFIG[key as keyof typeof WIDGET_CONFIG]) : null;
 
     setVisibleWidgets(validSavedWidgets || defaultWidgetKeys);
@@ -104,7 +106,7 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
     setVisibleWidgets(newWidgets);
     saveToLS("dashboard-visible-widgets", newWidgets);
   };
-  
+
   const handleAddWidget = (widgetKey: string) => {
     const newWidgets = [...visibleWidgets, widgetKey];
     setVisibleWidgets(newWidgets);
@@ -112,9 +114,9 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
 
     const newLayouts = { ...layouts };
     const widgetDefaultLayout = WIDGET_CONFIG[widgetKey as keyof typeof WIDGET_CONFIG].defaultLayout;
-    
+
     Object.keys(newLayouts).forEach(bp => {
-        newLayouts[bp] = [...(newLayouts[bp] || []), { ...widgetDefaultLayout, y: Infinity }];
+      newLayouts[bp] = [...(newLayouts[bp] || []), { ...widgetDefaultLayout, y: Infinity }];
     });
     setLayouts(newLayouts);
     saveToLS("dashboard-layouts", newLayouts);
@@ -126,7 +128,7 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
     saveToLS("dashboard-layouts", defaultLayouts);
     saveToLS("dashboard-visible-widgets", defaultWidgetKeys);
   };
-  
+
   const componentDataMapping: { [key: string]: any } = {
     'lucro-liquido-tabela': { data: data.lucratividadeData },
     'lucro-liquido-grafico': { data: data.lucratividadeData },
@@ -142,27 +144,28 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
     'receita-polo-tabela': { data: data.receitaPorPolo.data, footer: data.receitaPorPolo.footer, columns: data.receitaPorPolo.columns },
     'top-5-cursos': { data: data.topCursos },
     'top-5-cursos-polo': { data: data.topCursosPorPolo },
+    'spacepoints-attainment': {},
   };
 
   return (
     <div className="space-y-6">
       <SummaryStats summary={data.summaryData} isLoading={false} />
-      
+
       <div className="flex justify-end gap-2">
         <ColorPaletteSwitcher />
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" /> Adicionar Widget</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                {Object.keys(WIDGET_CONFIG)
-                    .filter(key => !visibleWidgets.includes(key))
-                    .map(key => (
-                    <DropdownMenuItem key={key} onSelect={() => handleAddWidget(key)}>
-                        {WIDGET_CONFIG[key as keyof typeof WIDGET_CONFIG].title}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
+          <DropdownMenuTrigger asChild>
+            <Button><Plus className="mr-2 h-4 w-4" /> Adicionar Widget</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {Object.keys(WIDGET_CONFIG)
+              .filter(key => !visibleWidgets.includes(key))
+              .map(key => (
+                <DropdownMenuItem key={key} onSelect={() => handleAddWidget(key)}>
+                  {WIDGET_CONFIG[key as keyof typeof WIDGET_CONFIG].title}
+                </DropdownMenuItem>
+              ))}
+          </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="outline" onClick={onResetLayout}>Redefinir Layout</Button>
       </div>
@@ -177,18 +180,18 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
           draggableHandle=".drag-handle"
         >
           {visibleWidgets.map(key => {
-              const config = WIDGET_CONFIG[key as keyof typeof WIDGET_CONFIG];
-              if (!config) return null;
-              
-              const WidgetComponent = config.component;
-              const props = componentDataMapping[key];
+            const config = WIDGET_CONFIG[key as keyof typeof WIDGET_CONFIG];
+            if (!config) return null;
 
-              return (
-                <div key={key}>
-                  <WidgetComponent {...props} onRemove={() => handleRemoveWidget(key)} />
-                </div>
-              );
-            })}
+            const WidgetComponent = config.component;
+            const props = componentDataMapping[key];
+
+            return (
+              <div key={key}>
+                <WidgetComponent {...props} onRemove={() => handleRemoveWidget(key)} />
+              </div>
+            );
+          })}
         </ResponsiveGridLayout>
       ) : (
         <div className="text-center p-8">Carregando layout...</div>

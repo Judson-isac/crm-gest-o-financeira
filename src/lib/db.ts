@@ -988,15 +988,34 @@ export const deleteNumeroProcessoSeletivo = async (id: string) => genericDelete(
 export const saveMeta = async (data: Partial<Meta>) => genericSave<Meta>('metas', data);
 export const deleteMeta = async (id: string) => genericDelete('metas', id);
 
-export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo'>[], redeId: string): Promise<void> {
+export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[], redeId: string): Promise<void> {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        // Delete existing spacepoints for this processoSeletivo and redeId
         await client.query('DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2', [processoSeletivo, redeId]);
+
         for (const sp of spacepoints) {
             await client.query(
-                'INSERT INTO spacepoints (id, "processoSeletivo", date, percentage, "redeId") VALUES ($1, $2, $3, $4, $5)',
-                [uuidv4(), processoSeletivo, sp.date, sp.percentage, redeId]
+                `INSERT INTO spacepoints (
+                    id, 
+                    "processoSeletivo", 
+                    "redeId",
+                    "numeroSpace",
+                    "dataSpace", 
+                    "metasPorTipo",
+                    "metaTotal",
+                    "criadoEm"
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+                [
+                    uuidv4(),
+                    processoSeletivo,
+                    redeId,
+                    sp.numeroSpace,
+                    sp.dataSpace,
+                    JSON.stringify(sp.metasPorTipo), // Ensure JSON
+                    sp.metaTotal
+                ]
             );
         }
         await client.query('COMMIT');
@@ -1039,10 +1058,17 @@ export async function getSpacepoints(redeId?: string): Promise<Spacepoint[]> {
             params.push(redeId);
         }
 
-        query += ' ORDER BY date';
+        query += ' ORDER BY "dataSpace"';
 
         const result = await client.query(query, params);
-        return result.rows;
+        return result.rows.map(row => ({
+            ...row,
+            dataSpace: new Date(row.dataSpace), // Ensure Date object
+            // Ensure numbers
+            numeroSpace: Number(row.numeroSpace),
+            metaTotal: Number(row.metaTotal),
+            metasPorTipo: row.metasPorTipo || {}
+        }));
     } finally {
         client.release();
     }

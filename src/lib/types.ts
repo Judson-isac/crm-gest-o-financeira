@@ -183,8 +183,11 @@ export type Meta = {
 export type Spacepoint = {
   id: string;
   processoSeletivo: string;
-  date: Date;
-  percentage: number;
+  redeId: string;
+  numeroSpace: number;
+  dataSpace: Date;
+  metaTotal: number;
+  metasPorTipo: Record<string, number>; // Key: TipoCurso Name in UPPERCASE, Value: Qtd
 };
 
 export type TipoCurso = {

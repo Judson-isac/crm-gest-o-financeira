@@ -172,7 +172,7 @@ export async function deleteMetaAction(id: string) {
 
 
 // Spacepoints
-export async function saveSpacepointsAction(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo'>[]) {
+export async function saveSpacepointsAction(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[]) {
   try {
     const user = await getAuthenticatedUser();
     if (!user || !user.redeId) {
