@@ -1049,12 +1049,16 @@ export const deleteNumeroProcessoSeletivo = async (id: string) => genericDelete(
 export const saveMeta = async (data: Partial<Meta>) => genericSave<Meta>('metas', data);
 export const deleteMeta = async (id: string) => genericDelete('metas', id);
 
-export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[], redeId: string): Promise<void> {
+export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[], redeId: string, polo?: string): Promise<void> {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Delete existing spacepoints for this processoSeletivo and redeId
-        await client.query('DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2', [processoSeletivo, redeId]);
+        // Delete existing spacepoints for this processoSeletivo, redeId and polo
+        const deleteQuery = polo
+            ? 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" = $3'
+            : 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" IS NULL';
+        const deleteParams = polo ? [processoSeletivo, redeId, polo] : [processoSeletivo, redeId];
+        await client.query(deleteQuery, deleteParams);
 
         for (const sp of spacepoints) {
             await client.query(
@@ -1066,8 +1070,9 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
                     "dataSpace", 
                     "metasPorTipo",
                     "metaTotal",
+                    "polo",
                     "criadoEm"
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
                 [
                     uuidv4(),
                     processoSeletivo,
@@ -1075,7 +1080,8 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
                     sp.numeroSpace,
                     sp.dataSpace,
                     JSON.stringify(sp.metasPorTipo), // Ensure JSON
-                    sp.metaTotal
+                    sp.metaTotal,
+                    polo || null
                 ]
             );
         }
@@ -1128,7 +1134,8 @@ export async function getSpacepoints(redeId?: string): Promise<Spacepoint[]> {
             // Ensure numbers
             numeroSpace: Number(row.numeroSpace),
             metaTotal: Number(row.metaTotal),
-            metasPorTipo: row.metasPorTipo || {}
+            metasPorTipo: row.metasPorTipo || {},
+            polo: row.polo || undefined
         }));
     } finally {
         client.release();

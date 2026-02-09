@@ -190,6 +190,7 @@ export type Spacepoint = {
   dataSpace: Date;
   metaTotal: number;
   metasPorTipo: Record<string, number>; // Key: TipoCurso Name in UPPERCASE, Value: Qtd
+  polo?: string; // Optional polo specificity
 };
 
 export type TipoCurso = {

@@ -172,13 +172,13 @@ export async function deleteMetaAction(id: string) {
 
 
 // Spacepoints
-export async function saveSpacepointsAction(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[]) {
+export async function saveSpacepointsAction(processoSeletivo: string, spacepoints: Omit<Spacepoint, 'id' | 'processoSeletivo' | 'redeId'>[], polo?: string) {
   try {
     const user = await getAuthenticatedUser();
     if (!user || !user.redeId) {
       return { success: false, message: 'Usuário não autenticado ou sem rede associada' };
     }
-    await db.saveSpacepoints(processoSeletivo, spacepoints, user.redeId);
+    await db.saveSpacepoints(processoSeletivo, spacepoints, user.redeId, polo);
     revalidatePath('/cadastros/space-points');
     return { success: true };
   } catch (e: any) {

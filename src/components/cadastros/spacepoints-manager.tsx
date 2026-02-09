@@ -25,23 +25,28 @@ type EditorSpacepoint = {
 
 function SpacepointsEditor({
     initialProcesso,
+    initialPolo,
     onBack,
     onSaveSuccess,
     allProcessos,
     processoLabels,
     allSpacepoints,
     tiposCurso,
+    polos,
 }: {
     initialProcesso: string | null;
+    initialPolo?: string;
     onBack: () => void;
     onSaveSuccess: () => void;
     allProcessos: string[];
     processoLabels?: Map<string, string>;
     allSpacepoints: DbSpacepoint[];
     tiposCurso: TipoCurso[];
+    polos: string[];
 }) {
     const { toast } = useToast();
     const [selectedProcesso, setSelectedProcesso] = useState<string>(initialProcesso || '');
+    const [selectedPolo, setSelectedPolo] = useState<string>(initialPolo || 'GLOBAL');
     const [spacepoints, setSpacepoints] = useState<EditorSpacepoint[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, startSavingTransition] = useTransition();
@@ -56,7 +61,10 @@ function SpacepointsEditor({
         setAreSpacepointsLoaded(false);
         setTimeout(() => {
             const dataForProcesso = allSpacepoints
-                .filter(sp => sp.processoSeletivo === selectedProcesso)
+                .filter(sp =>
+                    sp.processoSeletivo === selectedProcesso &&
+                    (selectedPolo === 'GLOBAL' ? !sp.polo : sp.polo === selectedPolo)
+                )
                 .sort((a, b) => a.numeroSpace - b.numeroSpace)
                 .map(sp => {
                     const dynamicMetas: Record<string, string> = {};
@@ -159,7 +167,8 @@ function SpacepointsEditor({
         }
 
         startSavingTransition(async () => {
-            const result = await saveSpacepointsAction(selectedProcesso, spacepointsToSave);
+            const poloToSave = selectedPolo === 'GLOBAL' ? undefined : selectedPolo;
+            const result = await saveSpacepointsAction(selectedProcesso, spacepointsToSave, poloToSave);
             if (result.success) {
                 toast({ title: 'Sucesso!', description: `Spacepoints para ${processoLabels?.get(selectedProcesso) || selectedProcesso} salvos com sucesso.` });
                 onSaveSuccess();
@@ -189,6 +198,18 @@ function SpacepointsEditor({
                                 </SelectTrigger>
                                 <SelectContent>
                                     {allProcessos.map(pId => <SelectItem key={pId} value={pId}>{processoLabels?.get(pId) || pId}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="polo-select">Polo</Label>
+                            <Select value={selectedPolo} onValueChange={setSelectedPolo} disabled={!!initialProcesso}>
+                                <SelectTrigger id="polo-select">
+                                    <SelectValue placeholder="Selecione um polo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="GLOBAL">GLOBAL (Média da Rede)</SelectItem>
+                                    {polos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -273,34 +294,39 @@ function SpacepointsEditor({
 }
 
 
-export default function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso }: { processosSeletivos: { id: string, numero: string, ano: number }[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[] }) {
+export default function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso, polos }: { processosSeletivos: { id: string, numero: string, ano: number }[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[], polos: string[] }) {
     const [view, setView] = useState<'list' | 'editor'>('list');
     const [editingProcesso, setEditingProcesso] = useState<string | null>(null);
+    const [editingPolo, setEditingPolo] = useState<string | undefined>(undefined);
     const router = useRouter();
 
     // Create a map for display labels
     const processoLabels = new Map(processosSeletivos.map(p => [p.id, `${p.numero}/${p.ano}`]));
     const processoIds = processosSeletivos.map(p => p.id);
 
-    const handleEdit = (processoId: string) => {
+    const handleEdit = (processoId: string, polo?: string) => {
         setEditingProcesso(processoId);
+        setEditingPolo(polo);
         setView('editor');
     }
 
     const handleNew = () => {
         setEditingProcesso(null);
+        setEditingPolo(undefined);
         setView('editor');
     }
 
     if (view === 'editor') {
         return <SpacepointsEditor
             initialProcesso={editingProcesso}
+            initialPolo={editingPolo}
             onBack={() => setView('list')}
             onSaveSuccess={() => { setView('list'); router.refresh(); }}
             allProcessos={processoIds}
             processoLabels={processoLabels}
             allSpacepoints={allSpacepoints}
             tiposCurso={tiposCurso}
+            polos={polos}
         />
     }
 
@@ -333,22 +359,56 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {processoIds.map(pId => {
-                                const sps = allSpacepoints.filter(sp => sp.processoSeletivo === pId);
-                                const totalMeta = sps.length > 0 ? Math.max(...sps.map(s => s.metaTotal || 0)) : 0; // Assuming cumulative, max is total
+                            {processoIds.flatMap(pId => {
+                                // Get all unique combinations of (Processo, Polo) that have spacepoints
+                                const combinations = [
+                                    { pId, polo: undefined, label: 'GLOBAL' },
+                                    ...polos.map(p => ({ pId, polo: p, label: p }))
+                                ].filter(comb => {
+                                    return allSpacepoints.some(sp => sp.processoSeletivo === comb.pId && (comb.polo === undefined ? !sp.polo : sp.polo === comb.polo));
+                                });
 
-                                return (
-                                    <TableRow key={pId}>
-                                        <TableCell className="font-medium">{processoLabels.get(pId)}</TableCell>
-                                        <TableCell className="text-center">{sps.length}</TableCell>
-                                        <TableCell className="text-center">{totalMeta}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" onClick={() => handleEdit(pId)}>
-                                                Editar
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                );
+                                // fallback if no spacepoints for this process yet, show at least a generic row if it matches search
+                                if (combinations.length === 0) {
+                                    return [(
+                                        <TableRow key={pId}>
+                                            <TableCell className="font-medium">{processoLabels.get(pId)}</TableCell>
+                                            <TableCell className="text-center">0</TableCell>
+                                            <TableCell className="text-center">-</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(pId)}>
+                                                    Configurar
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )];
+                                }
+
+                                return combinations.map(comb => {
+                                    const sps = allSpacepoints.filter(sp =>
+                                        sp.processoSeletivo === comb.pId &&
+                                        (comb.polo === undefined ? !sp.polo : sp.polo === comb.polo)
+                                    );
+                                    const totalMeta = sps.length > 0 ? Math.max(...sps.map(s => s.metaTotal || 0)) : 0;
+
+                                    return (
+                                        <TableRow key={`${comb.pId}-${comb.polo || 'global'}`}>
+                                            <TableCell className="font-medium">
+                                                {processoLabels.get(comb.pId)}
+                                                <span className="ml-2 text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                                                    {comb.label}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-center">{sps.length}</TableCell>
+                                            <TableCell className="text-center">{totalMeta}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(comb.pId, comb.polo)}>
+                                                    Editar
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                });
                             })}
                         </TableBody>
                     </Table>

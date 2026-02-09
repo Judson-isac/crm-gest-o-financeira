@@ -29,9 +29,18 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
 
     // 1. Get Spacepoints
     const spacepoints = await db.getSpacepoints(user.redeId);
-    const processSpacepoints = spacepoints
-        .filter(sp => sp.processoSeletivo === processoSeletivoId)
+
+    // Try to find polo-specific spacepoints first if a polo is provided
+    let processSpacepoints = spacepoints
+        .filter(sp => sp.processoSeletivo === processoSeletivoId && (polo && polo !== 'Todos' ? sp.polo === polo : !sp.polo))
         .sort((a, b) => a.numeroSpace - b.numeroSpace);
+
+    // Fallback to global (no polo) if no specific goals found for the selected polo
+    if (processSpacepoints.length === 0 && polo && polo !== 'Todos') {
+        processSpacepoints = spacepoints
+            .filter(sp => sp.processoSeletivo === processoSeletivoId && !sp.polo)
+            .sort((a, b) => a.numeroSpace - b.numeroSpace);
+    }
 
     console.log('Found spacepoints:', processSpacepoints.length);
 
