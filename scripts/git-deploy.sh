@@ -4,21 +4,27 @@
 
 set -e  # Para em caso de erro
 
-# Check for -y flag to skip confirmation
+# Default values
 AUTO_CONFIRM=false
-if [ "$1" == "-y" ]; then
-  AUTO_CONFIRM=true
-  shift
-fi
+COMMIT_MSG=""
+
+# Parse arguments
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -y|--yes) AUTO_CONFIRM=true ;;
+        *) COMMIT_MSG="$1" ;;
+    esac
+    shift
+done
+
+echo "🔧 Config: Auto-Confirm=$AUTO_CONFIRM"
 
 # Verificar se mensagem foi fornecida
-if [ -z "$1" ]; then
+if [ -z "$COMMIT_MSG" ]; then
   echo "❌ Erro: Mensagem de commit é obrigatória!"
   echo "Uso: ./scripts/git-deploy.sh [-y] \"sua mensagem aqui\""
   exit 1
 fi
-
-COMMIT_MSG="$1"
 
 echo "=========================================="
 echo "📤 Enviando código para o Git..."
