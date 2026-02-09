@@ -1,20 +1,30 @@
 'use server';
 
-import { getRankingConfig, saveRankingConfig, createRankingMessage, getLastRankingMessage, getEnrollmentRanking, getEnrollmentStats, getRedeById, getLastEnrollment, getSavedSounds, saveSound, deleteSound } from '@/lib/db';
+import { getRankingConfig, saveRankingConfig, createRankingMessage, getLastRankingMessage, getEnrollmentRanking, getEnrollmentStats, getRedeById, getLastEnrollment, getSavedSounds, saveSound, deleteSound, getDistinctValuesForRanking } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/auth';
 
-export async function getRankingAction(period: 'today' | 'month' | 'campaign') {
+export async function getRankingAction(
+    period: 'today' | 'month' | 'campaign',
+    filters?: {
+        polos?: string[],
+        processo?: string
+    }
+) {
     try {
         const user = await getAuthenticatedUser();
         if (!user || !user.redeId) {
             return { success: false, message: "Acesso negado." };
         }
 
-        const [ranking, stats, config, latestMessage] = await Promise.all([
-            getEnrollmentRanking(user.redeId, period),
+        const [ranking, stats, config, latestMessage, distinctValues] = await Promise.all([
+            getEnrollmentRanking(user.redeId, period, {
+                polos: filters?.polos,
+                processoId: filters?.processo
+            }),
             getEnrollmentStats(user.redeId),
             getRankingConfig(user.redeId),
-            getLastRankingMessage(user.redeId)
+            getLastRankingMessage(user.redeId),
+            getDistinctValuesForRanking(user.redeId)
         ]);
 
         const latestEnrollment = await getLastEnrollment(user.redeId);
@@ -25,7 +35,8 @@ export async function getRankingAction(period: 'today' | 'month' | 'campaign') {
             stats,
             latestEnrollment,
             config,
-            latestMessage
+            latestMessage,
+            distinctValues // Return filter options
         };
     } catch (error: any) {
         console.error("Erro ao buscar ranking:", error);

@@ -3,6 +3,8 @@
 // Force dynamic rendering (no static generation during build)
 export const dynamic = 'force-dynamic';
 
+import { RankingFilterControls } from '@/components/ranking/ranking-filters';
+import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { getRankingAction, saveRankingConfigAction } from '@/actions/ranking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,10 +40,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export default function RankingPage() {
+    const searchParams = useSearchParams();
     const [ranking, setRanking] = useState<RankingItem[]>([]);
     const [period, setPeriod] = useState<'today' | 'month'>('today');
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [isLoading, setIsLoading] = useState(true);
+    const [distinctValues, setDistinctValues] = useState<{ polos: string[]; anos: number[]; processos?: any[] }>({ polos: [], anos: [] });
 
     // Settings State - Now synced from server
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -49,28 +53,6 @@ export default function RankingPage() {
     const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
 
     // Removed localStorage logic
-
-
-
-    const [stats, setStats] = useState<{
-        total: number;
-        byType: { name: string; count: number }[];
-        byPolo: {
-            polo: string;
-            total: number;
-            users: {
-                nome: string;
-                count: number;
-                types: string[];
-            }[];
-        }[];
-    } | null>(null);
-
-    const [redeNome, setRedeNome] = useState<string>('');
-
-    const [lastSeenEnrollmentId, setLastSeenEnrollmentId] = useState<string | null>(null);
-
-    const [currentMessage, setCurrentMessage] = useState<string>('');
 
     // Web Audio API Refs
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -169,7 +151,16 @@ export default function RankingPage() {
         isFetchingRef.current = true;
 
         try {
-            const result = await getRankingAction(period);
+            // Read filters from URL
+            const polosParam = searchParams.get('polo');
+            const polos = polosParam ? polosParam.split(',') : undefined;
+            const processo = searchParams.get('processo') || undefined;
+
+            const result = await getRankingAction(period, {
+                polos,
+                processo
+            });
+
             if (result.success && result.data) {
                 setRanking(result.data);
                 if (result.stats) {
@@ -178,8 +169,11 @@ export default function RankingPage() {
                 if ((result as any).redeNome) {
                     setRedeNome((result as any).redeNome);
                 }
+                if (result.distinctValues) {
+                    setDistinctValues(result.distinctValues);
+                }
 
-                // Sync Settings & Use Fresh Config
+                // ... Sync Settings code ...
                 let currentSettings = settings;
                 if (result.config) {
                     currentSettings = {
@@ -189,7 +183,7 @@ export default function RankingPage() {
                     setSettings(currentSettings);
                 }
 
-                // Celebration Logic
+                // ... Celebration Logic code ...
                 const latest = (result as any).latestEnrollment;
                 if (latest && latest.id !== lastSeenEnrollmentIdRef.current) {
                     if (lastSeenEnrollmentIdRef.current !== null) { // Don't celebrate on initial load
@@ -202,7 +196,7 @@ export default function RankingPage() {
                     lastSeenEnrollmentIdRef.current = latest.id;
                 }
 
-                // Manual Message Logic
+                // ... Manual Message Logic code ...
                 const latestMsg = (result as any).latestMessage;
                 if (latestMsg && latestMsg.id !== lastSeenMessageIdRef.current) {
                     if (lastSeenMessageIdRef.current !== null) {
@@ -235,7 +229,7 @@ export default function RankingPage() {
             fetchDataRef.current();
         }, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [period, searchParams]); // Re-run if period or URL params change
 
     // Check Autoplay Permission on Mount
     useEffect(() => {
@@ -465,6 +459,11 @@ export default function RankingPage() {
                 {/* Settings Panel Removed - Now centralized in CRM */}
 
                 {/* Podium Section */}
+
+                {/* Filter Controls */}
+                <div className="w-full max-w-7xl mb-8 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <RankingFilterControls distinctValues={distinctValues} />
+                </div>
 
                 {/* Podium Section */}
                 <div className="flex justify-center items-end gap-6 mb-16 w-full max-w-5xl h-[400px]">

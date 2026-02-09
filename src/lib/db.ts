@@ -646,6 +646,22 @@ export async function deleteRede(id: string): Promise<void> {
     }
 }
 
+export async function getDistinctValuesForRanking(redeId: string): Promise<any> {
+    // Reusing the logic by simulating permissions for the given redeId
+    return getDistinctValues({
+        verDashboard: true,
+        gerenciarMatriculas: true,
+        verRelatoriosFinanceiros: true,
+        gerenciarCadastrosGerais: true,
+        gerenciarUsuarios: true,
+        realizarImportacoes: true,
+        verRanking: true,
+        polos: null, // Allow all polos for the ranking filter options
+        isSuperadmin: false,
+        redeId: redeId
+    });
+}
+
 export async function getDistinctValues(permissions: UserPermissions): Promise<any> {
     const client = await pool.connect();
     try {
@@ -1286,6 +1302,10 @@ export type RankingItem = {
 export async function getEnrollmentRanking(
     redeId: string,
     period: 'today' | 'month' | 'campaign',
+    filters?: {
+        polos?: string[],
+        processoId?: string
+    },
     campaignId?: string
 ): Promise<RankingItem[]> {
     const client = await pool.connect();
@@ -1301,6 +1321,17 @@ export async function getEnrollmentRanking(
         } else if (period === 'campaign' && campaignId) {
             dateFilter = `AND "campanhaId" = $${paramIndex++}`;
             params.push(campaignId);
+        }
+
+        // Apply additional filters
+        if (filters?.polos && filters.polos.length > 0) {
+            dateFilter += ` AND m.polo = ANY($${paramIndex++})`;
+            params.push(filters.polos);
+        }
+
+        if (filters?.processoId && filters.processoId !== 'all') {
+            dateFilter += ` AND m."processoSeletivoId" = $${paramIndex++}`;
+            params.push(filters.processoId);
         }
 
         const query = `
