@@ -58,6 +58,7 @@ interface MultiSelectProps
   asChild?: boolean;
   className?: string;
   disabled?: boolean;
+  popoverContentClassName?: string;
 }
 
 
@@ -74,6 +75,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
       asChild = false,
       className,
       disabled,
+      popoverContentClassName,
       ...props
     },
     ref
@@ -82,7 +84,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
 
     React.useEffect(() => {
-        setSelectedValues(defaultValue);
+      setSelectedValues(defaultValue);
     }, [defaultValue])
 
     const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -176,7 +178,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
             </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className={cn("w-[--radix-popover-trigger-width] p-0", popoverContentClassName)} align="start">
           <Command>
             <CommandInput
               placeholder="Search..."

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Filter, X, Loader2 } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { cn } from '@/lib/utils';
 
 type RankingFilterControlsProps = {
     distinctValues: { polos: string[]; anos: number[]; processos?: any[] };
@@ -88,6 +89,7 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
                             "w-full bg-slate-900/50 border-slate-800 text-slate-200 transition-all",
                             polos.length > 0 && "border-blue-500/50 bg-blue-500/5"
                         )}
+                        popoverContentClassName="z-[75]"
                         disabled={isPending}
                     />
                 </div>
