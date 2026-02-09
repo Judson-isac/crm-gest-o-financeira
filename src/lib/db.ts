@@ -438,7 +438,7 @@ export async function getDistinctProcessos(redeId: string): Promise<ProcessoSele
     const client = await pool.connect();
     try {
         const result = await client.query(
-            'SELECT * FROM processos_seletivos WHERE "redeId" = $1 AND ativo = TRUE ORDER BY numero DESC',
+            'SELECT * FROM processos_seletivos WHERE "redeId" = $1 ORDER BY numero DESC',
             [redeId]
         );
         return result.rows.map(r => ({
