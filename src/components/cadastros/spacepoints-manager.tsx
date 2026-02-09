@@ -93,10 +93,10 @@ function SpacepointsEditor({
     }, [selectedProcesso, toast, allSpacepoints, tiposCurso]);
 
     useEffect(() => {
-        if (initialProcesso) {
+        if (selectedProcesso) {
             handleLoadSpacepoints();
         }
-    }, [initialProcesso, handleLoadSpacepoints]);
+    }, [selectedProcesso, selectedPolo, handleLoadSpacepoints]);
 
 
     const handleAddRow = () => {
@@ -203,7 +203,13 @@ function SpacepointsEditor({
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="polo-select">Polo</Label>
-                            <Select value={selectedPolo} onValueChange={setSelectedPolo} disabled={!!initialProcesso}>
+                            <Select
+                                value={selectedPolo}
+                                onValueChange={(val) => {
+                                    setSelectedPolo(val);
+                                    // The useEffect will handle the load
+                                }}
+                            >
                                 <SelectTrigger id="polo-select">
                                     <SelectValue placeholder="Selecione um polo" />
                                 </SelectTrigger>
@@ -213,10 +219,6 @@ function SpacepointsEditor({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button onClick={handleLoadSpacepoints} disabled={isLoading || !selectedProcesso}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Carregar Spacepoints
-                        </Button>
                     </div>
 
                     {areSpacepointsLoaded && (
