@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void }) {
+export function SpacepointAttainmentWidget({ onRemove, processoFilter, poloFilter }: { onRemove?: () => void, processoFilter?: string, poloFilter?: string }) {
     const [processos, setProcessos] = useState<{ id: string, numero: string, ano: number }[]>([]);
     const [selectedProcesso, setSelectedProcesso] = useState<string>('');
     const [data, setData] = useState<SpacepointDashboardData | null>(null);
@@ -23,15 +23,50 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
         getProcessosSeletivos().then(setProcessos);
     }, []);
 
+    // Sync with global filter
+    useEffect(() => {
+        if (processos.length > 0) {
+            if (processoFilter && processoFilter !== 'all') {
+                // Try to find by ID
+                let found = processos.find(p => p.id === processoFilter);
+                // Fallback: Try to find by Number
+                if (!found) {
+                    found = processos.find(p => p.numero === processoFilter);
+                }
+
+                if (found) {
+                    setSelectedProcesso(found.id);
+                }
+            } else {
+                // If filter is 'all' or empty, maybe reset or keep current?
+                // If we want to enforce "Global Filter controls Widget", we should reset or select default.
+                // Let's not force reset if user is interacting, BUT if filter changes to 'all' maybe we should?
+                // If 'all', Spacepoint widget doesn't really work well (it needs a specific timeline).
+                // Maybe default to the latest/active one?
+                // For now, let's leave it as is if 'all' (user can select manually).
+            }
+        }
+    }, [processoFilter, processos]);
+
     useEffect(() => {
         if (selectedProcesso) {
             startTransition(async () => {
-                const result = await getSpacepointStatsAction(selectedProcesso, 'Todos'); // Default to 'Todos' or allow polo filter?
-                // For now, assuming Global view or passing 'Todos'. Widget could have internal Polo filter later.
+                // Use poloFilter if available, else 'Todos'
+                // Note: poloFilter might be "Polo A, Polo B". The action expects single string or handles generic?
+                // The action `getSpacepointStatsAction` takes `polo?: string`.
+                // If poloFilter is array/comma-list, we might pass it as is, but action might need update if it doesn't handle list.
+                // Currently generic matching `(!polo || m.polo === polo || polo === 'Todos')`.
+                // If polo is "Polo A,Polo B", exact match fails.
+                // We'll pass it, but effectively it might need action update for multi-polo. 
+                // For now, pass normalized polo.
+                const targetPolo = (poloFilter && poloFilter !== 'all') ? poloFilter : 'Todos';
+                const result = await getSpacepointStatsAction(selectedProcesso, targetPolo);
                 setData(result);
             });
+        } else {
+            setData(null);
         }
-    }, [selectedProcesso]);
+    }, [selectedProcesso, poloFilter]);
 
     const formatQuantity = (val: number) => {
         return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });

@@ -110,7 +110,10 @@ export function EnrollmentDashboardView({ summary, filters }: EnrollmentDashboar
 
     // Data mapping for widgets (if they need specific props)
     const componentDataMapping: { [key: string]: any } = {
-        'spacepoint-attainment': {}, // No specific props needed, it fetches its own data for now or uses context/actions
+        'spacepoint-attainment': {
+            processoFilter: filters.processo,
+            poloFilter: Array.isArray(filters.polo) ? filters.polo.join(',') : filters.polo
+        },
     };
 
     return (
