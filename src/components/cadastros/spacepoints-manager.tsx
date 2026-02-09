@@ -273,7 +273,7 @@ function SpacepointsEditor({
 }
 
 
-export function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso }: { processosSeletivos: { id: string, numero: string, ano: number }[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[] }) {
+export default function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso }: { processosSeletivos: { id: string, numero: string, ano: number }[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[] }) {
     const [view, setView] = useState<'list' | 'editor'>('list');
     const [editingProcesso, setEditingProcesso] = useState<string | null>(null);
     const router = useRouter();

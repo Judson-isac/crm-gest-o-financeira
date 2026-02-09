@@ -1,4 +1,5 @@
 import { getProcessosSeletivos, getSpacepoints, getTiposCurso } from '@/lib/api';
+import SpacepointsManager from '@/components/cadastros/spacepoints-manager';
 
 export default async function SpacePointsPage() {
   const processosSeletivos = await getProcessosSeletivos();
