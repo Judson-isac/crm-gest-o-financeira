@@ -1007,6 +1007,22 @@ export const deleteCampanha = async (id: string) => genericDelete('campanhas', i
 export const saveProcessoSeletivo = async (data: Partial<ProcessoSeletivo>) => genericSave<ProcessoSeletivo>('processos_seletivos', data);
 export const deleteProcessoSeletivo = async (id: string) => genericDelete('processos_seletivos', id);
 
+export async function getProcessosSeletivos(redeId?: string): Promise<(ProcessoSeletivo & { rede: string })[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT ps.*, r.nome as rede FROM processos_seletivos ps JOIN redes r ON ps."redeId" = r.id';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE ps."redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
 export const saveNumeroProcessoSeletivo = async (data: Partial<NumeroProcessoSeletivo>) => genericSave<NumeroProcessoSeletivo>('numeros_processo_seletivo', data);
 export const deleteNumeroProcessoSeletivo = async (id: string) => genericDelete('numeros_processo_seletivo', id);
 
