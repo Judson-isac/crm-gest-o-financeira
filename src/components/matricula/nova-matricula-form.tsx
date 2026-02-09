@@ -174,7 +174,6 @@ export function NovaMatriculaForm({
                 cursoSigla: formData.get('curso') as string,
                 campanhaId: formData.get('campanha') as string || undefined,
                 canalId: formData.get('canal') as string || undefined,
-                canalId: formData.get('canal') as string || undefined,
                 primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat((formData.get('r$-1a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
                 segundaMensalidade: parseFloat((formData.get('r$-2a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')),
                 bolsaGestor: formData.get('bolsa-gestor') ? parseFloat((formData.get('bolsa-gestor') as string).replace(',', '.')) : undefined,
