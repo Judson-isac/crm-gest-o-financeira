@@ -17,6 +17,8 @@ fi
 # 1. Puxar código atualizado
 echo "📥 1. Puxando código do Git..."
 git pull
+echo "🔖 Versão atual no servidor:"
+git log -1 --oneline
 
 # 2. Remover stack antiga
 echo "🗑️  2. Removendo stack antiga..."
@@ -28,8 +30,8 @@ echo "🧹 3. Limpando imagem antiga..."
 docker rmi crm-app:latest 2>/dev/null || echo "Imagem já removida"
 
 # 4. Rebuild
-echo "🔨 4. Reconstruindo imagem..."
-docker build \
+echo "🔨 4. Reconstruindo imagem (SEM CACHE)..."
+docker build --no-cache \
   --build-arg DATABASE_URL='postgresql://crm_user:Crm@2024!Forte@pgvector:5432/crm_gestao' \
   -t crm-app:latest .
 
