@@ -1,19 +1,16 @@
-'use client';
+"use client";
 
-// Force dynamic rendering (no static generation during build)
-export const dynamic = 'force-dynamic';
-
-import { RankingFilterControls } from '@/components/ranking/ranking-filters';
-import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
-import { getRankingAction, saveRankingConfigAction } from '@/actions/ranking';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from "@/lib/utils";
+import { RankingFilterControls } from "@/components/ranking/ranking-filters";
+import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { getRankingAction, saveRankingConfigAction } from "@/actions/ranking";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type RankingItem = {
     userId: string;

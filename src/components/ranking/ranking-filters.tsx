@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useState, useTransition, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { cn } from "@/lib/utils";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { Filter, X, Loader2 } from 'lucide-react';
-import { MultiSelect } from '@/components/ui/multi-select';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select";
+import { Filter, X, Loader2 } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 type RankingFilterControlsProps = {
     distinctValues: { polos: string[]; anos: number[]; processos?: any[] };
