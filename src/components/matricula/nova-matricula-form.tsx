@@ -48,14 +48,14 @@ type NovaMatriculaFormProps = {
 };
 
 export function NovaMatriculaForm({
-    courses,
-    polos,
-    cidades,
-    estados,
-    campaigns,
-    selectionProcesses,
-    courseTypes,
-    marketingChannels,
+    courses = [],
+    polos = [],
+    cidades = [],
+    estados = [],
+    campaigns = [],
+    selectionProcesses = [],
+    courseTypes = [],
+    marketingChannels = [],
     initialData,
     isEditing = false,
     users = [],

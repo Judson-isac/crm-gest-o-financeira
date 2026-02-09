@@ -27,9 +27,10 @@ export default async function EditarMatriculaPage({ params }: { params: Promise<
         notFound();
     }
 
-    const activeCampaigns = campaigns.filter(c => c.status === 'Ativo');
-    const activeProcesses = selectionProcesses.filter(p => p.ativo);
-    const activeChannels = marketingChannels.filter(c => c.ativo);
+    const activeCampaigns = campaigns.filter(c => c.status === 'Ativo' || c.id === matricula.campanhaId);
+    // Include the current process even if inactive, so it displays correctly in the dropdown
+    const activeProcesses = selectionProcesses.filter(p => p.ativo || p.id === matricula.processoSeletivoId);
+    const activeChannels = marketingChannels.filter(c => c.ativo || c.id === matricula.id);
 
     return (
         <NovaMatriculaForm
