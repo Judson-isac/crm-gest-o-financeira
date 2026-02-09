@@ -367,35 +367,54 @@ function extractDataFromHtml(htmlString: string, log: (message: string) => void)
 
 
 // Helper to get month/year from a string like "JANEIRO/2024"
+// Helper to get month/year from a string like "JANEIRO/2024", "REPASSE COMPLEMENTAR JULHO/2025", "ABRIL_MAIO/2025"
 function parseReferenceDate(refString: string | undefined): { mes: number; ano: number } {
     if (!refString) {
         // Default to current month/year if no string is provided.
         return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() }
     }
     const monthMap: { [key: string]: number } = {
-        'janeiro': 1, 'fevereiro': 2, 'março': 3, 'marco': 3, 'abril': 4, 'maio': 5, 'junho': 6,
-        'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
+        'janeiro': 1, 'jan': 1,
+        'fevereiro': 2, 'fev': 2,
+        'março': 3, 'marco': 3, 'mar': 3,
+        'abril': 4, 'abr': 4,
+        'maio': 5, 'mai': 5,
+        'junho': 6, 'jun': 6,
+        'julho': 7, 'jul': 7,
+        'agosto': 8, 'ago': 8,
+        'setembro': 9, 'set': 9,
+        'outubro': 10, 'out': 10,
+        'novembro': 11, 'nov': 11,
+        'dezembro': 12, 'dez': 12
     };
 
-    // Clean the string to remove the "REPASSE " prefix before splitting.
-    const cleanedRefString = refString.toLowerCase().replace('repasse', '').trim();
+    // Normalize: lowercase, and replace common separators (_, /, -, .) with spaces
+    const normalized = refString.toLowerCase().replace(/[^a-z0-9]/g, ' ');
+    const parts = normalized.split(/\s+/);
 
-    const parts = cleanedRefString.split(/[\/\s]+/);
-    if (parts.length < 2) {
-        // If split doesn't work, we can't parse it. Fallback to current month.
-        return { mes: new Date().getMonth() + 1, ano: new Date().getFullYear() };
+    let year = new Date().getFullYear();
+    let foundMonths: number[] = [];
+
+    for (const part of parts) {
+        // Check for Year (4 digits, > 2000)
+        if (part.length === 4 && !isNaN(parseInt(part)) && parseInt(part) > 2000) {
+            year = parseInt(part);
+            continue;
+        }
+
+        // Check for Month
+        if (monthMap[part]) {
+            foundMonths.push(monthMap[part]);
+        }
     }
 
-    const monthName = parts[0].trim();
-    const yearString = parts[1].trim();
+    // Logic: 
+    // 1. If "COMPLEMENTAR JULHO", it finds JULHO.
+    // 2. If "ABRIL_MAIO", it finds [ABRIL, MAIO]. We usually attribute the revenue to the closing month (MAIO).
 
-    const parsedMonth = monthMap[monthName];
-    const parsedYear = parseInt(yearString, 10);
+    const month = foundMonths.length > 0 ? foundMonths[foundMonths.length - 1] : (new Date().getMonth() + 1);
 
-    return {
-        mes: parsedMonth || new Date().getMonth() + 1,
-        ano: parsedYear || new Date().getFullYear(),
-    };
+    return { mes: month, ano: year };
 }
 
 export function parseAndTransformHtml(htmlContent: string, fileName: string, log: (message: string) => void): { records: Omit<FinancialRecord, 'id' | 'data_importacao'>[], errors: string[] } {
