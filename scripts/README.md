@@ -7,6 +7,22 @@ Scripts para facilitar deploy e atualização do CRM.
 ### `update-vps.sh` - Atualizar na VPS
 
 Atualiza o CRM na VPS automaticamente (pull, rebuild, deploy).
+...
+
+### `force-update.sh` - Atualização Forçada (Correção de Erros)
+
+Use este script se o `update-vps.sh` falhar com erros de Git ("Already up to date" incorreto ou conflitos).
+
+**Uso:**
+```bash
+./scripts/force-update.sh
+```
+
+**O que faz:**
+1. ✅ Detecta a branch atual (main/master)
+2. ✅ `git reset --hard` - Descarta mudanças locais e força sincronização com GitHub
+3. ✅ Corrige permissões dos scripts (`chmod +x`)
+4. ✅ Executa o `update-vps.sh` automaticamente
 
 **Uso na VPS:**
 ```bash
