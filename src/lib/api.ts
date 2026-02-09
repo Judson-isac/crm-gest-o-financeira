@@ -473,7 +473,13 @@ export async function getEnrollmentSummaryData(filters: Filters): Promise<Enroll
         // We need to fetch the process details.
         // We can use getDistinctValues (cached/fast) or getProcessosSeletivos.
         const processos = await db.getDistinctProcessos(permissions.redeId || '');
-        const selected = processos.find(p => p.id === filters.processo);
+        let selected = processos.find(p => p.id === filters.processo);
+
+        // Fallback: Check if filter matches 'numero' (legacy URL or user input)
+        if (!selected) {
+            selected = processos.find(p => p.numero === filters.processo);
+        }
+
         if (selected) {
             processDateRange = { start: new Date(selected.dataInicial), end: new Date(selected.dataFinal) };
         }
