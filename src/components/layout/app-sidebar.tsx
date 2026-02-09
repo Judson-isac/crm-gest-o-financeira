@@ -156,6 +156,13 @@ export default function AppSidebar({
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
+                      <Link href="/matricula/dashboard" passHref>
+                        <SidebarMenuSubButton isActive={pathname === "/matricula/dashboard"}>
+                          Dashboard
+                        </SidebarMenuSubButton>
+                      </Link>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
                       <Link href="/matricula/nova" passHref>
                         <SidebarMenuSubButton isActive={pathname.startsWith("/matricula/nova")}>
                           Nova Matrícula
