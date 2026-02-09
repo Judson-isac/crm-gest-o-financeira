@@ -21,6 +21,7 @@ type DashboardFilterControlsProps = {
 };
 
 export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, actions }: DashboardFilterControlsProps) {
+  // Re-run deployment
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
