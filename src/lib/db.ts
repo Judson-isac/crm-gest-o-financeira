@@ -434,14 +434,18 @@ export async function getFinancialYears(redeId: string): Promise<number[]> {
     }
 }
 
-export async function getDistinctProcessos(redeId: string): Promise<string[]> {
+export async function getDistinctProcessos(redeId: string): Promise<ProcessoSeletivo[]> {
     const client = await pool.connect();
     try {
         const result = await client.query(
-            'SELECT numero FROM processos_seletivos WHERE "redeId" = $1 AND ativo = TRUE ORDER BY numero DESC',
+            'SELECT * FROM processos_seletivos WHERE "redeId" = $1 AND ativo = TRUE ORDER BY numero DESC',
             [redeId]
         );
-        return result.rows.map(r => r.numero);
+        return result.rows.map(r => ({
+            ...r,
+            dataInicial: new Date(r.dataInicial),
+            dataFinal: new Date(r.dataFinal)
+        }));
     } finally {
         client.release();
     }
@@ -703,7 +707,7 @@ export async function getDistinctValues(permissions: UserPermissions): Promise<a
         const distinctAnos = Array.from(new Set(result.rows.map(row => row.referencia_ano))).sort((a, b) => b - a);
         const distinctCidades = Array.from(new Set(result.rows.map(row => row.polo.split(' - ')[0]))).sort();
 
-        let distinctProcessos: string[] = [];
+        let distinctProcessos: ProcessoSeletivo[] = [];
         if (permissions.redeId) {
             distinctProcessos = await getDistinctProcessos(permissions.redeId);
         }
