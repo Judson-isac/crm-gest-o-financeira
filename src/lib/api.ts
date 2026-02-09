@@ -1,6 +1,6 @@
 
 'use server';
-import type { FinancialRecord, Polo, Categoria, Tipo, Filters, SummaryData, ImportInfo, LucratividadeData, Curso, LucratividadePorMetodologiaData, Despesa, LucratividadePorCursoData, Campanha, Canal, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Usuario, Funcao, Permissoes, UserPermissions } from './types';
+import type { FinancialRecord, Polo, Categoria, Tipo, Filters, SummaryData, ImportInfo, LucratividadeData, Curso, LucratividadePorMetodologiaData, Despesa, LucratividadePorCursoData, Campanha, Canal, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Usuario, Funcao, Permissoes, UserPermissions, Rede } from './types';
 import * as db from './db';
 import { revalidatePath } from 'next/cache';
 import { getAuthenticatedUser as getAuthUser, getAuthenticatedUserPermissions as getAuthPerms } from './auth';
@@ -71,23 +71,7 @@ function getPreviousPeriodFilters(filters: Filters): Filters | null {
 }
 
 
-export async function getDistinctValues(forceAll: boolean = false): Promise<{
-    polos: string[],
-    cidades: string[],
-    estados: string[],
-    categorias: string[],
-    anos: number[],
-    processos: string[]
-}> {
-    const permissions = await getAuthPerms();
 
-    if (forceAll && permissions.isSuperadmin) {
-        // Create a permission object that allows all
-        const allAccessPermissions = { ...permissions, redeId: null, polos: null };
-        return db.getDistinctValues(allAccessPermissions);
-    }
-    return db.getDistinctValues(permissions);
-}
 
 export async function getDespesas(filters: { polo?: string | string[], referencia_ano?: number, referencia_mes?: number }): Promise<Despesa[]> {
     const permissions = await getAuthPerms();
@@ -138,73 +122,69 @@ export async function getCanais(redeId?: string): Promise<(Canal & { rede: strin
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getCanais(redeId);
     if (!sessionRedeId) return [];
-    return db.getCanais(sessionRedeId);
+    return db.getCanais(sessionRedeId || undefined);
 }
 
 export async function getCampanhas(redeId?: string): Promise<(Campanha & { rede: string })[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getCampanhas(redeId);
     if (!sessionRedeId) return [];
-    return db.getCampanhas(sessionRedeId);
+    return db.getCampanhas(sessionRedeId || undefined);
 }
 
 export async function getProcessosSeletivos(redeId?: string): Promise<(ProcessoSeletivo & { rede: string })[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getProcessosSeletivos(redeId);
     if (!sessionRedeId) return [];
-    return db.getProcessosSeletivos(sessionRedeId);
+    return db.getProcessosSeletivos(sessionRedeId || undefined);
 }
 
 export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getFuncoes(redeId);
     if (!sessionRedeId) return [];
-    return db.getFuncoes(sessionRedeId);
+    return db.getFuncoes(sessionRedeId || undefined);
 }
 
 export async function getUsuarios(redeId?: string): Promise<Omit<Usuario, 'senha'>[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getAllUsuarios(redeId, false);
     if (!sessionRedeId) return [];
-    return db.getAllUsuarios(sessionRedeId, true); // Exclude superadmins for regular users
+    return db.getAllUsuarios(sessionRedeId || undefined, true);
 }
 
 export async function getNumerosProcessoSeletivo(redeId?: string): Promise<(NumeroProcessoSeletivo & { rede: string })[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     const targetRedeId = isSuperAdmin ? redeId : sessionRedeId;
-    return db.getAllNumerosProcessoSeletivo(targetRedeId);
+    return db.getAllNumerosProcessoSeletivo(targetRedeId || undefined);
 }
 
 export async function getCursos(): Promise<Curso[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
-    if (isSuperAdmin) return db.getCursos(); // Superadmin allows optional filtering if we wanted, but db.getCursos() without args returns all. 
-    // Actually, superadmin might want to see all? Or filtered? Usually filtering is better. 
-    // But for now let's keep it consistent: Superadmin sees all (or we should add a filter param).
-    // The current signature doesn't accept params. 
-    // If regular user, strict filtering.
+    if (isSuperAdmin) return db.getCursos();
     if (!sessionRedeId) return [];
-    return db.getCursos(sessionRedeId);
+    return db.getCursos(sessionRedeId || undefined);
 }
 
 export async function getMetas(): Promise<Meta[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getMetas();
     if (!sessionRedeId) return [];
-    return db.getMetas(sessionRedeId);
+    return db.getMetas(sessionRedeId || undefined);
 }
 
 export async function getSpacepoints(): Promise<Spacepoint[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getSpacepoints();
     if (!sessionRedeId) return [];
-    return db.getSpacepoints(sessionRedeId);
+    return db.getSpacepoints(sessionRedeId || undefined);
 }
 
 export async function getTiposCurso(): Promise<TipoCurso[]> {
     const { isSuperAdmin, sessionRedeId } = await getRedeContext();
     if (isSuperAdmin) return db.getTiposCurso();
     if (!sessionRedeId) return [];
-    return db.getTiposCurso(sessionRedeId);
+    return db.getTiposCurso(sessionRedeId || undefined);
 }
 
 // ==========================================================================

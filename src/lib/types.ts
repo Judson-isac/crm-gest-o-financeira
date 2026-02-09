@@ -34,6 +34,7 @@ export type Filters = {
   categoria?: string;
   mes?: number;
   ano?: number;
+  processo?: string; // ID of the process
 };
 
 export type ImportInfo = {
@@ -258,6 +259,7 @@ export type Matricula = {
   segundaMensalidade: number;
   bolsaGestor?: number; // Percentual da Bolsa Gestor (0-100)
   anexos?: string[];
+  status?: string; // Added status
   criadoEm?: Date;
   atualizadoEm?: Date;
 };
