@@ -495,7 +495,7 @@ export default function RankingPage() {
                                     )}
                                 </button>
                             </PopoverTrigger>
-                            <PopoverContent align="end" className="w-80 bg-slate-950/95 backdrop-blur-md border-slate-800 p-6 shadow-2xl z-[110]">
+                            <PopoverContent align="end" className="w-80 bg-slate-950/95 backdrop-blur-md border-slate-800 p-6 shadow-2xl z-[60]">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 pb-2 border-b border-slate-800/50">
                                         <Settings2 className="w-4 h-4 text-blue-400" />

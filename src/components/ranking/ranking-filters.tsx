@@ -73,29 +73,41 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
         <div className="flex flex-col gap-5 p-1">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">
-                        Polo
-                    </label>
+                    <div className="flex items-center justify-between px-1">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            Polo
+                        </label>
+                        {polos.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                    </div>
                     <MultiSelect
                         options={poloOptions}
                         onValueChange={setPolos}
                         defaultValue={polos}
                         placeholder="Todos os Polos"
-                        className="w-full bg-slate-900/50 border-slate-800 text-slate-200"
+                        className={cn(
+                            "w-full bg-slate-900/50 border-slate-800 text-slate-200 transition-all",
+                            polos.length > 0 && "border-blue-500/50 bg-blue-500/5"
+                        )}
                         disabled={isPending}
                     />
                 </div>
 
                 {processosSafe.length > 0 && (
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">
-                            Processo Seletivo
-                        </label>
+                        <div className="flex items-center justify-between px-1">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                Processo Seletivo
+                            </label>
+                            {processo !== 'all' && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                        </div>
                         <Select value={processo} onValueChange={setProcesso} disabled={isPending}>
-                            <SelectTrigger className="bg-slate-900/50 border-slate-800 text-slate-200">
+                            <SelectTrigger className={cn(
+                                "bg-slate-900/50 border-slate-800 text-slate-200 transition-all",
+                                processo !== 'all' && "border-blue-500/50 bg-blue-500/5"
+                            )}>
                                 <SelectValue placeholder="Todos os Processos" />
                             </SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 z-[70]">
                                 <SelectItem value="all">Todos os Processos</SelectItem>
                                 {processosSafe.map(p => (
                                     <SelectItem key={p.id || p} value={p.id || p}>
