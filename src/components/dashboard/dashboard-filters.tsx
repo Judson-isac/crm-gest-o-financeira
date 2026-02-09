@@ -76,7 +76,6 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }
             <SelectTrigger><SelectValue placeholder="Todos os Anos" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Anos</SelectItem>
-              <SelectItem value="all">Todos os Anos</SelectItem>
               {anosSafe.map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}
             </SelectContent>
           </Select>

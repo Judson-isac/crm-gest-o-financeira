@@ -11,6 +11,7 @@ import type { Usuario } from "@/lib/types";
 const getTitle = (path: string) => {
   if (path.startsWith("/matricula/nova")) return "Nova Matrícula";
   if (path.startsWith("/matricula/listar")) return "Listar Matrículas";
+  if (path.startsWith("/matricula/dashboard")) return "Dashboard de Matrículas";
   if (path.startsWith("/matricula")) return "Matrículas";
 
   if (path.startsWith("/cadastros")) return "Cadastros Gerais";
