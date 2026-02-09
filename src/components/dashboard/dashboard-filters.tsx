@@ -21,7 +21,44 @@ type DashboardFilterControlsProps = {
 };
 
 export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, actions }: DashboardFilterControlsProps) {
-  // ... hooks ...
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+
+  const [polos, setPolos] = useState<string[]>(searchParams.get('polo')?.split(',') || []);
+  const [ano, setAno] = useState(searchParams.get('ano') || 'all');
+  const [mes, setMes] = useState(searchParams.get('mes') || 'all');
+  const [processo, setProcesso] = useState(searchParams.get('processo') || 'all');
+
+  const handleFilterClick = () => {
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (polos.length > 0) params.set('polo', polos.join(','));
+      if (ano && ano !== 'all') params.set('ano', ano);
+      if (mes && mes !== 'all') params.set('mes', mes);
+      if (processo && processo !== 'all') params.set('processo', processo);
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  };
+
+  const handleClearClick = () => {
+    startTransition(() => {
+      router.push(pathname);
+      setPolos([]);
+      setAno('all');
+      setMes('all');
+      setProcesso('all');
+    });
+  };
+
+  const meses = Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), name: new Date(2000, i).toLocaleString('pt-BR', { month: 'long' }) }));
+
+  const polosSafe = distinctValues?.polos || [];
+  const anosSafe = distinctValues?.anos || [];
+  const processosSafe = distinctValues?.processos || [];
+
+  const poloOptions = polosSafe.map(p => ({ label: p, value: p }));
 
   return (
     <Card>
