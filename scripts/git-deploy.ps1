@@ -17,11 +17,16 @@ Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Adicionar todos os arquivos
 Write-Host "➕ 1. Adicionando arquivos..." -ForegroundColor Green
-git add -A
+git add .
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Erro ao adicionar arquivos." -ForegroundColor Red
+    exit $LASTEXITCODE
+}
 
 # 2. Mostrar status
 Write-Host "`n📊 Status:" -ForegroundColor Yellow
 git status --short
+
 
 # 3. Confirmar commit (se não for auto)
 if (-not $Yes) {
