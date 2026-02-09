@@ -448,35 +448,33 @@ export async function getUserPermissionsById(userId: string, userObject?: Usuari
 
 
 
+
 export async function getFinancialYears(redeId: string): Promise<number[]> {
-    const years = await prisma.financialRecord.findMany({
-        where: { redeId },
-        select: { referencia_ano: true },
-        distinct: ['referencia_ano'],
-        orderBy: { referencia_ano: 'desc' },
-    });
-    return years.map(y => y.referencia_ano);
-}
-
-export async function getProcessosSeletivos(redeId: string): Promise<string[]> {
-    // Fetch from ProcessoSeletivo table or Spacepoint? 
-    // Let's use the 'ProcessoSeletivo' table if it exists and has a name/number.
-    // Based on types.ts: ProcessoSeletivo { numero: string, ... }
-    // We want to return a list of strings (numbers/names) for the filter.
-    const processos = await prisma.processoSeletivo.findMany({
-        where: { redeId, ativo: true }, // Only active? Or all? Usually filters show all history.
-        select: { numero: true },
-        orderBy: { numero: 'desc' },
-    });
-
-    if (processos.length > 0) {
-        return processos.map(p => p.numero);
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT DISTINCT referencia_ano FROM financial_records WHERE "redeId" = $1 ORDER BY referencia_ano DESC',
+            [redeId]
+        );
+        return result.rows.map(r => r.referencia_ano);
+    } finally {
+        client.release();
     }
-
-    // Fallback: If no ProcessoSeletivo records, try distinctive from Matriculas? 
-    // Or Spacepoints? 
-    return [];
 }
+
+export async function getDistinctProcessos(redeId: string): Promise<string[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT numero FROM processos_seletivos WHERE "redeId" = $1 AND ativo = TRUE ORDER BY numero DESC',
+            [redeId]
+        );
+        return result.rows.map(r => r.numero);
+    } finally {
+        client.release();
+    }
+}
+
 
 export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
     const client = await pool.connect();
@@ -791,20 +789,13 @@ export async function getCampanhas(redeId?: string): Promise<(Campanha & { rede:
     }
 }
 
-export async function getProcessosSeletivos(redeId?: string): Promise<(ProcessoSeletivo & { rede: string })[]> {
-    const client = await pool.connect();
-    try {
-        let query = 'SELECT ps.*, r.nome as rede FROM processos_seletivos ps JOIN redes r ON ps."redeId" = r.id';
-        const params: string[] = [];
-        if (redeId) {
-            query += ' WHERE ps."redeId" = $1';
-            params.push(redeId);
+params.push(redeId);
         }
-        const result = await client.query(query, params);
-        return result.rows;
+const result = await client.query(query, params);
+return result.rows;
     } finally {
-        client.release();
-    }
+    client.release();
+}
 }
 
 export async function getTiposCurso(redeId?: string): Promise<TipoCurso[]> {
