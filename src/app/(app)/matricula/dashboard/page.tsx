@@ -1,8 +1,5 @@
 
 import { Suspense } from 'react';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, List } from 'lucide-react';
-import Link from 'next/link';
 import { DashboardFilterControls } from '@/components/dashboard/dashboard-filters';
 import { EnrollmentDashboardView } from '@/components/matricula/enrollment-dashboard-view';
 import { getDistinctValues, getEnrollmentSummaryData } from '@/lib/api';
@@ -41,22 +38,6 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
                 <DashboardFilterControls
                     distinctValues={distinctValues}
                     showProcessoSeletivo={true}
-                    actions={(
-                        <div className="flex gap-2">
-                            <Link href="/matricula/listar">
-                                <Button variant="outline">
-                                    <List className="mr-2 h-4 w-4" />
-                                    Listar Matrículas
-                                </Button>
-                            </Link>
-                            <Link href="/matricula/nova">
-                                <Button>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Nova Matrícula
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
                 />
 
                 {/* Main Dashboard View */}
