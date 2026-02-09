@@ -789,14 +789,7 @@ export async function getCampanhas(redeId?: string): Promise<(Campanha & { rede:
     }
 }
 
-params.push(redeId);
-        }
-const result = await client.query(query, params);
-return result.rows;
-    } finally {
-    client.release();
-}
-}
+
 
 export async function getTiposCurso(redeId?: string): Promise<TipoCurso[]> {
     const client = await pool.connect();
