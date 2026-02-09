@@ -4,7 +4,7 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, RefreshCcw, X } from 'lucide-react';
+import { Loader2, RefreshCcw, X, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSpacepointStatsAction, type SpacepointDashboardData } from '@/actions/dashboard';
 import { getProcessosSeletivos } from '@/lib/api';
@@ -126,8 +126,10 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
 
                                         {data.spaces.map(sp => (
                                             <TableHead key={sp.id} className={cn(
-                                                "text-center font-bold whitespace-nowrap",
-                                                data.currentSpaceIndex + 1 === sp.numeroSpace ? "bg-primary/20 text-primary border-b-2 border-primary" : ""
+                                                "text-center font-bold whitespace-nowrap transition-colors",
+                                                data.currentSpaceIndex + 1 === sp.numeroSpace
+                                                    ? "bg-primary/10 text-primary border-b-4 border-primary"
+                                                    : "text-muted-foreground"
                                             )}>
                                                 {sp.numeroSpace}º SPACE
                                             </TableHead>
@@ -162,24 +164,33 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                                 const isPast = idx < data.currentSpaceIndex;
                                                 const realizedAtSpace = row.spaceRealized?.[idx] || 0; // Use new field
 
-                                                // Current Target: Show Target with Highlight
+                                                // Current Target: Show Target with Highlight (Subtle background + Bottom Border instead of full border)
                                                 if (isCurrentTarget) {
-                                                    const cellClass = row.realized >= target ? "bg-green-500/20 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400";
+                                                    const isHit = row.realized >= target;
                                                     return (
-                                                        <TableCell key={idx} className={cn("text-center font-bold border-2 border-primary", cellClass)}>
-                                                            {formatQuantity(target)}
+                                                        <TableCell key={idx} className={cn(
+                                                            "text-center font-bold border-b-4",
+                                                            isHit ? "border-green-500 bg-green-500/5 text-green-700 dark:text-green-400" : "border-primary bg-primary/5 text-primary"
+                                                        )}>
+                                                            <div className="flex flex-col items-center justify-center py-2">
+                                                                <span className="text-xs uppercase text-muted-foreground mb-1">Meta</span>
+                                                                <span className="text-lg">{formatQuantity(target)}</span>
+                                                            </div>
                                                         </TableCell>
                                                     );
                                                 }
 
-                                                // Past Space: Show Result/Target or %
+                                                // Past Space: Show Result/Target with Icons
                                                 if (isPast) {
                                                     const hit = realizedAtSpace >= target;
                                                     return (
-                                                        <TableCell key={idx} className={cn("text-center text-xs", hit ? "text-green-600 font-semibold" : "text-muted-foreground")}>
-                                                            <div className="flex flex-col items-center justify-center">
-                                                                <span>{formatQuantity(realizedAtSpace)}/{formatQuantity(target)}</span>
-                                                                {/* Optional: Show check or X */}
+                                                        <TableCell key={idx} className="text-center p-2">
+                                                            <div className={cn(
+                                                                "flex flex-col items-center justify-center p-2 rounded-md",
+                                                                hit ? "bg-green-100/50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "bg-red-100/50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                                                            )}>
+                                                                {hit ? <CheckCircle2 className="h-5 w-5 mb-1" /> : <XCircle className="h-5 w-5 mb-1" />}
+                                                                <span className="font-bold text-sm">{formatQuantity(realizedAtSpace)}/{formatQuantity(target)}</span>
                                                             </div>
                                                         </TableCell>
                                                     );
