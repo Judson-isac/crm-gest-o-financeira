@@ -127,7 +127,7 @@ export default async function VerMatriculaPage({ params }: { params: Promise<{ i
 
                     <div className="border-t pt-6">
                         <h3 className="text-lg font-semibold mb-4">Valores de Mensalidade</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-muted-foreground">1ª Mensalidade</Label>
                                 <p className="font-medium">
@@ -141,6 +141,12 @@ export default async function VerMatriculaPage({ params }: { params: Promise<{ i
                                 <Label className="text-muted-foreground">2ª Mensalidade</Label>
                                 <p className="font-medium">
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(matricula.segundaMensalidade)}
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-muted-foreground">Bolsa Gestor</Label>
+                                <p className="font-medium">
+                                    {matricula.bolsaGestor ? `${matricula.bolsaGestor}%` : '—'}
                                 </p>
                             </div>
                         </div>
