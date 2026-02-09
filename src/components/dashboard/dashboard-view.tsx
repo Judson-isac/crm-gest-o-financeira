@@ -27,7 +27,7 @@ import { LucroLiquidoTable } from "./lucro-liquido-table";
 import { LucroLiquidoChart } from "./lucro-liquido-chart";
 import { TopCursosChart } from "./top-cursos-chart";
 import { TopCursosPorPoloTable } from "./top-cursos-por-polo-table";
-import { SpacepointAttainmentWidget } from "./spacepoint-attainment-widget";
+
 import { Button } from "@/components/ui/button";
 import type { Filters } from "@/lib/types";
 import { ColorPaletteSwitcher } from "./color-palette-switcher";
@@ -49,7 +49,6 @@ const WIDGET_CONFIG = {
   'receita-polo-tabela': { title: 'Receita por Polo', component: ReceitaPorPoloTable, defaultLayout: { i: "receita-polo-tabela", x: 0, y: 41, w: 12, h: 9, minW: 6, minH: 6 } },
   'top-5-cursos': { title: 'Top 5 Cursos (Geral)', component: TopCursosChart, defaultLayout: { i: "top-5-cursos", x: 0, y: 50, w: 6, h: 9, minW: 4, minH: 8 } },
   'top-5-cursos-polo': { title: 'Top 5 Cursos por Polo', component: TopCursosPorPoloTable, defaultLayout: { i: "top-5-cursos-polo", x: 6, y: 50, w: 6, h: 9, minW: 4, minH: 8 } },
-  'spacepoints-attainment': { title: 'Atingimento Spacepoints', component: SpacepointAttainmentWidget, defaultLayout: { i: "spacepoints-attainment", x: 0, y: 59, w: 12, h: 8, minW: 6, minH: 6 } },
 };
 
 const defaultWidgetKeys = Object.keys(WIDGET_CONFIG);
@@ -144,7 +143,6 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
     'receita-polo-tabela': { data: data.receitaPorPolo.data, footer: data.receitaPorPolo.footer, columns: data.receitaPorPolo.columns },
     'top-5-cursos': { data: data.topCursos },
     'top-5-cursos-polo': { data: data.topCursosPorPolo },
-    'spacepoints-attainment': {},
   };
 
   return (

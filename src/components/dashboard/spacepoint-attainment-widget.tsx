@@ -4,8 +4,9 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, RefreshCcw, X, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, RefreshCcw, X, CheckCircle2, XCircle, CalendarClock, Target, ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { getSpacepointStatsAction, type SpacepointDashboardData } from '@/actions/dashboard';
 import { getProcessosSeletivos } from '@/lib/api';
 import { format } from 'date-fns';
@@ -92,46 +93,74 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                 ) : (
                     <div className="p-2 space-y-4">
                         {/* Header Info */}
-                        <div className="grid grid-cols-4 gap-2 text-xs font-semibold bg-muted/50 p-2 rounded-md text-center">
-                            <div className="flex flex-col">
-                                <span className="text-muted-foreground">HOJE</span>
-                                <span>{format(new Date(), 'dd/MM/yyyy')}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-muted-foreground">{data.currentSpaceIndex >= 0 ? `${data.currentSpaceIndex + 1}º SPACE` : 'PRÓXIMO SPACE'}</span>
-                                <span>{data.nextSpaceDate ? format(new Date(data.nextSpaceDate), 'dd/MM/yyyy') : '-'}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-muted-foreground">DIAS FALTANTES</span>
-                                <span className={cn(data.daysRemaining && data.daysRemaining < 3 ? "text-red-500" : "")}>{data.daysRemaining ?? '-'}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-muted-foreground">META DIA</span>
-                                <span className={cn(data.dailyTarget > 0 ? "text-red-500" : "text-green-500")}>
-                                    {data.dailyTarget > 0 ? `${formatDecimal(data.dailyTarget)}` : 'OK'}
-                                </span>
-                            </div>
+                        {/* Header Info - Cards */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <Card className="bg-muted/30 border-none shadow-sm">
+                                <CardContent className="p-4 flex flex-col items-center justify-center">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Hoje</span>
+                                    <div className="flex items-center gap-2">
+                                        <CalendarClock className="h-4 w-4 text-primary" />
+                                        <span className="text-lg font-bold text-primary">{format(new Date(), 'dd/MM/yyyy')}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-muted/30 border-none shadow-sm">
+                                <CardContent className="p-4 flex flex-col items-center justify-center">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                                        {data.currentSpaceIndex >= 0 ? `${data.currentSpaceIndex + 1}º Space` : 'Próximo Space'}
+                                    </span>
+                                    <span className="text-lg font-bold">{data.nextSpaceDate ? format(new Date(data.nextSpaceDate), 'dd/MM/yyyy') : '-'}</span>
+                                </CardContent>
+                            </Card>
+                            <Card className={cn("border-none shadow-sm", data.daysRemaining && data.daysRemaining < 3 ? "bg-red-50 dark:bg-red-900/10 border-red-200" : "bg-muted/30")}>
+                                <CardContent className="p-4 flex flex-col items-center justify-center">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Dias Faltantes</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn("text-2xl font-black", data.daysRemaining && data.daysRemaining < 3 ? "text-red-600" : "text-primary")}>
+                                            {data.daysRemaining ?? '-'}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className={cn("border-none shadow-sm", data.dailyTarget > 0 ? "bg-amber-50 dark:bg-amber-900/10 border-amber-200" : "bg-green-50 dark:bg-green-900/10 border-green-200")}>
+                                <CardContent className="p-4 flex flex-col items-center justify-center">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Meta Diária</span>
+                                    <div className="flex items-center gap-2">
+                                        <Target className={cn("h-5 w-5", data.dailyTarget > 0 ? "text-amber-600" : "text-green-600")} />
+                                        <span className={cn("text-2xl font-black", data.dailyTarget > 0 ? "text-amber-600" : "text-green-600")}>
+                                            {data.dailyTarget > 0 ? `${formatDecimal(data.dailyTarget)}` : 'OK'}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
                         {/* Main Table */}
                         <div className="border rounded-md overflow-x-auto">
                             <Table className="text-xs">
                                 <TableHeader>
-                                    <TableRow className="bg-primary/5 hover:bg-primary/5">
-                                        <TableHead className="w-[50px] font-bold text-primary">SPACE</TableHead>
-                                        <TableHead className="w-[100px] font-bold text-primary">PRODUTOS</TableHead>
-                                        <TableHead className="text-center font-bold text-primary bg-blue-100/50 dark:bg-blue-900/20">REALIZADO</TableHead>
-                                        <TableHead className="text-center font-bold text-primary bg-blue-100/50 dark:bg-blue-900/20">SAVE/GAP</TableHead>
-                                        <TableHead className="text-center font-bold text-primary bg-blue-100/50 dark:bg-blue-900/20">%</TableHead>
+                                    {/* Super Headers */}
+                                    <TableRow className="bg-muted/50 border-none hover:bg-muted/50">
+                                        <TableHead colSpan={2} className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground border-r">Produto</TableHead>
+                                        <TableHead colSpan={3} className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground border-r bg-blue-50/30 dark:bg-blue-900/10">Desempenho Geral</TableHead>
+                                        <TableHead colSpan={data.spaces.length} className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground">Timeline Spaces</TableHead>
+                                    </TableRow>
+                                    <TableRow className="bg-background hover:bg-background">
+                                        <TableHead className="w-[50px] font-bold text-primary text-center">#</TableHead>
+                                        <TableHead className="w-[120px] font-bold text-primary border-r">Categoria</TableHead>
+
+                                        <TableHead className="text-center font-bold text-primary bg-blue-50/50 dark:bg-blue-900/20 w-[100px]">Realizado</TableHead>
+                                        <TableHead className="text-center font-bold text-primary bg-blue-50/50 dark:bg-blue-900/20 w-[100px]">Gap</TableHead>
+                                        <TableHead className="text-center font-bold text-primary bg-blue-50/50 dark:bg-blue-900/20 w-[150px] border-r">Progresso</TableHead>
 
                                         {data.spaces.map(sp => (
                                             <TableHead key={sp.id} className={cn(
-                                                "text-center font-bold whitespace-nowrap transition-colors",
+                                                "text-center font-bold whitespace-nowrap transition-colors px-2",
                                                 data.currentSpaceIndex + 1 === sp.numeroSpace
-                                                    ? "text-primary text-base"
-                                                    : "text-muted-foreground"
+                                                    ? "text-primary text-sm"
+                                                    : "text-muted-foreground text-xs"
                                             )}>
-                                                {sp.numeroSpace}º SPACE
+                                                {sp.numeroSpace}º Space
                                             </TableHead>
                                         ))}
                                     </TableRow>
@@ -142,24 +171,33 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                             "hover:bg-muted/50 transition-colors",
                                             row.product === 'TOTAL' ? "bg-primary/10 font-bold border-t-2 border-primary/20" : "even:bg-muted/30"
                                         )}>
-                                            <TableCell className="text-center font-medium">
-                                                {data.currentSpaceIndex + 1}º
+                                            <TableCell className="text-center font-medium opacity-50 text-xs">
+                                                {data.currentSpaceIndex + 1}
                                             </TableCell>
-                                            <TableCell className="font-medium">{row.product}</TableCell>
-                                            <TableCell className="text-center bg-blue-50/50 dark:bg-blue-950/10 text-foreground font-semibold">
+                                            <TableCell className="font-semibold text-sm border-r">{row.product}</TableCell>
+                                            <TableCell className="text-center bg-blue-50/30 dark:bg-blue-950/20 text-foreground font-bold text-base">
                                                 {formatQuantity(row.realized)}
                                             </TableCell>
-                                            <TableCell className={cn("text-center bg-blue-50/50 dark:bg-blue-950/10 font-bold", row.gap < 0 ? "text-red-500" : "text-green-600")}>
-                                                {formatQuantity(row.gap)}
+                                            <TableCell className={cn("text-center bg-blue-50/30 dark:bg-blue-950/20 font-bold text-sm", row.gap < 0 ? "text-red-500" : "text-green-600")}>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    {row.gap < 0 ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                                                    {formatQuantity(row.gap)}
+                                                </div>
                                             </TableCell>
-                                            <TableCell className="relative text-center font-bold">
-                                                <div className={cn(
-                                                    "absolute inset-0 opacity-20",
-                                                    row.percentage >= 100 ? "bg-green-500" : "bg-red-500"
-                                                )} style={{ width: `${Math.min(row.percentage, 100)}%` }} />
-                                                <span className={cn("relative z-10", row.percentage < 100 ? "text-red-500" : "text-green-600")}>
-                                                    {formatPercent(row.percentage)}
-                                                </span>
+                                            <TableCell className="text-center bg-blue-50/30 dark:bg-blue-950/20 border-r px-4 py-2">
+                                                <div className="flex flex-col justify-center h-full gap-1">
+                                                    <div className="flex justify-between items-end w-full text-xs mb-0.5">
+                                                        <span className="font-bold text-muted-foreground">{formatPercent(row.percentage)}</span>
+                                                    </div>
+                                                    <Progress
+                                                        value={Math.min(row.percentage, 100)}
+                                                        className="h-2 w-full bg-slate-200 dark:bg-slate-800"
+                                                        indicatorClassName={cn(
+                                                            row.percentage >= 100 ? "bg-green-500" :
+                                                                row.percentage >= 80 ? "bg-amber-500" : "bg-red-500"
+                                                        )}
+                                                    />
+                                                </div>
                                             </TableCell>
 
                                             {row.spaceTargets.map((target, idx) => {
@@ -203,10 +241,13 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                                     );
                                                 }
 
-                                                // Future: Show Target (Plain)
+                                                // Future: Show Target (Plain Card)
                                                 return (
-                                                    <TableCell key={idx} className="text-center text-muted-foreground">
-                                                        {formatQuantity(target)}
+                                                    <TableCell key={idx} className="text-center p-2 opaciy-50">
+                                                        <div className="rounded border border-dashed border-muted-foreground/30 p-2 flex flex-col items-center justify-center bg-muted/10">
+                                                            <span className="text-[10px] text-muted-foreground uppercase">Meta</span>
+                                                            <span className="text-sm font-semibold text-muted-foreground">{formatQuantity(target)}</span>
+                                                        </div>
                                                     </TableCell>
                                                 )
                                             })}
