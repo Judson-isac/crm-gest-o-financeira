@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+export const dynamic = "force-dynamic";
+
 type RankingItem = {
     userId: string;
     nome: string;
