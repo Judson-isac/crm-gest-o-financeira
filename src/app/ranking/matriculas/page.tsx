@@ -464,239 +464,248 @@ export default function RankingPage() {
                         >
                             Hoje
                         </button>
-                        Este Mês
-                    </button>
+                        <button
+                            onClick={() => setPeriod('month')}
+                            className={cn(
+                                "px-6 py-2 rounded-full font-medium transition-all",
+                                period === 'month'
+                                    ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                                    : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                            )}
+                        >
+                            Este Mês
+                        </button>
 
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <button
-                                className={cn(
-                                    "relative flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all ml-2 border outline-none",
-                                    activeFiltersCount > 0
-                                        ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20"
-                                        : "bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700"
-                                )}
-                            >
-                                <SlidersHorizontal className="w-4 h-4" />
-                                <span>Filtros</span>
-                                {activeFiltersCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
-                                        {activeFiltersCount}
-                                    </span>
-                                )}
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-80 bg-slate-950/95 backdrop-blur-md border-slate-800 p-6 shadow-2xl z-[110]">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 pb-2 border-b border-slate-800/50">
-                                    <Settings2 className="w-4 h-4 text-blue-400" />
-                                    <h3 className="font-bold text-sm uppercase tracking-widest text-slate-200">Configurar Filtros</h3>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "relative flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all ml-2 border outline-none",
+                                        activeFiltersCount > 0
+                                            ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20"
+                                            : "bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700"
+                                    )}
+                                >
+                                    <SlidersHorizontal className="w-4 h-4" />
+                                    <span>Filtros</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-80 bg-slate-950/95 backdrop-blur-md border-slate-800 p-6 shadow-2xl z-[110]">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 pb-2 border-b border-slate-800/50">
+                                        <Settings2 className="w-4 h-4 text-blue-400" />
+                                        <h3 className="font-bold text-sm uppercase tracking-widest text-slate-200">Configurar Filtros</h3>
+                                    </div>
+                                    <RankingFilterControls distinctValues={distinctValues} />
                                 </div>
-                                <RankingFilterControls distinctValues={distinctValues} />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+
+                {/* Podium Section */}
+                <div className="flex justify-center items-end gap-6 mb-16 w-full max-w-5xl h-[400px]">
+                    <AnimatePresence mode='popLayout'>
+                        {/* 2nd Place */}
+                        {topThree.find(r => r.position === 2) && (
+                            <PodiumItem key="2nd" item={topThree.find(r => r.position === 2)!} color="silver" height="h-[280px]" />
+                        )}
+
+                        {/* 1st Place */}
+                        {topThree.find(r => r.position === 1) && (
+                            <PodiumItem key="1st" item={topThree.find(r => r.position === 1)!} color="gold" height="h-[340px]" isFirst />
+                        )}
+
+                        {/* 3rd Place */}
+                        {topThree.find(r => r.position === 3) && (
+                            <PodiumItem key="3rd" item={topThree.find(r => r.position === 3)!} color="bronze" height="h-[240px]" />
+                        )}
+                    </AnimatePresence>
+
+                    {topThree.length === 0 && !isLoading && (
+                        <div className="text-slate-500 text-xl">Nenhuma matrícula registrada ainda.</div>
+                    )}
+                </div>
+
+                {/* List Section */}
+                <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+                    {others.map((item) => (
+                        <motion.div
+                            key={item.userId}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+                        >
+                            <div className="flex items-center gap-4">
+                                <span className="text-xl font-bold text-slate-500 w-8">#{item.position}</span>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10 border border-slate-700">
+                                        <AvatarFallback className="bg-slate-800 text-slate-300">
+                                            {item.nome.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-semibold text-lg">{item.nome}</span>
+                                </div>
                             </div>
-                        </PopoverContent>
-                    </Popover>
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl font-bold text-white">{item.count}</span>
+                                <span className="text-sm text-slate-500 uppercase tracking-wider">Vendas</span>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
 
-            {/* Podium Section */}
-            <div className="flex justify-center items-end gap-6 mb-16 w-full max-w-5xl h-[400px]">
-                <AnimatePresence mode='popLayout'>
-                    {/* 2nd Place */}
-                    {topThree.find(r => r.position === 2) && (
-                        <PodiumItem key="2nd" item={topThree.find(r => r.position === 2)!} color="silver" height="h-[280px]" />
-                    )}
-
-                    {/* 1st Place */}
-                    {topThree.find(r => r.position === 1) && (
-                        <PodiumItem key="1st" item={topThree.find(r => r.position === 1)!} color="gold" height="h-[340px]" isFirst />
-                    )}
-
-                    {/* 3rd Place */}
-                    {topThree.find(r => r.position === 3) && (
-                        <PodiumItem key="3rd" item={topThree.find(r => r.position === 3)!} color="bronze" height="h-[240px]" />
-                    )}
-                </AnimatePresence>
-
-                {topThree.length === 0 && !isLoading && (
-                    <div className="text-slate-500 text-xl">Nenhuma matrícula registrada ainda.</div>
-                )}
-            </div>
-
-            {/* List Section */}
-            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
-                {others.map((item) => (
+            {/* Premium Sidebar Stats Panel */}
+            {/* Red Alert Overlay */}
+            <AnimatePresence>
+                {isRedAlert && (
                     <motion.div
-                        key={item.userId}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-red-600 flex items-center justify-center overflow-hidden pointer-events-none"
                     >
-                        <div className="flex items-center gap-4">
-                            <span className="text-xl font-bold text-slate-500 w-8">#{item.position}</span>
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border border-slate-700">
-                                    <AvatarFallback className="bg-slate-800 text-slate-300">
-                                        {item.nome.substring(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <span className="font-semibold text-lg">{item.nome}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-white">{item.count}</span>
-                            <span className="text-sm text-slate-500 uppercase tracking-wider">Vendas</span>
+                        <motion.div
+                            animate={{ opacity: [1, 0.5, 1] }}
+                            transition={{ repeat: Infinity, duration: 0.5 }}
+                            className="absolute inset-0 bg-red-900"
+                        />
+                        <div className="relative z-10 text-center px-8">
+                            <motion.h1
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ repeat: Infinity, duration: 0.8 }}
+                                className="text-[80px] md:text-[120px] font-black text-white uppercase tracking-tighter leading-none drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] break-words w-full"
+                            >
+                                {currentMessage ? (
+                                    <>
+                                        {currentMessage.split(' ').map((word, i) => (
+                                            <span key={i} className="block">{word}</span>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <>NOVA<br />MATRÍCULA</>
+                                )}
+                            </motion.h1>
+                            {!currentMessage && (
+                                <div className="text-4xl font-bold text-red-200 mt-8 animate-bounce uppercase tracking-[1em]">
+                                    Atenção Total
+                                </div>
+                            )}
                         </div>
                     </motion.div>
-                ))}
-            </div>
-        </div>
+                )}
+            </AnimatePresence>
 
-            {/* Premium Sidebar Stats Panel */ }
-    {/* Red Alert Overlay */ }
-    <AnimatePresence>
-        {isRedAlert && (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-red-600 flex items-center justify-center overflow-hidden pointer-events-none"
-            >
-                <motion.div
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ repeat: Infinity, duration: 0.5 }}
-                    className="absolute inset-0 bg-red-900"
-                />
-                <div className="relative z-10 text-center px-8">
-                    <motion.h1
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ repeat: Infinity, duration: 0.8 }}
-                        className="text-[80px] md:text-[120px] font-black text-white uppercase tracking-tighter leading-none drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)] break-words w-full"
-                    >
-                        {currentMessage ? (
-                            <>
-                                {currentMessage.split(' ').map((word, i) => (
-                                    <span key={i} className="block">{word}</span>
-                                ))}
-                            </>
-                        ) : (
-                            <>NOVA<br />MATRÍCULA</>
-                        )}
-                    </motion.h1>
-                    {!currentMessage && (
-                        <div className="text-4xl font-bold text-red-200 mt-8 animate-bounce uppercase tracking-[1em]">
-                            Atenção Total
+            {
+                stats && (
+                    <div className="w-[420px] bg-slate-900 border-l border-white/10 p-8 flex flex-col gap-8 shadow-2xl z-20 overflow-hidden relative">
+                        {/* Background Gradient Effect */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 blur-[100px] pointer-events-none" />
+
+                        {/* Header */}
+                        <div className="relative">
+                            <h2 className="text-3xl font-black bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent uppercase tracking-tight leading-none mb-2 break-words">
+                                {redeNome || 'Minha Rede'}
+                            </h2>
+                            <div className="flex items-center gap-2 text-slate-400 font-medium text-sm pl-0.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                            </div>
                         </div>
-                    )}
-                </div>
-            </motion.div>
-        )}
-    </AnimatePresence>
 
-    {
-        stats && (
-            <div className="w-[420px] bg-slate-900 border-l border-white/10 p-8 flex flex-col gap-8 shadow-2xl z-20 overflow-hidden relative">
-                {/* Background Gradient Effect */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 blur-[100px] pointer-events-none" />
-
-                {/* Header */}
-                <div className="relative">
-                    <h2 className="text-3xl font-black bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent uppercase tracking-tight leading-none mb-2 break-words">
-                        {redeNome || 'Minha Rede'}
-                    </h2>
-                    <div className="flex items-center gap-2 text-slate-400 font-medium text-sm pl-0.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-                    </div>
-                </div>
-
-                {/* Summary by Type */}
-                <div className="space-y-3 relative">
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Resumo por Categoria</div>
-                    <div className="grid grid-cols-1 gap-2">
-                        {/* Ensure we map over ALL types returned by DB, including 0 counts */}
-                        {stats.byType?.map((t, i) => (
-                            <div key={i} className="group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className={cn(
-                                        "w-1 h-8 rounded-full",
-                                        t.count > 0 ? "bg-blue-500" : "bg-slate-700"
-                                    )} />
-                                    <span className={cn(
-                                        "font-semibold text-sm uppercase tracking-wide",
-                                        t.count > 0 ? "text-slate-200" : "text-slate-600"
-                                    )}>
-                                        {t.name}
-                                    </span>
-                                </div>
-                                <span className={cn(
-                                    "text-xl font-bold tabular-nums",
-                                    t.count > 0 ? "text-white" : "text-slate-700"
-                                )}>
-                                    {String(t.count).padStart(2, '0')}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Total Card */}
-                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl shadow-blue-900/20 flex items-center justify-between">
-                        <span className="font-bold text-sm uppercase tracking-widest opacity-80">Total Geral</span>
-                        <span className="text-4xl font-black">{String(stats.total).padStart(2, '0')}</span>
-                    </div>
-                </div>
-
-                <div className="h-px bg-white/10 w-full" />
-
-                {/* Detailed List */}
-                <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1 sticky top-0 bg-slate-900 pb-2 z-10">
-                        Detalhamento por Polo
-                    </div>
-
-                    {stats.byPolo?.map((polo, i) => (
-                        <div key={i} className="group">
-                            <div className="flex items-center justify-between mb-3 pl-1 border-l-2 border-amber-500/50 pl-3">
-                                <h3 className="text-amber-400 font-bold uppercase text-sm tracking-widest truncate max-w-[240px]">
-                                    {polo.polo.split(' - ')[0]}
-                                </h3>
-                                <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full">
-                                    {String(polo.total).padStart(2, '0')}
-                                </span>
-                            </div>
-
-                            <div className="space-y-1 pl-4">
-                                {polo.users.map((u, j) => (
-                                    <div key={j} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                        {/* Summary by Type */}
+                        <div className="space-y-3 relative">
+                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Resumo por Categoria</div>
+                            <div className="grid grid-cols-1 gap-2">
+                                {/* Ensure we map over ALL types returned by DB, including 0 counts */}
+                                {stats.byType?.map((t, i) => (
+                                    <div key={i} className="group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 border border-slate-700">
-                                                {String(u.count).padStart(2, '0')}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-slate-200 text-sm font-medium leading-none">
-                                                    {u.nome.split(' ')[0]}
-                                                </span>
-                                                <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-                                                    {Array.isArray(u.types) ? u.types.join(' • ') : u.types}
-                                                </span>
-                                            </div>
+                                            <div className={cn(
+                                                "w-1 h-8 rounded-full",
+                                                t.count > 0 ? "bg-blue-500" : "bg-slate-700"
+                                            )} />
+                                            <span className={cn(
+                                                "font-semibold text-sm uppercase tracking-wide",
+                                                t.count > 0 ? "text-slate-200" : "text-slate-600"
+                                            )}>
+                                                {t.name}
+                                            </span>
                                         </div>
+                                        <span className={cn(
+                                            "text-xl font-bold tabular-nums",
+                                            t.count > 0 ? "text-white" : "text-slate-700"
+                                        )}>
+                                            {String(t.count).padStart(2, '0')}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Total Card */}
+                            <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl shadow-blue-900/20 flex items-center justify-between">
+                                <span className="font-bold text-sm uppercase tracking-widest opacity-80">Total Geral</span>
+                                <span className="text-4xl font-black">{String(stats.total).padStart(2, '0')}</span>
+                            </div>
                         </div>
-                    ))}
-                    {stats.byPolo?.length === 0 && (
-                        <div className="text-center py-10 text-slate-600">
-                            <span className="block text-4xl mb-2 opacity-20">📭</span>
-                            <span className="text-sm italic">Nenhum lançamento hoje.</span>
+
+                        <div className="h-px bg-white/10 w-full" />
+
+                        {/* Detailed List */}
+                        <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
+                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1 sticky top-0 bg-slate-900 pb-2 z-10">
+                                Detalhamento por Polo
+                            </div>
+
+                            {stats.byPolo?.map((polo, i) => (
+                                <div key={i} className="group">
+                                    <div className="flex items-center justify-between mb-3 pl-1 border-l-2 border-amber-500/50 pl-3">
+                                        <h3 className="text-amber-400 font-bold uppercase text-sm tracking-widest truncate max-w-[240px]">
+                                            {polo.polo.split(' - ')[0]}
+                                        </h3>
+                                        <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full">
+                                            {String(polo.total).padStart(2, '0')}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1 pl-4">
+                                        {polo.users.map((u, j) => (
+                                            <div key={j} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 border border-slate-700">
+                                                        {String(u.count).padStart(2, '0')}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-slate-200 text-sm font-medium leading-none">
+                                                            {u.nome.split(' ')[0]}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                            {Array.isArray(u.types) ? u.types.join(' • ') : u.types}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            {stats.byPolo?.length === 0 && (
+                                <div className="text-center py-10 text-slate-600">
+                                    <span className="block text-4xl mb-2 opacity-20">📭</span>
+                                    <span className="text-sm italic">Nenhum lançamento hoje.</span>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
-            </div>
-        )
-    }
+                    </div>
+                )
+            }
         </div >
     );
 }
