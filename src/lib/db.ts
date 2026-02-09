@@ -698,12 +698,22 @@ export async function getDistinctValues(permissions: UserPermissions): Promise<a
             parsedPolos.push({ original: r.polo, cidade, estado, unidade });
         });
 
+        const distinctPolos = Array.from(new Set(result.rows.map(row => row.polo))).sort();
+        const distinctCategorias = Array.from(new Set(result.rows.map(row => row.categoria))).sort();
+        const distinctAnos = Array.from(new Set(result.rows.map(row => row.referencia_ano))).sort((a, b) => b - a);
+        const distinctCidades = Array.from(new Set(result.rows.map(row => row.polo.split(' - ')[0]))).sort();
+
+        let distinctProcessos: string[] = [];
+        if (permissions.redeId) {
+            distinctProcessos = await getDistinctProcessos(permissions.redeId);
+        }
+
         return {
-            polos: Array.from(poloSet).sort(),
-            categorias: Array.from(categoriaSet).sort(),
-            anos: Array.from(anoSet).sort((a, b) => b - a),
-            cidades: Array.from(cidadeSet).sort(),
-            estados: Array.from(estadoSet).sort(),
+            polos: distinctPolos,
+            categorias: distinctCategorias,
+            anos: distinctAnos,
+            cidades: distinctCidades,
+            processos: distinctProcessos,
             parsedPolos,
         };
     } finally {
