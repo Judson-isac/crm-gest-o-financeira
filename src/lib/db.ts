@@ -1262,7 +1262,12 @@ export const getMatriculas = async (redeId: string): Promise<Matricula[]> => {
              ORDER BY m."dataMatricula" DESC`,
             [redeId]
         );
-        return result.rows;
+        return result.rows.map(row => ({
+            ...row,
+            primeiraMensalidade: row.primeiraMensalidade ? parseFloat(row.primeiraMensalidade) : 0,
+            segundaMensalidade: row.segundaMensalidade ? parseFloat(row.segundaMensalidade) : 0,
+            bolsaGestor: row.bolsaGestor ? parseFloat(row.bolsaGestor) : 0
+        }));
     } finally {
         client.release();
     }

@@ -53,7 +53,11 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }
 
   const meses = Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), name: new Date(2000, i).toLocaleString('pt-BR', { month: 'long' }) }));
 
-  const poloOptions = distinctValues.polos.map(p => ({ label: p, value: p }));
+  const polosSafe = distinctValues?.polos || [];
+  const anosSafe = distinctValues?.anos || [];
+  const processosSafe = distinctValues?.processos || [];
+
+  const poloOptions = polosSafe.map(p => ({ label: p, value: p }));
 
   return (
     <Card>
@@ -72,7 +76,8 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }
             <SelectTrigger><SelectValue placeholder="Todos os Anos" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Anos</SelectItem>
-              {distinctValues.anos.map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}
+              <SelectItem value="all">Todos os Anos</SelectItem>
+              {anosSafe.map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -84,12 +89,12 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }
             </SelectContent>
           </Select>
 
-          {showProcessoSeletivo && distinctValues.processos && (
+          {showProcessoSeletivo && processosSafe.length > 0 && (
             <Select value={processo} onValueChange={setProcesso} disabled={isPending}>
               <SelectTrigger><SelectValue placeholder="Todos os Processos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Processos</SelectItem>
-                {distinctValues.processos.map(p => (
+                {processosSafe.map(p => (
                   <SelectItem key={p.id || p} value={p.id || p}>
                     {p.nome ? p.nome : (p.numero && p.ano ? `${p.numero}/${p.ano}` : (p.numero || p))}
                   </SelectItem>
