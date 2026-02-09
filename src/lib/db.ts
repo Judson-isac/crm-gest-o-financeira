@@ -414,34 +414,6 @@ export async function getUserPermissionsById(userId: string, userObject?: Usuari
         return { ...finalPermissions, polos: finalPolos, isSuperadmin: false, redeId: user.redeId };
     } finally {
         client.release();
-        if (permissions.polos) {
-            // Assuming permissions.polos is an array of strings
-            if (permissions.polos.length > 0) {
-                whereConditions.push(`polo = ANY($${values.length + 1}::text[])`);
-                values.push(permissions.polos);
-            } else {
-                // If polos array is empty, it means no polos are allowed, so return empty results
-                return { polos: [], categorias: [], anos: [] };
-            }
-        }
-
-        if (whereConditions.length > 0) {
-            query += ' WHERE ' + whereConditions.join(' AND ');
-        }
-
-        const result = await client.query(query, values);
-
-        const distinctPolos = Array.from(new Set(result.rows.map(row => row.polo))).sort();
-        const distinctCategorias = Array.from(new Set(result.rows.map(row => row.categoria))).sort();
-        const distinctAnos = Array.from(new Set(result.rows.map(row => row.referencia_ano))).sort((a, b) => b - a);
-
-        return {
-            polos: distinctPolos,
-            categorias: distinctCategorias,
-            anos: distinctAnos
-        };
-    } finally {
-        client.release();
     }
 }
 
