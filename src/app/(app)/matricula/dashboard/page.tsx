@@ -8,6 +8,7 @@ import { EnrollmentDashboardView } from '@/components/matricula/enrollment-dashb
 import { getDistinctValues, getEnrollmentSummaryData } from '@/lib/api';
 import type { Filters } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardProvider } from "@/contexts/DashboardContext";
 
 export default async function MatriculaDashboardPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
 
@@ -32,33 +33,35 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
     ]);
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 className="text-3xl font-bold tracking-tight">Dashboard de Matrículas</h1>
-                <div className="flex gap-2">
-                    <Link href="/matricula/listar">
-                        <Button variant="outline">
-                            <List className="mr-2 h-4 w-4" />
-                            Listar Matrículas
-                        </Button>
-                    </Link>
-                    <Link href="/matricula/nova">
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nova Matrícula
-                        </Button>
-                    </Link>
+        <DashboardProvider>
+            <div className="p-6 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight">Dashboard de Matrículas</h1>
+                    <div className="flex gap-2">
+                        <Link href="/matricula/listar">
+                            <Button variant="outline">
+                                <List className="mr-2 h-4 w-4" />
+                                Listar Matrículas
+                            </Button>
+                        </Link>
+                        <Link href="/matricula/nova">
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Nova Matrícula
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
+
+                {/* Filters */}
+                <DashboardFilterControls distinctValues={distinctValues} />
+
+                {/* Main Dashboard View */}
+                <Suspense fallback={<DashboardSkeleton />}>
+                    <EnrollmentDashboardView summary={summaryData} filters={filters} />
+                </Suspense>
             </div>
-
-            {/* Filters */}
-            <DashboardFilterControls distinctValues={distinctValues} />
-
-            {/* Main Dashboard View */}
-            <Suspense fallback={<DashboardSkeleton />}>
-                <EnrollmentDashboardView summary={summaryData} filters={filters} />
-            </Suspense>
-        </div>
+        </DashboardProvider>
     );
 }
 
