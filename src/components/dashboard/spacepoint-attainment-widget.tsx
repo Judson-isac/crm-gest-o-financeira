@@ -108,7 +108,7 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                             <div className="flex flex-col">
                                 <span className="text-muted-foreground">META DIA</span>
                                 <span className={cn(data.dailyTarget > 0 ? "text-red-500" : "text-green-500")}>
-                                    {data.dailyTarget > 0 ? `-${formatDecimal(data.dailyTarget)}` : 'OK'}
+                                    {data.dailyTarget > 0 ? `${formatDecimal(data.dailyTarget)}` : 'OK'}
                                 </span>
                             </div>
                         </div>
@@ -160,15 +160,34 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                             {row.spaceTargets.map((target, idx) => {
                                                 const isCurrentTarget = data.currentSpaceIndex === idx;
                                                 const isPast = idx < data.currentSpaceIndex;
+                                                const realizedAtSpace = row.spaceRealized?.[idx] || 0; // Use new field
 
-                                                // If this is the current target we are chasing, highlight based on status
-                                                let cellClass = "";
+                                                // Current Target: Show Target with Highlight
                                                 if (isCurrentTarget) {
-                                                    cellClass = row.realized >= target ? "bg-green-500/20 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400";
+                                                    const cellClass = row.realized >= target ? "bg-green-500/20 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400";
+                                                    return (
+                                                        <TableCell key={idx} className={cn("text-center font-bold border-2 border-primary", cellClass)}>
+                                                            {formatQuantity(target)}
+                                                        </TableCell>
+                                                    );
                                                 }
 
+                                                // Past Space: Show Result/Target or %
+                                                if (isPast) {
+                                                    const hit = realizedAtSpace >= target;
+                                                    return (
+                                                        <TableCell key={idx} className={cn("text-center text-xs", hit ? "text-green-600 font-semibold" : "text-muted-foreground")}>
+                                                            <div className="flex flex-col items-center justify-center">
+                                                                <span>{formatQuantity(realizedAtSpace)}/{formatQuantity(target)}</span>
+                                                                {/* Optional: Show check or X */}
+                                                            </div>
+                                                        </TableCell>
+                                                    );
+                                                }
+
+                                                // Future: Show Target (Plain)
                                                 return (
-                                                    <TableCell key={idx} className={cn("text-center", cellClass)}>
+                                                    <TableCell key={idx} className="text-center text-muted-foreground">
                                                         {formatQuantity(target)}
                                                     </TableCell>
                                                 )

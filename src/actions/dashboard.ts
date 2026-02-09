@@ -11,6 +11,7 @@ export type SpacepointStats = {
     gap: number;
     percentage: number;
     spaceTargets: number[]; // Targets for Space 1, Space 2, ...
+    spaceRealized: number[]; // Realized for Space 1, Space 2, ... (Historical)
 };
 
 export type SpacepointDashboardData = {
@@ -127,36 +128,24 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
     });
 
     // 5. Build Stats
-    // 5. Build Stats
     const stats: SpacepointStats[] = [];
 
-    // Get all unique product keys from:
-    // 1. typeMap (all available course types)
-    // 2. keys in nextSpace.metasPorTipo (in case there are historical ones)
-
+    // Get all unique product keys
     const allProductKeys = new Set<string>();
-
-    // Add from typeMap (the standard types)
     typeMap.forEach(name => allProductKeys.add(name));
-
-    // Add TOTAL
     allProductKeys.add('TOTAL');
 
     let totalGap = 0;
 
     Array.from(allProductKeys).sort().forEach(prod => {
-        // Skip if it's not a relevant product? 
-        // For now show all types found in system + Total.
         if (prod !== 'TOTAL' && !prod) return;
 
+        // Current Realized (Total for this Processo)
         const realized = counts[prod] || 0;
 
-        // Target lookup:
-        // Key in metasPorTipo is Uppercase Name.
+        // Next Space Target
         let target = 0;
-
         if (prod === 'TOTAL') {
-            // For total, we can sum specific targets or use the metaTotal field
             target = nextSpace.metaTotal || 0;
         } else {
             target = nextSpace.metasPorTipo?.[prod] || 0;
@@ -167,10 +156,40 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
 
         if (prod === 'TOTAL') totalGap = gap;
 
-        // Space targets array for history
+        // Calculate Targets AND Realized for EACH Space (History)
         const spaceTargets = processSpacepoints.map(sp => {
             if (prod === 'TOTAL') return sp.metaTotal || 0;
             return sp.metasPorTipo?.[prod] || 0;
+        });
+
+        const spaceRealized = processSpacepoints.map(sp => {
+            // Count matriculas created BEFORE or ON the space date
+            // We need to filter relevantMatriculas based on sp.dataSpace
+            // Note: This is an O(N*M) operation in loop, but N (matriculas) and M (spaces) are likely small enough here.
+
+            const spDate = new Date(sp.dataSpace);
+            spDate.setHours(23, 59, 59, 999); // End of the space date
+
+            // Filter relevant matriculas
+            // We need to count based on the specific product 'prod'
+
+            let count = 0;
+            relevantMatriculas.forEach(m => {
+                // Check Product Match
+                const typeName = m.tipoCursoId ? typeMap.get(m.tipoCursoId) : '';
+                const key = normalizeType(typeName || '');
+
+                const isMatch = (prod === 'TOTAL') || (key === prod);
+
+                if (isMatch) {
+                    // Check Date Match
+                    const mDate = new Date(m.dataMatricula || m.criadoEm || new Date());
+                    if (mDate <= spDate) {
+                        count++;
+                    }
+                }
+            });
+            return count;
         });
 
         stats.push({
@@ -179,8 +198,9 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
             target,
             gap,
             percentage,
-            spaceTargets
-        });
+            spaceTargets,
+            spaceRealized // New field
+        } as SpacepointStats);
     });
 
     // Move TOTAL to bottom
@@ -191,9 +211,6 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
 
 
     // Calculate Daily Target (Meta Dia)
-    // To close the gap within daysRemaining
-    // If gap is negative (behind), we need to cover the gap.
-    // Daily Target = Abs(Gap) / Days.
     const dailyTarget = totalGap < 0 && daysRemaining > 0 ? Math.abs(totalGap) / daysRemaining : 0;
 
     return {
