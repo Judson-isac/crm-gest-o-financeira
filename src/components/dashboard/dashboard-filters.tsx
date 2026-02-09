@@ -4,7 +4,15 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-// ... items ...
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Filter, X, Loader2 } from 'lucide-react';
+import { MultiSelect } from '../ui/multi-select';
 
 type DashboardFilterControlsProps = {
   distinctValues: { polos: string[]; anos: number[]; processos?: any[] };
