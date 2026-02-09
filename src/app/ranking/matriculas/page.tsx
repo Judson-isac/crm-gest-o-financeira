@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getRankingAction, saveRankingConfigAction } from '@/actions/ranking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trophy, Medal, Crown, Volume2, VolumeX } from 'lucide-react';
+import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -69,6 +69,7 @@ export default function RankingPage() {
     // Settings State - Now synced from server
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
     const [isRedAlert, setIsRedAlert] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
     const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
 
     // Removed localStorage logic
@@ -475,17 +476,36 @@ export default function RankingPage() {
                         >
                             Este Mês
                         </button>
+
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={cn(
+                                "flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all ml-2 border",
+                                showFilters
+                                    ? "bg-blue-600/10 border-blue-500/50 text-blue-400"
+                                    : "bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700"
+                            )}
+                        >
+                            <SlidersHorizontal className="w-4 h-4" />
+                            <span>Filtros</span>
+                            {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
                     </div>
                 </div>
 
-                {/* Settings Panel Removed - Now centralized in CRM */}
-
-                {/* Podium Section */}
-
-                {/* Filter Controls */}
-                <div className="w-full max-w-7xl mb-8 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                    <RankingFilterControls distinctValues={distinctValues} />
-                </div>
+                {/* Filter Controls Panel */}
+                <AnimatePresence>
+                    {showFilters && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                            animate={{ height: 'auto', opacity: 1, marginBottom: 32 }}
+                            exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                            className="w-full max-w-7xl overflow-hidden"
+                        >
+                            <RankingFilterControls distinctValues={distinctValues} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Podium Section */}
                 <div className="flex justify-center items-end gap-6 mb-16 w-full max-w-5xl h-[400px]">
