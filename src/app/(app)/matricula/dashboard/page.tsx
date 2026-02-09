@@ -37,25 +37,27 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
     return (
         <DashboardProvider>
             <div className="p-6 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex gap-2 ml-auto">
-                        <Link href="/matricula/listar">
-                            <Button variant="outline">
-                                <List className="mr-2 h-4 w-4" />
-                                Listar Matrículas
-                            </Button>
-                        </Link>
-                        <Link href="/matricula/nova">
-                            <Button>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Nova Matrícula
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-
                 {/* Filters */}
-                <DashboardFilterControls distinctValues={distinctValues} showProcessoSeletivo={true} />
+                <DashboardFilterControls
+                    distinctValues={distinctValues}
+                    showProcessoSeletivo={true}
+                    actions={(
+                        <div className="flex gap-2">
+                            <Link href="/matricula/listar">
+                                <Button variant="outline">
+                                    <List className="mr-2 h-4 w-4" />
+                                    Listar Matrículas
+                                </Button>
+                            </Link>
+                            <Link href="/matricula/nova">
+                                <Button>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Nova Matrícula
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
+                />
 
                 {/* Main Dashboard View */}
                 <Suspense fallback={<DashboardSkeleton />}>

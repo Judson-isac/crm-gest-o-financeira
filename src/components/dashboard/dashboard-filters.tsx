@@ -3,64 +3,25 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Filter, X, Loader2 } from 'lucide-react';
-import { MultiSelect } from '../ui/multi-select';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+// ... items ...
 
 type DashboardFilterControlsProps = {
   distinctValues: { polos: string[]; anos: number[]; processos?: any[] };
   showProcessoSeletivo?: boolean;
+  actions?: React.ReactNode;
 };
 
-export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }: DashboardFilterControlsProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const [isPending, startTransition] = useTransition();
-
-  const [polos, setPolos] = useState<string[]>(searchParams.get('polo')?.split(',') || []);
-  const [ano, setAno] = useState(searchParams.get('ano') || 'all');
-  const [mes, setMes] = useState(searchParams.get('mes') || 'all');
-  const [processo, setProcesso] = useState(searchParams.get('processo') || 'all');
-
-  const handleFilterClick = () => {
-    startTransition(() => {
-      const params = new URLSearchParams();
-      if (polos.length > 0) params.set('polo', polos.join(','));
-      if (ano && ano !== 'all') params.set('ano', ano);
-      if (mes && mes !== 'all') params.set('mes', mes);
-      if (processo && processo !== 'all') params.set('processo', processo);
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-
-  const handleClearClick = () => {
-    startTransition(() => {
-      router.push(pathname);
-      setPolos([]);
-      setAno('all');
-      setMes('all');
-      setProcesso('all');
-    });
-  };
-
-  const meses = Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), name: new Date(2000, i).toLocaleString('pt-BR', { month: 'long' }) }));
-
-  const polosSafe = distinctValues?.polos || [];
-  const anosSafe = distinctValues?.anos || [];
-  const processosSafe = distinctValues?.processos || [];
-
-  const poloOptions = polosSafe.map(p => ({ label: p, value: p }));
+export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, actions }: DashboardFilterControlsProps) {
+  // ... hooks ...
 
   return (
     <Card>
+      {actions && (
+        <CardHeader className="flex flex-row items-center justify-end space-y-0 p-4 pb-0">
+          {actions}
+        </CardHeader>
+      )}
       <CardContent className="p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <MultiSelect
