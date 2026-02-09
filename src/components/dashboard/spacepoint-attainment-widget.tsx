@@ -32,8 +32,11 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
         }
     }, [selectedProcesso]);
 
-    const formatCurrency = (val: number) => {
-        // The user image shows "104,00".
+    const formatQuantity = (val: number) => {
+        return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    const formatDecimal = (val: number) => {
         return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
@@ -105,7 +108,7 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                             <div className="flex flex-col">
                                 <span className="text-muted-foreground">META DIA</span>
                                 <span className={cn(data.dailyTarget > 0 ? "text-red-500" : "text-green-500")}>
-                                    {data.dailyTarget > 0 ? `-${formatCurrency(data.dailyTarget)}` : 'OK'}
+                                    {data.dailyTarget > 0 ? `-${formatDecimal(data.dailyTarget)}` : 'OK'}
                                 </span>
                             </div>
                         </div>
@@ -139,10 +142,10 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                             </TableCell>
                                             <TableCell className="font-medium">{row.product}</TableCell>
                                             <TableCell className="text-center bg-blue-50/50 dark:bg-blue-950/10 text-foreground font-semibold">
-                                                {formatCurrency(row.realized)}
+                                                {formatQuantity(row.realized)}
                                             </TableCell>
                                             <TableCell className={cn("text-center bg-blue-50/50 dark:bg-blue-950/10 font-bold", row.gap < 0 ? "text-red-500" : "text-green-600")}>
-                                                {formatCurrency(row.gap)}
+                                                {formatQuantity(row.gap)}
                                             </TableCell>
                                             <TableCell className={cn("text-center bg-blue-50/50 dark:bg-blue-950/10 font-bold", row.percentage < 100 ? "text-red-500" : "text-green-600")}>
                                                 {formatPercent(row.percentage)}
@@ -160,7 +163,7 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
 
                                                 return (
                                                     <TableCell key={idx} className={cn("text-center", cellClass)}>
-                                                        {formatCurrency(target)}
+                                                        {formatQuantity(target)}
                                                     </TableCell>
                                                 )
                                             })}
