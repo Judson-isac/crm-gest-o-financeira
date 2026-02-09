@@ -253,6 +253,7 @@ export type Matricula = {
   canalId?: string;
   primeiraMensalidade?: number;
   segundaMensalidade: number;
+  bolsaGestor?: number; // Percentual da Bolsa Gestor (0-100)
   anexos?: string[];
   criadoEm?: Date;
   atualizadoEm?: Date;

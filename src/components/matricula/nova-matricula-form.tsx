@@ -177,6 +177,7 @@ export function NovaMatriculaForm({
                 canalId: formData.get('canal') as string || undefined,
                 primeiraMensalidade: formData.get('r$-1a-mensalidade') ? parseFloat((formData.get('r$-1a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')) : undefined,
                 segundaMensalidade: parseFloat((formData.get('r$-2a-mensalidade') as string).replace(/[^\d,]/g, '').replace(',', '.')),
+                bolsaGestor: formData.get('bolsa-gestor') ? parseFloat((formData.get('bolsa-gestor') as string).replace(',', '.')) : undefined,
                 anexos,
             };
 
@@ -369,7 +370,7 @@ export function NovaMatriculaForm({
 
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Informações de Mensalidade</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="r$-1a-mensalidade">R$ 1ª Mensalidade</Label>
                                     <Input
@@ -389,6 +390,19 @@ export function NovaMatriculaForm({
                                         required
                                         defaultValue={initialData?.segundaMensalidade ? initialData.segundaMensalidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''}
                                         onChange={handleCurrencyChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="bolsa-gestor">Bolsa Gestor (%)</Label>
+                                    <Input
+                                        id="bolsa-gestor"
+                                        name="bolsa-gestor"
+                                        placeholder="0%"
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        defaultValue={initialData?.bolsaGestor?.toString() || ''}
                                     />
                                 </div>
                             </div>

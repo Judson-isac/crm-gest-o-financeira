@@ -1,0 +1,1 @@
+ALTER TABLE matriculas ADD COLUMN IF NOT EXISTS "bolsaGestor" NUMERIC(5,2);
