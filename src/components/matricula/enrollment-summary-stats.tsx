@@ -62,37 +62,51 @@ export function EnrollmentSummaryStats({ summary, isLoading }: EnrollmentSummary
     };
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <StatCard
-                title="Total de Matrículas (Filtro)"
-                value={safeSummary.totalMatriculas.toLocaleString('pt-BR')}
-                icon={GraduationCap}
+                title="Matrículas Hoje"
+                value={safeSummary.novasHoje?.toLocaleString('pt-BR') || '0'}
+                icon={UserPlus}
                 isLoading={isLoading}
+                colorClass="text-green-600"
             />
             <StatCard
-                title="Matrículas Ativas"
-                value={safeSummary.ativas.toLocaleString('pt-BR')}
-                icon={School}
+                title="Ticket Médio (1ª Mens.)"
+                value={safeSummary.ticketMedio1?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00'}
+                icon={BarChart}
                 isLoading={isLoading}
                 colorClass="text-blue-500"
             />
             <StatCard
-                title="Novas (Período)"
-                value={safeSummary.novasMes.toLocaleString('pt-BR')}
-                icon={UserPlus}
+                title="Ticket Médio (2ª Mens.)"
+                value={safeSummary.ticketMedio2?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00'}
+                icon={BarChart}
                 isLoading={isLoading}
-                colorClass="text-green-500"
+                colorClass="text-blue-500"
             />
             <StatCard
-                title="Canceladas/Evadidas"
-                value={safeSummary.canceladas.toLocaleString('pt-BR')}
-                icon={UserMinus}
+                title="Matrículas no Mês"
+                value={safeSummary.novasMes.toLocaleString('pt-BR')}
+                icon={School}
                 isLoading={isLoading}
-                colorClass="text-red-500"
+                colorClass="text-purple-500"
+            />
+            <StatCard
+                title="Total (Filtro)"
+                value={safeSummary.totalMatriculas.toLocaleString('pt-BR')}
+                icon={GraduationCap}
+                isLoading={isLoading}
             />
             {/* 
-      <GrowthStatCard title="Crescimento (vs. Mês Ant.)" value={safeSummary.monthlyGrowth} isLoading={isLoading} />
-       */}
+      <StatCard 
+        title="Canceladas" 
+        value={safeSummary.canceladas.toLocaleString('pt-BR')} 
+        icon={UserMinus} 
+        isLoading={isLoading} 
+         colorClass="text-destructive"
+      />
+      */}
         </div>
     );
 }

@@ -414,10 +414,69 @@ export async function getUserPermissionsById(userId: string, userObject?: Usuari
         return { ...finalPermissions, polos: finalPolos, isSuperadmin: false, redeId: user.redeId };
     } finally {
         client.release();
+        if (permissions.polos) {
+            // Assuming permissions.polos is an array of strings
+            if (permissions.polos.length > 0) {
+                whereConditions.push(`polo = ANY($${values.length + 1}::text[])`);
+                values.push(permissions.polos);
+            } else {
+                // If polos array is empty, it means no polos are allowed, so return empty results
+                return { polos: [], categorias: [], anos: [] };
+            }
+        }
+
+        if (whereConditions.length > 0) {
+            query += ' WHERE ' + whereConditions.join(' AND ');
+        }
+
+        const result = await client.query(query, values);
+
+        const distinctPolos = Array.from(new Set(result.rows.map(row => row.polo))).sort();
+        const distinctCategorias = Array.from(new Set(result.rows.map(row => row.categoria))).sort();
+        const distinctAnos = Array.from(new Set(result.rows.map(row => row.referencia_ano))).sort((a, b) => b - a);
+
+        return {
+            polos: distinctPolos,
+            categorias: distinctCategorias,
+            anos: distinctAnos
+        };
+    } finally {
+        client.release();
     }
 }
 
 
+
+
+export async function getFinancialYears(redeId: string): Promise<number[]> {
+    const years = await prisma.financialRecord.findMany({
+        where: { redeId },
+        select: { referencia_ano: true },
+        distinct: ['referencia_ano'],
+        orderBy: { referencia_ano: 'desc' },
+    });
+    return years.map(y => y.referencia_ano);
+}
+
+export async function getProcessosSeletivos(redeId: string): Promise<string[]> {
+    // Fetch from ProcessoSeletivo table or Spacepoint? 
+    // Let's use the 'ProcessoSeletivo' table if it exists and has a name/number.
+    // Based on types.ts: ProcessoSeletivo { numero: string, ... }
+    // We want to return a list of strings (numbers/names) for the filter.
+    const processos = await prisma.processoSeletivo.findMany({
+        where: { redeId, ativo: true }, // Only active? Or all? Usually filters show all history.
+        select: { numero: true },
+        orderBy: { numero: 'desc' },
+    });
+
+    if (processos.length > 0) {
+        return processos.map(p => p.numero);
+    }
+
+    // Fallback: If no ProcessoSeletivo records, try distinctive from Matriculas? 
+    // Or Spacepoints? 
+    return [];
+}
 
 export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
     const client = await pool.connect();

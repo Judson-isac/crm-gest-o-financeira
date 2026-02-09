@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,37 +17,42 @@ import { Filter, X, Loader2 } from 'lucide-react';
 import { MultiSelect } from '../ui/multi-select';
 
 type DashboardFilterControlsProps = {
-  distinctValues: { polos: string[]; anos: number[] };
+  distinctValues: { polos: string[]; anos: number[]; processos?: string[] };
+  showProcessoSeletivo?: boolean;
 };
 
-export function DashboardFilterControls({ distinctValues }: DashboardFilterControlsProps) {
+export function DashboardFilterControls({ distinctValues, showProcessoSeletivo }: DashboardFilterControlsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  
+
   const [polos, setPolos] = useState<string[]>(searchParams.get('polo')?.split(',') || []);
   const [ano, setAno] = useState(searchParams.get('ano') || 'all');
   const [mes, setMes] = useState(searchParams.get('mes') || 'all');
+  const [processo, setProcesso] = useState(searchParams.get('processo') || 'all');
 
   const handleFilterClick = () => {
     startTransition(() => {
-        const params = new URLSearchParams();
-        if (polos.length > 0) params.set('polo', polos.join(','));
-        if (ano && ano !== 'all') params.set('ano', ano);
-        if (mes && mes !== 'all') params.set('mes', mes);
-        router.push(`/dashboard?${params.toString()}`);
+      const params = new URLSearchParams();
+      if (polos.length > 0) params.set('polo', polos.join(','));
+      if (ano && ano !== 'all') params.set('ano', ano);
+      if (mes && mes !== 'all') params.set('mes', mes);
+      if (processo && processo !== 'all') params.set('processo', processo);
+      router.push(`${pathname}?${params.toString()}`);
     });
   };
 
   const handleClearClick = () => {
     startTransition(() => {
-        router.push('/dashboard');
-        setPolos([]);
-        setAno('all');
-        setMes('all');
+      router.push(pathname);
+      setPolos([]);
+      setAno('all');
+      setMes('all');
+      setProcesso('all');
     });
   };
-  
+
   const meses = Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), name: new Date(2000, i).toLocaleString('pt-BR', { month: 'long' }) }));
 
   const poloOptions = distinctValues.polos.map(p => ({ label: p, value: p }));
@@ -67,18 +73,28 @@ export function DashboardFilterControls({ distinctValues }: DashboardFilterContr
           <Select value={ano} onValueChange={setAno} disabled={isPending}>
             <SelectTrigger><SelectValue placeholder="Todos os Anos" /></SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Todos os Anos</SelectItem>
+              <SelectItem value="all">Todos os Anos</SelectItem>
               {distinctValues.anos.map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
-          
+
           <Select value={mes} onValueChange={setMes} disabled={isPending}>
             <SelectTrigger><SelectValue placeholder="Todos os Meses" /></SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Todos os Meses</SelectItem>
+              <SelectItem value="all">Todos os Meses</SelectItem>
               {meses.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.name.charAt(0).toUpperCase() + m.name.slice(1)}</SelectItem>)}
             </SelectContent>
           </Select>
+
+          {showProcessoSeletivo && distinctValues.processos && (
+            <Select value={processo} onValueChange={setProcesso} disabled={isPending}>
+              <SelectTrigger><SelectValue placeholder="Todos os Processos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Processos</SelectItem>
+                {distinctValues.processos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
 
           <div className="flex flex-col col-span-1 md:col-span-2 space-y-2 lg:flex-row lg:space-y-0 lg:space-x-2">
             <Button onClick={handleFilterClick} disabled={isPending} className="w-full">
@@ -95,3 +111,4 @@ export function DashboardFilterControls({ distinctValues }: DashboardFilterContr
     </Card>
   );
 }
+

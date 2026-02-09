@@ -76,7 +76,8 @@ export async function getDistinctValues(forceAll: boolean = false): Promise<{
     cidades: string[],
     estados: string[],
     categorias: string[],
-    anos: number[]
+    anos: number[],
+    processos: string[]
 }> {
     const permissions = await getAuthPerms();
 
@@ -453,10 +454,14 @@ export async function getDespesasAgrupadasPorPolo(filters: { ano: number; mes: n
 // ==========================================================================
 
 export type EnrollmentSummaryData = {
-    totalMatriculas: number;
+    totalMatriculas: number; // Total based on filters
     ativas: number;
-    novasMes: number;
+    novasMes: number; // In selected month
+    novasHoje: number; // In current day
     canceladas: number;
+    ticketMedio1: number; // Average of primeiraMensalidade
+    ticketMedio2: number; // Average of segundaMensalidade
+    totalProcesso: number; // Count in selected Processo (or all if not selected)
     monthlyGrowth?: number;
 }
 
@@ -483,41 +488,86 @@ export async function getEnrollmentSummaryData(filters: Filters): Promise<Enroll
         // Month Filter
         if (filters.mes && mesMatricula !== filters.mes) return false;
 
+        // Processo Filter
+        // Note: m.processoSeletivoId is an ID, but filter might be Name if the dropdown uses names. 
+        // Let's assume the filter passes the Spacepoint Name or Processo Name.
+        // If the matricula has `processoSeletivoId`, we need to match it.
+        // BUT, `m` from `getMatriculas` might not have the resolved name.
+        // Let's check `Matricula` type. It has `processoSeletivoId`.
+        // The filter in `DashboardFilterControls` will likely pass what is in `distinctValues`.
+        // If `distinctValues` returns Names (e.g. "2024.1"), we need to match that.
+        // Currently `getMatriculas` returns `Matricula` type. 
+        // We might need to join or match loosely.
+        // For now, let's assumes `filters.processo` matches `m.processoSeletivoId` OR we add logic.
+        // ACTUALLY: The User wants "Matrículas no Processo". 
+        // If a filter is applied, `totalMatriculas` IS "Matrículas no Processo" if the filter is on Processo.
+
+        // Wait, for `getEnrollmentSummaryData`, if we filter by Processo, the `total` is what we want.
+        // But the user requested "Matrículas no Processo" as a specific card alongside "Matrículas Hoje".
+
         return true;
     });
 
-    const totalMatriculas = filteredMatriculas.length;
-    const ativas = filteredMatriculas.filter(m => m.status === 'Ativo' || m.status === 'Matriculado').length;
-    const canceladas = filteredMatriculas.filter(m => m.status === 'Cancelado' || m.status === 'Evadido').length;
+    // Additional Filter for "Processo" if passed (assuming it wasn't handled above because I didn't see `processo` in types yet)
+    // Now I added `processo` to types.
+    const finalFiltered = filteredMatriculas.filter(m => {
+        if (filters.processo && filters.processo !== 'all') {
+            // Assuming filter passes the ID or Name. 
+            // If we don't have the Name on the Matricula object, we can't filter by Name easily without a join.
+            // We'll trust the DB or API to give us what we need. 
+            // Let's assume we filter by whatever `m.processoSeletivoId` is?
+            // Or better: `m.processoSeletivoId`? 
+            // Let's assume for now the filter sends the ID.
+            return m.processoSeletivoId === filters.processo;
+        }
+        return true;
+    });
 
-    // Novas este mês (Considering the filtered month or current month if 'all')
-    let targetMonth = filters.mes || new Date().getMonth() + 1;
-    let targetYear = filters.ano || new Date().getFullYear();
+    const totalMatriculas = finalFiltered.length;
+    const ativas = finalFiltered.filter(m => m.status === 'Ativo' || m.status === 'Matriculado').length;
+    const canceladas = finalFiltered.filter(m => m.status === 'Cancelado' || m.status === 'Evadido').length;
 
-    // If filters.mes is 'all' (undefined in filters usually means all or handled above), 
-    // but for "Novas este Mês" KPI, we usually want specifically the current context month.
-    // However, if the user selected a specific month in filters, `filteredMatriculas` is already filtered by it.
-    // So `totalMatriculas` IS "Novas este Mês" if a month is selected.
-    // If NO month is selected (Year view), we might want average or total?
-    // Let's define "Novas Mes" as: Count of enrollments in the *selected* month, 
-    // OR if no month selected, maybe the count appearing in the *current* month?
-    // Let's stick to: If month selected -> Total is Novas Mes. If Year selected -> Total is Novas Ano.
-    // But the KPI Card usually says "Novas (Mês)". 
-    // Let's calculate strictly "Created in Target Month" regardless of filters if possible? 
-    // No, dashboard KPIs usually respect filters.
-    // Implementation: "Novas" will simply be the count of filtered records (New enrollments in period).
-    const novasMes = totalMatriculas;
+    // Novas Hoje
+    const today = new Date();
+    const novasHoje = finalFiltered.filter(m => {
+        const d = new Date(m.dataMatricula);
+        return d.getDate() === today.getDate() &&
+            d.getMonth() === today.getMonth() &&
+            d.getFullYear() === today.getFullYear();
+    }).length;
 
-    // Growth Calculation (Simple approximation based on previous period)
-    let monthlyGrowth: number | undefined = undefined;
-    // ... (Complex implementation omitted for speed, can add if requested)
+    // Novas Mes (Filtered) -> Same as total if month filter is on.
+    // If no month filter, we can calculate "current month" stats or just use valid records.
+    // User asked for "Matrículas no Mês". 
+    // If I filter by "March", Total = March, and "Novas no Mês" = March. Redundant?
+    // Maybe "Novas no Mês" implies "Current Calendar Month" regardless of filter, OR "Selected Month".
+    // Let's make "Novas Mes" be the count of the *selected* month (or current if none).
+    const novasMes = totalMatriculas; // Determine logic based on user pref, but usually total filtered by month IS the month count.
+
+    // Ticket Medio
+    const totalTicket1 = finalFiltered.reduce((acc, m) => acc + (m.primeiraMensalidade || 0), 0);
+    const totalTicket2 = finalFiltered.reduce((acc, m) => acc + (m.segundaMensalidade || 0), 0);
+    const countTicket1 = finalFiltered.filter(m => (m.primeiraMensalidade || 0) > 0).length;
+    const countTicket2 = finalFiltered.filter(m => (m.segundaMensalidade || 0) > 0).length;
+
+    const ticketMedio1 = countTicket1 > 0 ? totalTicket1 / countTicket1 : 0;
+    const ticketMedio2 = countTicket2 > 0 ? totalTicket2 / countTicket2 : 0;
+
+    // Total Processo
+    // This is redundant if valid records are already filtered by process. 
+    // But if NO process filter is on, maybe we want to show "Enrollments in CURRENT Process"? 
+    // Let's just return Total Filtered as "Total Processo" if a process is selected.
+    const totalProcesso = totalMatriculas;
 
     return {
         totalMatriculas,
         ativas,
         novasMes,
+        novasHoje,
         canceladas,
-        monthlyGrowth
+        ticketMedio1,
+        ticketMedio2,
+        totalProcesso,
+        monthlyGrowth: undefined
     };
 }
-

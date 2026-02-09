@@ -16,6 +16,7 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
     const year = searchParams.ano ? parseInt(searchParams.ano as string) : undefined;
     const month = searchParams.mes ? parseInt(searchParams.mes as string) : undefined;
     const polo = searchParams.polo as string; // Multi-select handled by DashboardFilters but passed as comma list? 
+    const processo = searchParams.processo as string;
     // Actually DashboardFilterControls uses standard URL params. 
     // Let's ensure type compatibility. The Filters type expects `polo?: string | string[]`.
     // MultiSelect usually sends values.
@@ -23,7 +24,8 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
     const filters: Filters = {
         ano: year,
         mes: month,
-        polo: polo ? (polo.includes(',') ? polo.split(',') : polo) : undefined
+        polo: polo ? (polo.includes(',') ? polo.split(',') : polo) : undefined,
+        processo: processo
     };
 
     // Parallel Fetching
@@ -54,7 +56,7 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
                 </div>
 
                 {/* Filters */}
-                <DashboardFilterControls distinctValues={distinctValues} />
+                <DashboardFilterControls distinctValues={distinctValues} showProcessoSeletivo={true} />
 
                 {/* Main Dashboard View */}
                 <Suspense fallback={<DashboardSkeleton />}>
