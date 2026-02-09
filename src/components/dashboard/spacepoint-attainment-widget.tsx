@@ -147,8 +147,14 @@ export function SpacepointAttainmentWidget({ onRemove }: { onRemove?: () => void
                                             <TableCell className={cn("text-center bg-blue-50/50 dark:bg-blue-950/10 font-bold", row.gap < 0 ? "text-red-500" : "text-green-600")}>
                                                 {formatQuantity(row.gap)}
                                             </TableCell>
-                                            <TableCell className={cn("text-center bg-blue-50/50 dark:bg-blue-950/10 font-bold", row.percentage < 100 ? "text-red-500" : "text-green-600")}>
-                                                {formatPercent(row.percentage)}
+                                            <TableCell className="relative text-center font-bold">
+                                                <div className={cn(
+                                                    "absolute inset-0 opacity-20",
+                                                    row.percentage >= 100 ? "bg-green-500" : "bg-red-500"
+                                                )} style={{ width: `${Math.min(row.percentage, 100)}%` }} />
+                                                <span className={cn("relative z-10", row.percentage < 100 ? "text-red-500" : "text-green-600")}>
+                                                    {formatPercent(row.percentage)}
+                                                </span>
                                             </TableCell>
 
                                             {row.spaceTargets.map((target, idx) => {

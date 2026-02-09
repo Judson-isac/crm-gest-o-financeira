@@ -38,8 +38,14 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
 
     // 2. Determine Current/Next Space
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to midnight
+
     // Find the first space that is in the future (or today)
-    let nextSpaceIndex = processSpacepoints.findIndex(sp => new Date(sp.dataSpace) >= today);
+    let nextSpaceIndex = processSpacepoints.findIndex(sp => {
+        const spDate = new Date(sp.dataSpace);
+        spDate.setHours(0, 0, 0, 0); // Normalize space date to midnight
+        return spDate >= today;
+    });
     // If all are in past, maybe use the last one? Or special state?
     if (nextSpaceIndex === -1) nextSpaceIndex = processSpacepoints.length - 1;
 
@@ -47,8 +53,35 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
     if (!nextSpace) return null; // Handle case where no spaces exist
 
     const nextSpaceDate = new Date(nextSpace.dataSpace);
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const daysRemaining = Math.ceil((nextSpaceDate.getTime() - today.getTime()) / msPerDay);
+
+    // Calculate working days (excluding Sundays)
+    let daysRemaining = 0;
+    const tempDate = new Date(today);
+    tempDate.setHours(0, 0, 0, 0); // Start from beginning of today
+
+    // If today is Sunday, start counting from tomorrow? 
+    // Or just iterate. The user said "nobody works sunday". 
+    // Assumption: Sales happen on Saturdays but not Sundays.
+
+    const targetDate = new Date(nextSpaceDate);
+    targetDate.setHours(0, 0, 0, 0);
+
+    while (tempDate < targetDate) {
+        // Increment date first or check first?
+        // If today is Monday and target is Tuesday, diff is 1 day.
+        // We want the number of working days *available* to hit the target.
+        // If today (Mon) is already "spent" or assuming we have today?
+        // Usually "days remaining" includes today if the day is not over, or starts from tomorrow.
+        // Let's assume we count days forward.
+
+        tempDate.setDate(tempDate.getDate() + 1);
+        if (tempDate.getDay() !== 0) { // 0 is Sunday
+            daysRemaining++;
+        }
+    }
+
+    // Edge case: if today is the target day or passed, daysRemaining = 0.
+    if (daysRemaining < 0) daysRemaining = 0;
 
     // 3. Get Matriculas
     // We need to count matriculas for this Processo Seletivo
