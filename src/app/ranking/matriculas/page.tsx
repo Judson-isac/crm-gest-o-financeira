@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { RankingFilterControls } from "@/components/ranking/ranking-filters";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { getRankingAction, saveRankingConfigAction } from "@/actions/ranking";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export default function RankingPage() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
     const [ranking, setRanking] = useState<RankingItem[]>([]);
     const [period, setPeriod] = useState<'today' | 'month'>('today');
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -74,6 +76,7 @@ export default function RankingPage() {
     const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
     const [sidebarTab, setSidebarTab] = useState<'vendas' | 'metas'>('vendas');
     const [spacepointData, setSpacepointData] = useState<any>(null);
+    const [todayTotal, setTodayTotal] = useState(0);
 
     // Removed localStorage logic
 
@@ -202,6 +205,9 @@ export default function RankingPage() {
                 }
                 if ((result as any).spacepointData) {
                     setSpacepointData((result as any).spacepointData);
+                }
+                if ((result as any).todayTotal !== undefined) {
+                    setTodayTotal((result as any).todayTotal);
                 }
 
                 // ... Sync Settings code ...
@@ -726,11 +732,25 @@ export default function RankingPage() {
                                                     </Badge>
                                                 </div>
 
-                                                <div className="space-y-1">
-                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Impacto Diário Sugerido</div>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="text-4xl font-black text-white">{spacepointData.dailyTarget.toFixed(1)}</span>
-                                                        <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Matrículas/Dia</span>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Impacto Sugerido</div>
+                                                        <div className="flex items-baseline gap-2">
+                                                            <span className="text-3xl font-black text-white">{spacepointData.dailyTarget.toFixed(1)}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/dia</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1 border-l border-white/10 pl-4">
+                                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Realizado Hoje</div>
+                                                        <div className="flex items-baseline gap-2">
+                                                            <span className={cn(
+                                                                "text-3xl font-black transition-colors",
+                                                                todayTotal >= spacepointData.dailyTarget ? "text-emerald-400" : "text-blue-400"
+                                                            )}>
+                                                                {String(todayTotal).padStart(2, '0')}
+                                                            </span>
+                                                            {todayTotal >= spacepointData.dailyTarget && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

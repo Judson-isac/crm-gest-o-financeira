@@ -18,7 +18,7 @@ export async function getRankingAction(
             return { success: false, message: "Acesso negado." };
         }
 
-        const [ranking, stats, config, latestMessage, distinctValues] = await Promise.all([
+        const [ranking, stats, todayStats, config, latestMessage, distinctValues] = await Promise.all([
             getEnrollmentRanking(user.redeId, period, {
                 polos: filters?.polos,
                 processoId: filters?.processo,
@@ -28,6 +28,10 @@ export async function getRankingAction(
                 polos: filters?.polos,
                 processoId: filters?.processo,
                 date: filters?.date
+            }),
+            getEnrollmentStats(user.redeId, 'today', {
+                polos: filters?.polos,
+                processoId: filters?.processo
             }),
             getRankingConfig(user.redeId),
             getLastRankingMessage(user.redeId),
@@ -40,9 +44,11 @@ export async function getRankingAction(
         let spacepointData = null;
         let processoId = filters?.processo;
 
-        if (!processoId && distinctValues?.processos?.length > 0) {
+        const processes = (distinctValues as any)?.processos || [];
+
+        if (!processoId && processes.length > 0) {
             // Find an active process or just the first one
-            const activeProcesso = distinctValues.processos.find((p: any) => p.ativo) || distinctValues.processos[0];
+            const activeProcesso = processes.find((p: any) => p.ativo) || processes[0];
             processoId = activeProcesso.id;
         }
 
@@ -54,6 +60,7 @@ export async function getRankingAction(
             success: true,
             data: ranking,
             stats,
+            todayTotal: todayStats?.total || 0,
             latestEnrollment,
             config,
             latestMessage,
