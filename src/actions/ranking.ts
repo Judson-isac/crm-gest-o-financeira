@@ -7,7 +7,8 @@ export async function getRankingAction(
     period: 'today' | 'month' | 'campaign',
     filters?: {
         polos?: string[],
-        processo?: string
+        processo?: string,
+        date?: string
     }
 ) {
     try {
@@ -19,9 +20,14 @@ export async function getRankingAction(
         const [ranking, stats, config, latestMessage, distinctValues] = await Promise.all([
             getEnrollmentRanking(user.redeId, period, {
                 polos: filters?.polos,
-                processoId: filters?.processo
+                processoId: filters?.processo,
+                date: filters?.date
             }),
-            getEnrollmentStats(user.redeId),
+            getEnrollmentStats(user.redeId, period, {
+                polos: filters?.polos,
+                processoId: filters?.processo,
+                date: filters?.date
+            }),
             getRankingConfig(user.redeId),
             getLastRankingMessage(user.redeId),
             getDistinctValuesForRanking(user.redeId)

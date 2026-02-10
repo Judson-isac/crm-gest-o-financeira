@@ -12,8 +12,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Filter, X, Loader2 } from "lucide-react";
+import { Filter, X, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Input } from "@/components/ui/input";
 
 type RankingFilterControlsProps = {
     distinctValues: { polos: string[]; anos: number[]; processos?: any[] };
@@ -27,11 +28,13 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
 
     const [polos, setPolos] = useState<string[]>(searchParams.get('polo')?.split(',') || []);
     const [processo, setProcesso] = useState(searchParams.get('processo') || 'all');
+    const [date, setDate] = useState(searchParams.get('date') || '');
 
     // Sync state with URL if URL changes externally (e.g. back button)
     useEffect(() => {
         setPolos(searchParams.get('polo')?.split(',') || []);
         setProcesso(searchParams.get('processo') || 'all');
+        setDate(searchParams.get('date') || '');
     }, [searchParams]);
 
     const handleFilterClick = () => {
@@ -50,6 +53,12 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
                 params.delete('processo');
             }
 
+            if (date) {
+                params.set('date', date);
+            } else {
+                params.delete('date');
+            }
+
             router.replace(`${pathname}?${params.toString()}`);
         });
     };
@@ -59,10 +68,12 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
             const params = new URLSearchParams(searchParams.toString());
             params.delete('polo');
             params.delete('processo');
+            params.delete('date');
             router.replace(`${pathname}?${params.toString()}`);
 
             setPolos([]);
             setProcesso('all');
+            setDate('');
         });
     };
 
@@ -94,6 +105,31 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
                     />
                 </div>
 
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            Filtrar por Dia
+                        </label>
+                        {date && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                    </div>
+                    <div className="relative">
+                        <Input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            disabled={isPending}
+                            className={cn(
+                                "bg-slate-900/50 border-slate-800 text-slate-200 transition-all pl-10",
+                                date && "border-blue-500/50 bg-blue-500/5"
+                            )}
+                        />
+                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    </div>
+                    <p className="text-[10px] text-slate-500 px-1">
+                        Selecione um dia específico para ver o ranking daquela data.
+                    </p>
+                </div>
+
                 {processosSafe.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between px-1">
@@ -111,11 +147,15 @@ export function RankingFilterControls({ distinctValues }: RankingFilterControlsP
                             </SelectTrigger>
                             <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 z-[70]">
                                 <SelectItem value="all">Todos os Processos</SelectItem>
-                                {processosSafe.map(p => (
-                                    <SelectItem key={p.id || p} value={p.id || p}>
-                                        {p.nome ? p.nome : (p.numero && p.ano ? `${p.numero}/${p.ano}` : (p.numero || p))}
-                                    </SelectItem>
-                                ))}
+                                {processosSafe.map(p => {
+                                    const dateStr = p.dataInicial ? ` (${new Date(p.dataInicial).toLocaleDateString('pt-BR')} - ${new Date(p.dataFinal).toLocaleDateString('pt-BR')})` : '';
+                                    return (
+                                        <SelectItem key={p.id || p} value={p.id || p}>
+                                            {p.nome ? p.nome : (p.numero && p.ano ? `${p.numero}/${p.ano}` : (p.numero || p))}
+                                            <span className="text-[10px] opacity-50 ml-2">{dateStr}</span>
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                     </div>

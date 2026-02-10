@@ -175,10 +175,12 @@ export default function RankingPage() {
             const polosParam = searchParams.get('polo');
             const polos = polosParam ? polosParam.split(',') : undefined;
             const processo = searchParams.get('processo') || undefined;
+            const date = searchParams.get('date') || undefined;
 
             const result = await getRankingAction(period, {
                 polos,
-                processo
+                processo,
+                date
             });
 
             if (result.success && result.data) {
@@ -453,7 +455,13 @@ export default function RankingPage() {
                         </button>
 
                         <button
-                            onClick={() => setPeriod('today')}
+                            onClick={() => {
+                                setPeriod('today');
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('date');
+                                params.delete('processo');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
                             className={cn(
                                 "px-6 py-2 rounded-full font-medium transition-all",
                                 period === 'today'
@@ -464,7 +472,13 @@ export default function RankingPage() {
                             Hoje
                         </button>
                         <button
-                            onClick={() => setPeriod('month')}
+                            onClick={() => {
+                                setPeriod('month');
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.delete('date');
+                                params.delete('processo');
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
                             className={cn(
                                 "px-6 py-2 rounded-full font-medium transition-all",
                                 period === 'month'

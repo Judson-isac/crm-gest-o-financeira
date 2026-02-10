@@ -1317,7 +1317,8 @@ export async function getEnrollmentRanking(
     period: 'today' | 'month' | 'campaign',
     filters?: {
         polos?: string[],
-        processoId?: string
+        processoId?: string,
+        date?: string
     },
     campaignId?: string
 ): Promise<RankingItem[]> {
@@ -1337,6 +1338,12 @@ export async function getEnrollmentRanking(
         }
 
         // Apply additional filters
+        if (filters?.date) {
+            // override any period filter if specific date is provided
+            dateFilter = `AND DATE("dataMatricula") = $${paramIndex++}`;
+            params.push(filters.date);
+        }
+
         if (filters?.polos && filters.polos.length > 0) {
             dateFilter += ` AND m.polo = ANY($${paramIndex++})`;
             params.push(filters.polos);
@@ -1388,16 +1395,54 @@ export type DailyStats = {
     }[];
 };
 
-export async function getEnrollmentStats(redeId: string): Promise<DailyStats> {
+export async function getEnrollmentStats(
+    redeId: string,
+    period: 'today' | 'month' | 'campaign' = 'today',
+    filters?: {
+        polos?: string[],
+        processoId?: string,
+        date?: string
+    },
+    campaignId?: string
+): Promise<DailyStats> {
     const client = await pool.connect();
     try {
+        let dateFilter = '';
+        const params: any[] = [redeId];
+        let paramIndex = 2;
+
+        if (period === 'today') {
+            dateFilter = `AND DATE("dataMatricula") = CURRENT_DATE`;
+        } else if (period === 'month') {
+            dateFilter = `AND EXTRACT(MONTH FROM "dataMatricula") = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM "dataMatricula") = EXTRACT(YEAR FROM CURRENT_DATE)`;
+        } else if (period === 'campaign' && campaignId) {
+            dateFilter = `AND "campanhaId" = $${paramIndex++}`;
+            params.push(campaignId);
+        }
+
+        // Apply additional filters
+        if (filters?.date) {
+            dateFilter = `AND DATE("dataMatricula") = $${paramIndex++}`;
+            params.push(filters.date);
+        }
+
+        if (filters?.polos && filters.polos.length > 0) {
+            dateFilter += ` AND polo = ANY($${paramIndex++})`;
+            params.push(filters.polos);
+        }
+
+        if (filters?.processoId && filters.processoId !== 'all') {
+            dateFilter += ` AND "processoSeletivoId" = $${paramIndex++}`;
+            params.push(filters.processoId);
+        }
+
         // Query to get Total counts by Type (including zeros)
         const typeQuery = `
             SELECT 
                 tc.nome as tipo_nome,
                 COUNT(m.id) as count
             FROM tipos_curso tc
-            LEFT JOIN matriculas m ON tc.id = m."tipoCursoId" AND DATE(m."dataMatricula") = CURRENT_DATE
+            LEFT JOIN matriculas m ON tc.id = m."tipoCursoId" AND m."redeId" = tc."redeId" ${dateFilter}
             WHERE tc."redeId" = $1
             GROUP BY tc.nome
             ORDER BY count DESC, tc.nome ASC
@@ -1412,12 +1457,12 @@ export async function getEnrollmentStats(redeId: string): Promise<DailyStats> {
             FROM matriculas m
             LEFT JOIN usuarios u ON m."usuarioId" = u.id
             LEFT JOIN tipos_curso tc ON m."tipoCursoId" = tc.id
-            WHERE m."redeId" = $1 AND DATE(m."dataMatricula") = CURRENT_DATE
+            WHERE m."redeId" = $1 ${dateFilter}
         `;
 
         const [typeResult, detailResult] = await Promise.all([
-            client.query(typeQuery, [redeId]),
-            client.query(detailQuery, [redeId])
+            client.query(typeQuery, params),
+            client.query(detailQuery, params)
         ]);
 
         // Process Global Type Stats
