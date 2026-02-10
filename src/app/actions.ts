@@ -38,8 +38,8 @@ function getSetCookie(headers: Headers): string[] {
 }
 
 export async function authenticateAndGetCookie(
-  prevState: AuthState,
-  formData: FormData
+    prevState: AuthState,
+    formData: FormData
 ): Promise<AuthState> {
     const validatedFields = AuthSchema.safeParse({
         login: formData.get("login"),
@@ -51,7 +51,7 @@ export async function authenticateAndGetCookie(
     }
 
     const { login, senha } = validatedFields.data;
-    
+
     const firstRequestBody = new URLSearchParams();
     firstRequestBody.append("login", login);
     firstRequestBody.append("senha", senha);
@@ -72,11 +72,11 @@ export async function authenticateAndGetCookie(
         if (!firstResponse.ok) {
             return { success: false, error: `Falha na Etapa 1 de autenticação com status: ${firstResponse.status}` };
         }
-        
+
         firstRequestCookies = getSetCookie(firstResponse.headers);
 
         if (firstRequestCookies.length === 0) {
-           return { success: false, error: "Cookie não encontrado na resposta da Etapa 1." };
+            return { success: false, error: "Cookie não encontrado na resposta da Etapa 1." };
         }
 
     } catch (e: any) {
@@ -85,7 +85,7 @@ export async function authenticateAndGetCookie(
 
     const timestamp = format(new Date(), 'yyyyMMddHHmmss');
     const secondRequestUrl = `http://sistemasead.unicesumar.edu.br/portal/index.php?time=${timestamp}`;
-    
+
     const secondRequestBody = new URLSearchParams();
     secondRequestBody.append("login", login);
     secondRequestBody.append("senha", senha);
@@ -109,10 +109,10 @@ export async function authenticateAndGetCookie(
             method: "POST",
             headers: secondRequestHeaders,
             body: secondRequestBody.toString(),
-            redirect: 'manual' 
+            redirect: 'manual'
         });
 
-         if (secondResponse.status !== 302) { 
+        if (secondResponse.status !== 302) {
             const errorBody = await secondResponse.text();
             console.error("Authentication Step 2 Unexpected Response:", errorBody);
             return { success: false, error: `Falha na Etapa 2 de autenticação. Status recebido: ${secondResponse.status}. Esperava 302.` };
@@ -122,9 +122,9 @@ export async function authenticateAndGetCookie(
         const combinedCookies = [...firstRequestCookies, ...finalCookies];
         const uniqueCookies = [...new Map(combinedCookies.map(c => [c.split('=')[0].trim(), c])).values()];
         const finalCookieString = uniqueCookies.map(c => c.split(';')[0]).join('; ');
-        
+
         if (!finalCookieString) {
-             return { success: false, error: "Cookie final não encontrado na resposta da Etapa 2." };
+            return { success: false, error: "Cookie final não encontrado na resposta da Etapa 2." };
         }
 
         return { success: true, cookie: finalCookieString };
@@ -150,7 +150,7 @@ function readU29(hexString: string, cursor: { pos: number }): number {
                 result = (result << 7) | (byte & 0x7F);
             } else {
                 result = (result << 7) | byte;
-                break; 
+                break;
             }
         } else {
             result = (result << 8) | byte;
@@ -163,7 +163,7 @@ function readU29(hexString: string, cursor: { pos: number }): number {
 
 function parseRepasseOptions(hexString: string): { value: string; label: string }[] {
     const options: { value: string; label: string }[] = [];
-    const recordMarker = "0a0b01"; 
+    const recordMarker = "0a0b01";
     let currentIndex = hexString.indexOf(recordMarker);
 
     while (currentIndex !== -1) {
@@ -172,22 +172,22 @@ function parseRepasseOptions(hexString: string): { value: string; label: string 
         // Procurar o marcador de inteiro '04' para o value
         const intMarkerIndex = hexString.indexOf('04', cursor.pos);
         if (intMarkerIndex === -1 || intMarkerIndex > cursor.pos + 10) { // Limita a busca para evitar pular registros
-             currentIndex = hexString.indexOf(recordMarker, cursor.pos);
-             continue;
+            currentIndex = hexString.indexOf(recordMarker, cursor.pos);
+            continue;
         }
-        cursor.pos = intMarkerIndex + 2; 
+        cursor.pos = intMarkerIndex + 2;
 
         try {
             const value = readU29(hexString, cursor);
-            
+
             // Procurar o marcador de string '06' para o label
             const stringMarkerIndex = hexString.indexOf('06', cursor.pos);
-             if (stringMarkerIndex === -1 || stringMarkerIndex > cursor.pos + 10) {
+            if (stringMarkerIndex === -1 || stringMarkerIndex > cursor.pos + 10) {
                 currentIndex = hexString.indexOf(recordMarker, cursor.pos);
                 continue;
             }
             cursor.pos = stringMarkerIndex + 2;
-            
+
             const labelLength = readU29(hexString, cursor) >> 1; // O comprimento da string também é um U29, remove o bit de referência
 
             const labelHex = hexString.substring(cursor.pos, cursor.pos + (labelLength * 2));
@@ -203,10 +203,10 @@ function parseRepasseOptions(hexString: string): { value: string; label: string 
         } catch (e) {
             console.error("Error parsing a record, skipping:", e);
         }
-        
+
         currentIndex = hexString.indexOf(recordMarker, cursor.pos);
     }
-    
+
     return options;
 }
 
@@ -214,7 +214,7 @@ export async function fetchRepasseOptions(
     { cookie }: { cookie: string }
 ): Promise<RepasseOptionsState> {
     const url = "http://sistemasead.unicesumar.edu.br/flex/amfphp/gateway.php";
-    
+
     const amfBody = Buffer.from([
         0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x6e, 0x75, 0x6c, 0x6c, 0x00, 0x02, 0x2f, 0x35,
         0x00, 0x00, 0x01, 0x21, 0x0a, 0x00, 0x00, 0x00, 0x01, 0x11, 0x0a, 0x81, 0x13, 0x4f, 0x66, 0x6c,
@@ -255,11 +255,11 @@ export async function fetchRepasseOptions(
             headers: headers,
             body: amfBody
         });
-        
+
         const buffer = await response.arrayBuffer();
         const rawBody = Buffer.from(buffer).toString('hex');
         const amfBodyString = amfBody.toString('hex');
-        
+
         if (!response.ok) {
             return { success: false, error: `Erro na requisição AMF: ${response.status}`, rawBody, amfBodyString };
         }
@@ -268,9 +268,9 @@ export async function fetchRepasseOptions(
             const options = parseRepasseOptions(rawBody);
 
             if (!options || options.length === 0) {
-                 return { success: false, error: "A resposta AMF foi recebida, mas nenhuma opção de repasse foi encontrada após o parsing.", rawBody, amfBodyString };
+                return { success: false, error: "A resposta AMF foi recebida, mas nenhuma opção de repasse foi encontrada após o parsing.", rawBody, amfBodyString };
             }
-            
+
             return { success: true, options, rawBody, amfBodyString };
 
         } catch (parseError: any) {
@@ -314,8 +314,15 @@ export async function fetchCursosJson(): Promise<CursosResponse> {
             return { success: false, error: `A requisição falhou com o status: ${response.status}. Resposta: ${errorText}` };
         }
 
-        const data = await response.json();
-        return { success: true, data };
+        const text = await response.text();
+        try {
+            const data = JSON.parse(text);
+            return { success: true, data };
+        } catch (parseError: any) {
+            console.error("Falha ao analisar JSON de cursos:", parseError.message);
+            console.error("Início da resposta recebida:", text.substring(0, 500));
+            return { success: false, error: `A resposta da Sede não é um JSON válido. Verifique se o site deles está acessível. Detalhe: ${parseError.message}` };
+        }
 
     } catch (e: any) {
         console.error("Erro na Action fetchCursosJson:", e);
