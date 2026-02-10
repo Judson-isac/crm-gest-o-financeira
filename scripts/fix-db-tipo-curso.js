@@ -1,4 +1,5 @@
 
+#!/usr/bin / env node
 const { Pool } = require('pg');
 
 // Use a connection string from environment if available, or default to localhost
