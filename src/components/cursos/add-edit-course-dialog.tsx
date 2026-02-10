@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { addOrUpdateCursoAction } from '@/actions/cursos';
-import type { Curso } from '@/lib/types';
+import type { Curso, TipoCurso } from '@/lib/types';
 
 const cursoSchema = z.object({
   sigla: z.string().min(1, "A sigla é obrigatória."),
@@ -22,6 +22,7 @@ const cursoSchema = z.object({
   tipo: z.enum(['EAD', 'HIBRIDO', 'Outros'], {
     errorMap: () => ({ message: "Selecione uma metodologia válida." })
   }),
+  tipoCursoId: z.string().optional(),
   nicho: z.string().optional(),
 });
 
@@ -29,13 +30,14 @@ type AddEditCourseDialogProps = {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   curso: Curso | null;
+  courseTypes: TipoCurso[];
   onSuccess: () => void;
 };
 
-export function AddEditCourseDialog({ isOpen, setIsOpen, curso, onSuccess }: AddEditCourseDialogProps) {
+export function AddEditCourseDialog({ isOpen, setIsOpen, curso, courseTypes, onSuccess }: AddEditCourseDialogProps) {
   const [isSaving, startSaving] = useTransition();
   const { toast } = useToast();
-  
+
   const form = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
     defaultValues: {
@@ -43,10 +45,11 @@ export function AddEditCourseDialog({ isOpen, setIsOpen, curso, onSuccess }: Add
       sigla_alternativa: '',
       nome: '',
       tipo: 'EAD',
+      tipoCursoId: '',
       nicho: '',
     },
   });
-  
+
   useEffect(() => {
     if (curso) {
       form.reset({
@@ -54,6 +57,7 @@ export function AddEditCourseDialog({ isOpen, setIsOpen, curso, onSuccess }: Add
         sigla_alternativa: curso.sigla_alternativa || '',
         nome: curso.nome,
         tipo: curso.tipo as 'EAD' | 'HIBRIDO' | 'Outros',
+        tipoCursoId: curso.tipoCursoId || '',
         nicho: curso.nicho || '',
       });
     } else {
@@ -62,6 +66,7 @@ export function AddEditCourseDialog({ isOpen, setIsOpen, curso, onSuccess }: Add
         sigla_alternativa: '',
         nome: '',
         tipo: 'EAD',
+        tipoCursoId: '',
         nicho: '',
       });
     }
@@ -137,18 +142,40 @@ export function AddEditCourseDialog({ isOpen, setIsOpen, curso, onSuccess }: Add
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Metodologia</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Selecione a metodologia" />
-                              </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                              <SelectItem value="EAD">EAD</SelectItem>
-                              <SelectItem value="HIBRIDO">Híbrido</SelectItem>
-                              <SelectItem value="Outros">Outros</SelectItem>
-                          </SelectContent>
-                      </Select>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a metodologia" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="EAD">EAD</SelectItem>
+                        <SelectItem value="HIBRIDO">Híbrido</SelectItem>
+                        <SelectItem value="Outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tipoCursoId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Curso (Modalidade)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {courseTypes.map(tipo => (
+                          <SelectItem key={tipo.id} value={tipo.id}>{tipo.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

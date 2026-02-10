@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Edit, Trash2, Download } from 'lucide-react';
 import { deleteCursoAction, deleteCursosAction } from '@/actions/cursos';
-import type { Curso } from '@/lib/types';
+import type { Curso, TipoCurso } from '@/lib/types';
 import { AddEditCourseDialog } from './add-edit-course-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -29,9 +29,10 @@ type CursosListProps = {
   cursos?: Curso[];
   onDataChanged?: () => void;
   isLoading?: boolean;
+  courseTypes?: TipoCurso[];
 };
 
-export function CursosList({ initialCursos, cursos: cursosProp, onDataChanged, isLoading = false }: CursosListProps) {
+export function CursosList({ initialCursos, courseTypes = [], cursos: cursosProp, onDataChanged, isLoading = false }: CursosListProps) {
   const { toast } = useToast();
   const [cursos, setCursos] = useState<Curso[]>(initialCursos || cursosProp || []);
   const router = useRouter();
@@ -75,7 +76,7 @@ export function CursosList({ initialCursos, cursos: cursosProp, onDataChanged, i
       const result = await deleteCursoAction(sigla);
       if (result.success) {
         toast({ title: 'Sucesso!', description: 'Curso excluído.' });
-        onDataChanged();
+        if (onDataChanged) onDataChanged();
       } else {
         toast({ variant: 'destructive', title: 'Erro!', description: result.message });
       }
@@ -242,6 +243,7 @@ export function CursosList({ initialCursos, cursos: cursosProp, onDataChanged, i
         isOpen={dialogOpen}
         setIsOpen={setDialogOpen}
         curso={editingCurso}
+        courseTypes={courseTypes}
         onSuccess={() => {
           handleDataChanged();
           setDialogOpen(false);

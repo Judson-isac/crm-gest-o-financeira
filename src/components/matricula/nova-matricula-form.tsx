@@ -78,13 +78,13 @@ export function NovaMatriculaForm({
         const selectedType = courseTypes.find(t => t.id === selectedTipoCursoId);
         if (!selectedType) return courses;
 
-        // Filtering rule: match course.tipo with type.nome (case insensitive or exact)
-        // Usually course.tipo is 'EAD', 'HIBRIDO', etc.
+        // Filtering rule: match course.tipoCursoId WITH selectedTipoCursoId (exact)
+        // OR fallback to matching course.tipo with type.nome/sigla (for old data)
         return courses.filter(c =>
+            c.tipoCursoId === selectedTipoCursoId ||
             c.tipo === selectedType.nome ||
             c.tipo === selectedType.sigla ||
-            // Fallback if there's no direct match, could be empty list or all
-            !c.tipo
+            !c.tipo // Keep "untiped" courses visible or manage them as needed
         );
     }, [courses, selectedTipoCursoId, courseTypes]);
 
