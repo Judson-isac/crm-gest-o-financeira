@@ -734,9 +734,9 @@ export default function RankingPage() {
 
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-1">
-                                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Impacto Sugerido</div>
+                                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Meta Diária</div>
                                                         <div className="flex items-baseline gap-2">
-                                                            <span className="text-3xl font-black text-white">{spacepointData.dailyTarget.toFixed(1)}</span>
+                                                            <span className="text-3xl font-black text-white">{spacepointData.dailyTarget.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/dia</span>
                                                         </div>
                                                     </div>
