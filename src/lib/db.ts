@@ -235,7 +235,12 @@ export async function validateUserCredentials(email: string, password?: string):
 export async function getUserById(userId: string): Promise<Usuario | undefined> {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM usuarios WHERE id = $1', [userId]);
+        const result = await client.query(`
+            SELECT u.*, r.nome as rede 
+            FROM usuarios u 
+            LEFT JOIN redes r ON u."redeId" = r.id 
+            WHERE u.id = $1
+        `, [userId]);
         return result.rows[0];
     } finally {
         client.release();
