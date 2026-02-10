@@ -2,9 +2,10 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { validateUserCredentials } from '@/lib/db';
-import { findDefaultRouteForUser, generateJwtToken } from '@/lib/auth';
-import { Usuario } from '@/lib/types';
+import { validateUserCredentials, saveUsuario } from '@/lib/db';
+import { findDefaultRouteForUser, generateJwtToken, getAuthenticatedUser } from '@/lib/auth';
+import type { Usuario } from '@/lib/types';
+import { revalidatePath } from 'next/cache';
 
 export async function loginAction(formData: FormData) {
     const email = formData.get('email') as string;
@@ -23,12 +24,10 @@ export async function loginAction(formData: FormData) {
             path: '/',
         });
 
-        // Pass the full user object to avoid a DB refetch
         const defaultRoute = await findDefaultRouteForUser(user as Usuario);
         if (defaultRoute) {
             redirect(defaultRoute);
         } else {
-            // If user has no permissions, log them out and show error.
             const cookieStore = await cookies();
             cookieStore.delete('auth-token');
             redirect('/login?error=NoPermissions');
@@ -43,4 +42,25 @@ export async function logoutAction() {
     const cookieStore = await cookies();
     cookieStore.delete('auth-token');
     redirect('/login');
+}
+
+export async function updateProfileAction(data: { nome: string, email: string, avatarUrl?: string }) {
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return { success: false, message: 'Não autorizado.' };
+    }
+
+    try {
+        await saveUsuario({
+            id: user.id,
+            nome: data.nome,
+            email: data.email,
+            avatarUrl: data.avatarUrl
+        });
+
+        revalidatePath('/', 'layout');
+        return { success: true, message: 'Perfil atualizado com sucesso!' };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Erro ao atualizar perfil.' };
+    }
 }

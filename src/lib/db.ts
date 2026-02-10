@@ -264,6 +264,7 @@ export async function getAllUsuarios(redeId?: string, excludeSuperadmins: boolea
         const query = `
             SELECT 
                 u.id, u.nome, u.email, u.funcao, u.status, u."redeId",
+                u."avatarUrl",
                 r.nome as rede,
                 f.polos,
                 u."isSuperadmin"
@@ -293,7 +294,6 @@ export async function saveUsuario(usuario: Partial<Usuario>): Promise<Usuario> {
         }
         if (dataToSave.id) {
             const { id, ...updateFields } = dataToSave;
-            delete (updateFields as any).avatarUrl; // Don't try to update avatarUrl
 
             const fieldEntries = Object.entries(updateFields).filter(([key, value]) => value !== undefined);
 
@@ -309,10 +309,10 @@ export async function saveUsuario(usuario: Partial<Usuario>): Promise<Usuario> {
             return result.rows[0];
         } else {
             const newId = uuidv4();
-            const { nome, email, senha, funcao, status, redeId, isSuperadmin, polos } = dataToSave;
+            const { nome, email, senha, funcao, status, redeId, isSuperadmin, polos, avatarUrl } = dataToSave;
             const result = await client.query(
-                'INSERT INTO usuarios (id, nome, email, senha, funcao, status, "redeId", "isSuperadmin", polos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-                [newId, nome, email, senha, funcao, status, redeId, isSuperadmin, polos]
+                'INSERT INTO usuarios (id, nome, email, senha, funcao, status, "redeId", "isSuperadmin", polos, "avatarUrl") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+                [newId, nome, email, senha, funcao, status, redeId, isSuperadmin, polos, avatarUrl]
             );
             return result.rows[0];
         }
