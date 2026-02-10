@@ -56,9 +56,15 @@ export function Combobox({ options, value, onValueChange, placeholder = "Selecio
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-3"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onValueChange(option.value)
+                    setOpen(false)
+                  }}
                   onSelect={() => {
-                    onValueChange(option.value === value ? "" : option.value)
+                    onValueChange(option.value)
                     setOpen(false)
                   }}
                 >
