@@ -31,6 +31,7 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, 
   const [ano, setAno] = useState(searchParams.get('ano') || 'all');
   const [mes, setMes] = useState(searchParams.get('mes') || 'all');
   const [processo, setProcesso] = useState(searchParams.get('processo') || 'all');
+  const [modo, setModo] = useState(searchParams.get('modo') || 'repasse');
 
   const handleFilterClick = () => {
     startTransition(() => {
@@ -39,6 +40,7 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, 
       if (ano && ano !== 'all') params.set('ano', ano);
       if (mes && mes !== 'all') params.set('mes', mes);
       if (processo && processo !== 'all') params.set('processo', processo);
+      if (modo) params.set('modo', modo);
       router.push(`${pathname}?${params.toString()}`);
     });
   };
@@ -50,6 +52,7 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, 
       setAno('all');
       setMes('all');
       setProcesso('all');
+      setModo('repasse');
     });
   };
 
@@ -108,6 +111,14 @@ export function DashboardFilterControls({ distinctValues, showProcessoSeletivo, 
               </SelectContent>
             </Select>
           )}
+
+          <Select value={modo} onValueChange={setModo} disabled={isPending}>
+            <SelectTrigger><SelectValue placeholder="Métrica" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pago">Valor Total (Pago)</SelectItem>
+              <SelectItem value="repasse">Valor Líquido (Repasse)</SelectItem>
+            </SelectContent>
+          </Select>
 
           <div className="flex flex-col col-span-1 md:col-span-2 space-y-2 lg:flex-row lg:space-y-0 lg:space-x-2">
             <Button onClick={handleFilterClick} disabled={isPending} className="w-full">

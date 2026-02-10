@@ -11,6 +11,7 @@ export default async function DashboardPage({
     polo?: string;
     ano?: string;
     mes?: string;
+    modo?: 'pago' | 'repasse';
   }>;
 }) {
   const params = await searchParams;
@@ -31,6 +32,7 @@ export default async function DashboardPage({
     polo: poloFilter,
     ano: !isNaN(parsedAno) ? parsedAno : latestYearWithData,
     mes: !isNaN(parsedMes) ? parsedMes : undefined,
+    modo: params?.modo === 'pago' ? 'pago' : 'repasse', // Default to repasse as requested
   };
 
   // Fetch all dashboard data in one efficient call

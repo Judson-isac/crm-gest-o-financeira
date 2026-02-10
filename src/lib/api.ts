@@ -41,12 +41,13 @@ export async function getSummaryData(filters: Filters): Promise<SummaryData> {
 
     if (previousPeriodFilters) {
         const previousSummary = await db.getSummaryData(permissions, previousPeriodFilters);
-        const previousTotalReceita = previousSummary.totalReceita;
-        const currentTotalReceita = summaryData.totalReceita;
+        const useRepasse = filters.modo === 'repasse';
+        const previousTotal = useRepasse ? previousSummary.totalRepasse : previousSummary.totalReceita;
+        const currentTotal = useRepasse ? summaryData.totalRepasse : summaryData.totalReceita;
 
-        if (previousTotalReceita > 0) {
-            monthlyGrowth = ((currentTotalReceita - previousTotalReceita) / previousTotalReceita) * 100;
-        } else if (currentTotalReceita > 0) {
+        if (previousTotal > 0) {
+            monthlyGrowth = ((currentTotal - previousTotal) / previousTotal) * 100;
+        } else if (currentTotal > 0) {
             monthlyGrowth = 100; // Growth from 0 to a positive number
         }
     }
@@ -208,10 +209,13 @@ export async function getEvolucaoMensal(tipo: Tipo | 'Faturamento', filters: Fil
     records
         .forEach(record => {
             let value = 0;
+            const useRepasse = filters.modo === 'repasse';
+            const recordValue = useRepasse ? record.valor_repasse : record.valor_pago;
+
             if (tipo === 'Faturamento') {
-                value = record.valor_pago;
+                value = recordValue;
             } else if (record.tipo === tipo) {
-                value = record.valor_pago;
+                value = recordValue;
             }
 
             if (value !== 0 && record.referencia_mes > 0 && record.referencia_mes <= 12) {
@@ -250,6 +254,8 @@ export async function getDashboardData(filters: Filters) {
 
 
     // 3. Perform transformations with sanitized data
+    const useRepasse = filters.modo === 'repasse';
+
     const repassePorPolo = Object.entries(allRecords.reduce((acc, record) => {
         acc[record.polo] = (acc[record.polo] || 0) + record.valor_repasse;
         return acc;
@@ -269,8 +275,9 @@ export async function getDashboardData(filters: Filters) {
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({ name: new Date(0, i).toLocaleString('pt-BR', { month: 'short' }).replace('.', ''), value: 0 }));
         yearlyRecords.forEach(record => {
             let value = 0;
-            if (tipo === 'Faturamento') value = record.valor_pago;
-            else if (record.tipo === tipo) value = record.valor_pago;
+            const recordValue = useRepasse ? record.valor_repasse : record.valor_pago;
+            if (tipo === 'Faturamento') value = recordValue;
+            else if (record.tipo === tipo) value = recordValue;
             if (value !== 0 && record.referencia_mes > 0 && record.referencia_mes <= 12) {
                 monthlyData[record.referencia_mes - 1].value += value;
             }
@@ -287,7 +294,8 @@ export async function getDashboardData(filters: Filters) {
     polosForTable.forEach(polo => { pivotData[polo] = {}; });
     yearlyRecords.forEach(record => {
         if (!pivotData[record.polo]) pivotData[record.polo] = {};
-        pivotData[record.polo][record.referencia_mes] = (pivotData[record.polo][record.referencia_mes] || 0) + record.valor_pago;
+        const recordValue = useRepasse ? record.valor_repasse : record.valor_pago;
+        pivotData[record.polo][record.referencia_mes] = (pivotData[record.polo][record.referencia_mes] || 0) + recordValue;
     });
     const monthNames = Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('pt-BR', { month: 'short' }).replace('.', ''));
     const tableData = Object.entries(pivotData).map(([polo, months]) => {
@@ -318,12 +326,12 @@ export async function getDashboardData(filters: Filters) {
         const poloMonthlyRecords = monthlyRecords.filter(r => r.polo === polo);
         const poloDiscountRecords = discountRecords.filter(r => r.polo === polo);
         const ticket1Records = poloMonthlyRecords.filter(r => r.parcela === 1);
-        const totalTicket1 = ticket1Records.reduce((sum, r) => sum + r.valor_pago, 0);
+        const totalTicket1 = ticket1Records.reduce((sum, r) => sum + (useRepasse ? r.valor_repasse : r.valor_pago), 0);
         const ticket1 = ticket1Records.length > 0 ? totalTicket1 / ticket1Records.length : 0;
         const ticket2Records = poloMonthlyRecords.filter(r => r.parcela === 2);
-        const totalTicket2 = ticket2Records.reduce((sum, r) => sum + r.valor_pago, 0);
+        const totalTicket2 = ticket2Records.reduce((sum, r) => sum + (useRepasse ? r.valor_repasse : r.valor_pago), 0);
         const ticket2 = ticket2Records.length > 0 ? totalTicket2 / ticket2Records.length : 0;
-        const totalDesconto = poloDiscountRecords.reduce((sum, r) => sum + r.valor_pago, 0);
+        const totalDesconto = poloDiscountRecords.reduce((sum, r) => sum + (useRepasse ? r.valor_repasse : r.valor_pago), 0);
         const count = poloDiscountRecords.length;
         const descMedio = count > 0 ? Math.abs(totalDesconto) / count : 0;
         return { polo, ticket1, ticket2, discount: descMedio };
@@ -331,13 +339,15 @@ export async function getDashboardData(filters: Filters) {
 
     const receitaPorCategoria = Object.entries(allRecords.reduce((acc, record) => {
         if (record.categoria !== 'Outras Receitas' || record.tipo !== 'Descontos') {
-            acc[record.categoria] = (acc[record.categoria] || 0) + record.valor_pago;
+            const recordValue = useRepasse ? record.valor_repasse : record.valor_pago;
+            acc[record.categoria] = (acc[record.categoria] || 0) + recordValue;
         }
         return acc;
     }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }));
 
     const topPolos = Object.entries(allRecords.reduce((acc, record) => {
-        acc[record.polo] = (acc[record.polo] || 0) + record.valor_pago;
+        const recordValue = useRepasse ? record.valor_repasse : record.valor_pago;
+        acc[record.polo] = (acc[record.polo] || 0) + recordValue;
         return acc;
     }, {} as Record<string, number>)).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
 
@@ -363,7 +373,8 @@ export async function getDashboardData(filters: Filters) {
         const curso = cursosMap.get(rec.sigla_curso);
         if (!curso) return acc;
         if (!acc[curso.sigla]) acc[curso.sigla] = { name: curso.nome, value: 0 };
-        acc[curso.sigla].value += rec.valor_pago;
+        const recordValue = useRepasse ? rec.valor_repasse : rec.valor_pago;
+        acc[curso.sigla].value += recordValue;
         return acc;
     }, {} as Record<string, { name: string, value: number }>)).sort((a, b) => b.value - a.value).slice(0, 5);
 
@@ -373,7 +384,8 @@ export async function getDashboardData(filters: Filters) {
         if (!curso) return acc;
         if (!acc[rec.polo]) acc[rec.polo] = {};
         if (!acc[rec.polo][curso.sigla]) acc[rec.polo][curso.sigla] = { name: curso.nome, value: 0 };
-        acc[rec.polo][curso.sigla].value += rec.valor_pago;
+        const recordValue = useRepasse ? rec.valor_repasse : rec.valor_pago;
+        acc[rec.polo][curso.sigla].value += recordValue;
         return acc;
     }, {} as Record<string, Record<string, { name: string, value: number }>>)).reduce((acc, [polo, cursos]) => {
         acc[polo] = Object.values(cursos).sort((a, b) => b.value - a.value).slice(0, 5);
@@ -465,7 +477,7 @@ export type EnrollmentSummaryData = {
 
 export async function getEnrollmentSummaryData(filters: Filters): Promise<EnrollmentSummaryData> {
     const permissions = await getAuthPerms();
-    const matriculas = await db.getMatriculas(permissions.redeId || undefined);
+    const matriculas = await db.getMatriculas(permissions.redeId || '');
 
     // Resolve Processo Filter Date Range
     let processDateRange: { start: Date, end: Date } | null = null;

@@ -140,9 +140,24 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
     'mensalidades': { data: data.mensalidadesEvolucao, distinctAnos: distinctValues.anos, globalFilters: filters },
     'acordos': { data: data.acordosEvolucao, distinctAnos: distinctValues.anos, globalFilters: filters },
     'descontos': { data: data.descontosEvolucao, distinctAnos: distinctValues.anos, globalFilters: filters },
-    'receita-polo-tabela': { data: data.receitaPorPolo.data, footer: data.receitaPorPolo.footer, columns: data.receitaPorPolo.columns },
-    'top-5-cursos': { data: data.topCursos },
-    'top-5-cursos-polo': { data: data.topCursosPorPolo },
+    'receita-polo-tabela': { data: data.receitaPorPolo.data, footer: data.receitaPorPolo.footer, columns: data.receitaPorPolo.columns, modo: filters.modo },
+    'top-5-cursos': { data: data.topCursos, modo: filters.modo },
+    'top-5-cursos-polo': { data: data.topCursosPorPolo, modo: filters.modo },
+  };
+
+  const getDynamicTitle = (key: string, baseTitle: string) => {
+    const modoSuffix = filters.modo === 'pago' ? ' (Total)' : ' (Líquido)';
+
+    // Some widgets have specific logic or don't need suffix
+    if (key === 'lucro-liquido-tabela' || key === 'lucro-liquido-grafico') return baseTitle;
+    if (key === 'ticket-medio') return `Ticket Médio${modoSuffix}`;
+    if (key === 'top-polos') return `Top 5 Polos${modoSuffix}`;
+    if (key === 'faturamento') return `Evolução${modoSuffix}`;
+    if (key === 'receita-categoria') return `Categoria${modoSuffix}`;
+    if (key === 'receita-polo-tabela') return `Receita por Polo${modoSuffix}`;
+    if (key.includes('cursos')) return `${baseTitle}${modoSuffix}`;
+
+    return baseTitle;
   };
 
   return (
@@ -183,10 +198,11 @@ export function DashboardView({ data, distinctValues, filters }: DashboardViewPr
 
             const WidgetComponent = config.component;
             const props = componentDataMapping[key];
+            const dynamicTitle = getDynamicTitle(key, config.title);
 
             return (
               <div key={key}>
-                <WidgetComponent {...props} onRemove={() => handleRemoveWidget(key)} />
+                <WidgetComponent {...props} title={dynamicTitle} onRemove={() => handleRemoveWidget(key)} />
               </div>
             );
           })}

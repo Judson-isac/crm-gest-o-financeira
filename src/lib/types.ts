@@ -35,6 +35,7 @@ export type Filters = {
   mes?: number;
   ano?: number;
   processo?: string; // ID of the process
+  modo?: 'pago' | 'repasse';
 };
 
 export type ImportInfo = {
