@@ -52,6 +52,9 @@ function SpacepointsEditor({
     const [isSaving, startSavingTransition] = useTransition();
     const [areSpacepointsLoaded, setAreSpacepointsLoaded] = useState(false);
 
+    // Shared dates across all polos for this process
+    const [sharedDates, setSharedDates] = useState<Record<number, Date | undefined>>({});
+
     const handleLoadSpacepoints = useCallback(() => {
         if (!selectedProcesso) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, selecione um processo seletivo.' });
@@ -59,49 +62,59 @@ function SpacepointsEditor({
         }
         setIsLoading(true);
         setAreSpacepointsLoaded(false);
-        setTimeout(() => {
-            const dataForProcesso = allSpacepoints
-                .filter(sp =>
-                    sp.processoSeletivo === selectedProcesso &&
-                    (selectedPolo === 'GLOBAL' ? !sp.polo : sp.polo === selectedPolo)
-                )
-                .sort((a, b) => a.numeroSpace - b.numeroSpace)
-                .map(sp => {
-                    const dynamicMetas: Record<string, string> = {};
-                    tiposCurso.forEach(tc => {
-                        // Mapping logic: check if metasPorTipo has key by ID or Name
-                        // If we saved by Name previously (migration), we might need to map.
-                        // But for new logic, let's try to use ID as key if possible, OR Name.
-                        // The type definition says Key: Uppercase Name. 
-                        const key = tc.nome.toUpperCase();
-                        dynamicMetas[tc.id] = String(sp.metasPorTipo?.[key] || 0);
-                    });
 
-                    return {
-                        id: sp.id,
-                        numeroSpace: sp.numeroSpace,
-                        date: new Date(sp.dataSpace),
-                        metaTotal: sp.metaTotal,
-                        metasPorTipo: dynamicMetas
-                    };
+        setTimeout(() => {
+            // Load ALL spacepoints for this process to find the established dates
+            const allForProcess = allSpacepoints.filter(sp => sp.processoSeletivo === selectedProcesso);
+
+            // Map space numbers to their dates (preferring the ones that have been set)
+            const dateMap: Record<number, Date | undefined> = {};
+            allForProcess.forEach(sp => {
+                if (sp.dataSpace && (!dateMap[sp.numeroSpace] || sp.polo === undefined)) {
+                    dateMap[sp.numeroSpace] = new Date(sp.dataSpace);
+                }
+            });
+            setSharedDates(dateMap);
+
+            // Now load specific metas for the selected polo
+            const dataForPolo = allForProcess
+                .filter(sp => (selectedPolo === 'GLOBAL' ? !sp.polo : sp.polo === selectedPolo))
+                .sort((a, b) => a.numeroSpace - b.numeroSpace);
+
+            // We want to show rows for ALL space numbers found in the process, not just the ones this polo has
+            const spaceNumbers = Array.from(new Set(allForProcess.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
+            if (spaceNumbers.length === 0) spaceNumbers.push(1, 2, 3); // Default spaces for new
+
+            const editorData = spaceNumbers.map(num => {
+                const sp = dataForPolo.find(s => s.numeroSpace === num);
+                const dynamicMetas: Record<string, string> = {};
+                tiposCurso.forEach(tc => {
+                    const key = tc.nome.toUpperCase();
+                    dynamicMetas[tc.id] = String(sp?.metasPorTipo?.[key] || 0);
                 });
 
-            setSpacepoints(dataForProcesso);
+                return {
+                    id: sp?.id || `temp_${num}_${Date.now()}`,
+                    numeroSpace: num,
+                    date: dateMap[num],
+                    metaTotal: sp?.metaTotal || 0,
+                    metasPorTipo: dynamicMetas
+                };
+            });
+
+            setSpacepoints(editorData);
             setIsLoading(false);
             setAreSpacepointsLoaded(true);
-        }, 500); // Simulate network delay
-    }, [selectedProcesso, toast, allSpacepoints, tiposCurso]);
-
-
+        }, 500);
+    }, [selectedProcesso, selectedPolo, toast, allSpacepoints, tiposCurso]);
 
     const handleAddRow = () => {
         const nextNum = spacepoints.length > 0 ? Math.max(...spacepoints.map(s => s.numeroSpace)) + 1 : 1;
-
         const initialMetas: Record<string, string> = {};
         tiposCurso.forEach(tc => initialMetas[tc.id] = '0');
 
         setSpacepoints([...spacepoints, {
-            id: `temp_${Date.now()}`,
+            id: `temp_${nextNum}_${Date.now()}`,
             numeroSpace: nextNum,
             date: undefined,
             metaTotal: 0,
@@ -114,18 +127,15 @@ function SpacepointsEditor({
     };
 
     const handleDateChange = (id: string, newDate: Date | undefined) => {
-        setSpacepoints(spacepoints.map(sp => sp.id === id ? { ...sp, date: newDate } : sp));
+        setSpacepoints(prev => prev.map(sp => sp.id === id ? { ...sp, date: newDate } : sp));
     };
 
     const handleChange = (id: string, tipoId: string, value: string) => {
-        setSpacepoints(spacepoints.map(sp => {
+        setSpacepoints(prev => prev.map(sp => {
             if (sp.id !== id) return sp;
             return {
                 ...sp,
-                metasPorTipo: {
-                    ...sp.metasPorTipo,
-                    [tipoId]: value
-                }
+                metasPorTipo: { ...sp.metasPorTipo, [tipoId]: value }
             };
         }));
     };
@@ -138,20 +148,17 @@ function SpacepointsEditor({
 
     const handleSave = () => {
         const spacepointsToSave = spacepoints
-            .filter(sp => sp.date) // Must have date
-            .map((sp, index) => {
-                const total = getTotal(sp);
-
-                // Convert UI ID-based keys to Backend Name-based keys (UPPERCASE)
+            .filter(sp => sp.date)
+            .map(sp => {
                 const metasToSave: Record<string, number> = {};
                 tiposCurso.forEach(tc => {
                     metasToSave[tc.nome.toUpperCase()] = Number(sp.metasPorTipo[tc.id]) || 0;
                 });
 
                 return {
-                    numeroSpace: sp.numeroSpace, // Or reset to index + 1 if we want to enforce sequential
+                    numeroSpace: sp.numeroSpace,
                     dataSpace: sp.date!,
-                    metaTotal: total,
+                    metaTotal: getTotal(sp),
                     metasPorTipo: metasToSave
                 };
             });
@@ -165,8 +172,10 @@ function SpacepointsEditor({
             const poloToSave = selectedPolo === 'GLOBAL' ? undefined : selectedPolo;
             const result = await saveSpacepointsAction(selectedProcesso, spacepointsToSave, poloToSave);
             if (result.success) {
-                toast({ title: 'Sucesso!', description: `Spacepoints para ${processoLabels?.get(selectedProcesso) || selectedProcesso} salvos com sucesso.` });
-                onSaveSuccess();
+                toast({ title: 'Sucesso!', description: `Metas do polo ${selectedPolo} salvos com sucesso.` });
+                // We don't automatically go back to allow editing other polos
+                setAreSpacepointsLoaded(false);
+                handleLoadSpacepoints();
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -366,56 +375,41 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {processoIds.flatMap(pId => {
-                                // Get all unique combinations of (Processo, Polo) that have spacepoints
-                                const combinations = [
-                                    { pId, polo: undefined, label: 'GLOBAL' },
-                                    ...polos.map(p => ({ pId, polo: p, label: p }))
-                                ].filter(comb => {
-                                    return allSpacepoints.some(sp => sp.processoSeletivo === comb.pId && (comb.polo === undefined ? !sp.polo : sp.polo === comb.polo));
-                                });
+                            {processoIds.map(pId => {
+                                const sps = allSpacepoints.filter(sp => sp.processoSeletivo === pId);
+                                if (sps.length === 0) return (
+                                    <TableRow key={pId}>
+                                        <TableCell className="font-medium">{processoLabels.get(pId)}</TableCell>
+                                        <TableCell className="text-center">0</TableCell>
+                                        <TableCell className="text-center">-</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" onClick={() => handleEdit(pId)}>
+                                                Configurar
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                );
 
-                                // fallback if no spacepoints for this process yet, show at least a generic row if it matches search
-                                if (combinations.length === 0) {
-                                    return [(
-                                        <TableRow key={pId}>
-                                            <TableCell className="font-medium">{processoLabels.get(pId)}</TableCell>
-                                            <TableCell className="text-center">0</TableCell>
-                                            <TableCell className="text-center">-</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(pId)}>
-                                                    Configurar
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    )];
-                                }
+                                // Calculate network-wide total meta (sum of all polos for the latest space)
+                                const latestSpaceNum = Math.max(...sps.map(s => s.numeroSpace));
+                                const latestSpacepoints = sps.filter(s => s.numeroSpace === latestSpaceNum);
+                                const networkTotalMeta = latestSpacepoints.reduce((acc, curr) => acc + (curr.metaTotal || 0), 0);
+                                const numSpaces = Array.from(new Set(sps.map(s => s.numeroSpace))).length;
 
-                                return combinations.map(comb => {
-                                    const sps = allSpacepoints.filter(sp =>
-                                        sp.processoSeletivo === comb.pId &&
-                                        (comb.polo === undefined ? !sp.polo : sp.polo === comb.polo)
-                                    );
-                                    const totalMeta = sps.length > 0 ? Math.max(...sps.map(s => s.metaTotal || 0)) : 0;
-
-                                    return (
-                                        <TableRow key={`${comb.pId}-${comb.polo || 'global'}`}>
-                                            <TableCell className="font-medium">
-                                                {processoLabels.get(comb.pId)}
-                                                <span className="ml-2 text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                                                    {comb.label}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-center">{sps.length}</TableCell>
-                                            <TableCell className="text-center">{totalMeta}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(comb.pId, comb.polo)}>
-                                                    Editar
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                });
+                                return (
+                                    <TableRow key={pId}>
+                                        <TableCell className="font-medium">
+                                            {processoLabels.get(pId)}
+                                        </TableCell>
+                                        <TableCell className="text-center">{numSpaces}</TableCell>
+                                        <TableCell className="text-center font-bold text-primary">{networkTotalMeta}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" onClick={() => handleEdit(pId)}>
+                                                Gerenciar
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                );
                             })}
                         </TableBody>
                     </Table>

@@ -1079,10 +1079,16 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
                     redeId,
                     sp.numeroSpace,
                     sp.dataSpace,
-                    JSON.stringify(sp.metasPorTipo), // Ensure JSON
+                    JSON.stringify(sp.metasPorTipo),
                     sp.metaTotal,
                     polo || null
                 ]
+            );
+
+            // Sync dates for all other polos of the same process and space number
+            await client.query(
+                'UPDATE spacepoints SET "dataSpace" = $1 WHERE "processoSeletivo" = $2 AND "redeId" = $3 AND "numeroSpace" = $4',
+                [sp.dataSpace, processoSeletivo, redeId, sp.numeroSpace]
             );
         }
         await client.query('COMMIT');

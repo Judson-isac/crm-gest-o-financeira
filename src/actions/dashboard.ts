@@ -286,3 +286,89 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
         spaces: processSpacepoints
     };
 }
+
+export type SpacepointCompositionData = {
+    spaceNumber: number;
+    totalTarget: number;
+    totalRealized: number;
+    polos: {
+        name: string;
+        target: number;
+        realized: number;
+        percentage: number;
+    }[];
+};
+
+export async function getSpacepointCompositionAction(processoSeletivoId: string): Promise<SpacepointCompositionData | null> {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) return null;
+
+    const spacepoints = await db.getSpacepoints(user.redeId);
+    const processSpacepoints = spacepoints.filter(sp => sp.processoSeletivo === processoSeletivoId);
+    if (processSpacepoints.length === 0) return null;
+
+    // 1. Find Current Space
+    const now = new Date();
+    const sortedSpaces = Array.from(new Set(processSpacepoints.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
+
+    // Find shared dates for each space number
+    const dateMap: Record<number, Date> = {};
+    processSpacepoints.forEach(sp => {
+        if (!dateMap[sp.numeroSpace]) dateMap[sp.numeroSpace] = new Date(sp.dataSpace);
+    });
+
+    let currentSpaceNum = sortedSpaces[0];
+    for (const num of sortedSpaces) {
+        const d = dateMap[num];
+        if (d && d >= now) {
+            currentSpaceNum = num;
+            break;
+        }
+        currentSpaceNum = num; // Fallback to last if all past
+    }
+
+    const currentSpaceDate = dateMap[currentSpaceNum];
+    const spDate = new Date(currentSpaceDate);
+    spDate.setHours(23, 59, 59, 999);
+
+    // 2. Get Matriculas
+    const matriculas = await db.getMatriculas(user.redeId);
+    const relevantMatriculas = matriculas.filter(m => m.processoSeletivoId === processoSeletivoId);
+
+    // 3. Calculate for each Polo
+    const rede = await db.getRedeById(user.redeId);
+    const poloList = rede?.polos || [];
+
+    // Include 'GLOBAL' logic? Usually Global is just the sum. 
+    // But the user has entries for GLOBAL in the DB.
+    // Let's stick to Polo list from Rede + Global if records exist.
+    const uniquePolosInDb = Array.from(new Set(processSpacepoints.map(sp => sp.polo).filter(Boolean))) as string[];
+    const allPolos = Array.from(new Set([...poloList, ...uniquePolosInDb]));
+
+    const poloResults = allPolos.map(poloName => {
+        const poloSp = processSpacepoints.find(sp => sp.polo === poloName && sp.numeroSpace === currentSpaceNum);
+        const target = poloSp?.metaTotal || 0;
+
+        const realized = relevantMatriculas.filter(m => {
+            const mDate = new Date(m.dataMatricula || m.criadoEm || new Date());
+            return m.polo === poloName && mDate <= spDate;
+        }).length;
+
+        return {
+            name: poloName,
+            target,
+            realized,
+            percentage: target > 0 ? (realized / target) * 100 : (realized > 0 ? 100 : 0)
+        };
+    }).sort((a, b) => b.realized - a.realized);
+
+    const totalTarget = poloResults.reduce((acc, curr) => acc + curr.target, 0);
+    const totalRealized = poloResults.reduce((acc, curr) => acc + curr.realized, 0);
+
+    return {
+        spaceNumber: currentSpaceNum,
+        totalTarget,
+        totalRealized,
+        polos: poloResults
+    };
+}

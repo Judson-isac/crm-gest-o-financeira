@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import type { Filters } from "@/lib/types";
 import { ColorPaletteSwitcher } from "@/components/dashboard/color-palette-switcher";
 import { SpacepointAttainmentWidget } from "@/components/dashboard/spacepoint-attainment-widget";
+import { SpacepointCompositionWidget } from "@/components/dashboard/spacepoint-composition-widget";
 import { EnrollmentSummaryStats } from "./enrollment-summary-stats";
 import type { EnrollmentSummaryData } from "@/lib/api";
 
@@ -27,6 +28,11 @@ const WIDGET_CONFIG = {
         title: 'Atingimento de Spacepoints',
         component: SpacepointAttainmentWidget,
         defaultLayout: { i: "spacepoint-attainment", x: 0, y: 0, w: 12, h: 14, minW: 6, minH: 8 }
+    },
+    'spacepoint-composition': {
+        title: 'Composição de Spacepoints por Polo',
+        component: SpacepointCompositionWidget,
+        defaultLayout: { i: "spacepoint-composition", x: 0, y: 14, w: 6, h: 12, minW: 4, minH: 6 }
     },
     // Future widgets can be added here
     // 'enrollment-by-polo': { ... }
@@ -113,6 +119,9 @@ export function EnrollmentDashboardView({ summary, filters }: EnrollmentDashboar
         'spacepoint-attainment': {
             processoFilter: filters.processo,
             poloFilter: Array.isArray(filters.polo) ? filters.polo.join(',') : filters.polo
+        },
+        'spacepoint-composition': {
+            processoFilter: filters.processo
         },
     };
 
