@@ -1217,8 +1217,8 @@ export async function upsertCursos(cursos: Omit<Curso, 'id'>[], redeId: string):
                  DO UPDATE SET 
                     nome = EXCLUDED.nome, 
                     tipo = EXCLUDED.tipo, 
-                    "tipoCursoId" = EXCLUDED."tipoCursoId",
-                    sigla_alternativa = EXCLUDED.sigla_alternativa,
+                    "tipoCursoId" = COALESCE(EXCLUDED."tipoCursoId", cursos."tipoCursoId"),
+                    sigla_alternativa = COALESCE(EXCLUDED.sigla_alternativa, cursos.sigla_alternativa),
                     nicho = EXCLUDED.nicho,
                     ativo = EXCLUDED.ativo`,
                 [

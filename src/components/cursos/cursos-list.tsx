@@ -193,6 +193,7 @@ export function CursosList({ initialCursos, courseTypes = [], cursos: cursosProp
                       />
                     </TableHead>
                     <TableHead>Nome do Curso</TableHead>
+                    <TableHead>Modalidade</TableHead>
                     <TableHead>Sigla</TableHead>
                     <TableHead>Sigla Alternativa</TableHead>
                     <TableHead>Metodologia</TableHead>
@@ -212,6 +213,11 @@ export function CursosList({ initialCursos, courseTypes = [], cursos: cursosProp
                           />
                         </TableCell>
                         <TableCell className="font-medium">{curso.nome}</TableCell>
+                        <TableCell>
+                          {courseTypes.find(t => t.id === curso.tipoCursoId)?.nome || (
+                            <span className="text-muted-foreground italic text-xs">Sem Vínculo</span>
+                          )}
+                        </TableCell>
                         <TableCell>{curso.sigla}</TableCell>
                         <TableCell>{curso.sigla_alternativa || 'N/A'}</TableCell>
                         <TableCell>{curso.tipo}</TableCell>
