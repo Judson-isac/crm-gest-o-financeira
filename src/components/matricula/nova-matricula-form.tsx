@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Separator } from '@/components/ui/separator';
+import { Combobox } from '@/components/ui/combobox';
 import type { Curso, Campanha, ProcessoSeletivo, TipoCurso, Canal, Matricula, Usuario } from '@/lib/types';
 import { saveMatriculaAction } from '@/actions/matriculas';
 
@@ -65,6 +66,44 @@ export function NovaMatriculaForm({
     const router = useRouter();
     const [isSaving, startSaving] = useTransition();
     const [isUploading, setIsUploading] = useState(false);
+
+    // States for dynamic filtering
+    const [selectedTipoCursoId, setSelectedTipoCursoId] = useState<string | undefined>(initialData?.tipoCursoId);
+    const [selectedCursoSigla, setSelectedCursoSigla] = useState<string | undefined>(initialData?.cursoSigla);
+
+    // Dynamic filtering of courses based on selected type
+    const filteredCourses = useMemo(() => {
+        if (!selectedTipoCursoId) return courses;
+
+        const selectedType = courseTypes.find(t => t.id === selectedTipoCursoId);
+        if (!selectedType) return courses;
+
+        // Filtering rule: match course.tipo with type.nome (case insensitive or exact)
+        // Usually course.tipo is 'EAD', 'HIBRIDO', etc.
+        return courses.filter(c =>
+            c.tipo === selectedType.nome ||
+            c.tipo === selectedType.sigla ||
+            // Fallback if there's no direct match, could be empty list or all
+            !c.tipo
+        );
+    }, [courses, selectedTipoCursoId, courseTypes]);
+
+    // Clear course selection when type changes
+    useEffect(() => {
+        if (selectedTipoCursoId && selectedCursoSigla) {
+            const courseInType = filteredCourses.find(c => c.sigla === selectedCursoSigla);
+            if (!courseInType) {
+                setSelectedCursoSigla(undefined);
+            }
+        }
+    }, [selectedTipoCursoId, filteredCourses, selectedCursoSigla]);
+
+    const courseOptions = useMemo(() => {
+        return filteredCourses.map(curso => ({
+            value: curso.sigla,
+            label: `${curso.nome} ${curso.tipo ? `- ${curso.tipo}` : ''} (${curso.sigla})`
+        }));
+    }, [filteredCourses]);
 
     // Currency formatter function
     const formatCurrency = (value: string) => {
@@ -310,7 +349,13 @@ export function NovaMatriculaForm({
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2 md:col-span-1">
                                     <Label htmlFor="tipo-curso">Tipo de Curso *</Label>
-                                    <Select name="tipo-curso" required disabled={courseTypes.length === 0} defaultValue={initialData?.tipoCursoId}>
+                                    <Select
+                                        name="tipo-curso"
+                                        required
+                                        disabled={courseTypes.length === 0}
+                                        defaultValue={initialData?.tipoCursoId}
+                                        onValueChange={setSelectedTipoCursoId}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder={courseTypes.length === 0 ? 'Nenhum tipo importado' : 'Selecione o tipo'} />
                                         </SelectTrigger>
@@ -323,18 +368,15 @@ export function NovaMatriculaForm({
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label htmlFor="curso">Curso *</Label>
-                                    <Select name="curso" required disabled={courses.length === 0} defaultValue={initialData?.cursoSigla}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={courses.length === 0 ? 'Nenhum curso importado' : 'Selecione o curso'} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {courses.map(curso => (
-                                                <SelectItem key={curso.sigla} value={curso.sigla}>
-                                                    {curso.nome} {curso.tipo ? `- ${curso.tipo}` : ''} ({curso.sigla})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                        options={courseOptions}
+                                        value={selectedCursoSigla || ""}
+                                        onValueChange={setSelectedCursoSigla}
+                                        placeholder={courses.length === 0 ? 'Nenhum curso importado' : 'Pesquisar ou selecionar curso...'}
+                                        emptyText="Nenhum curso encontrado."
+                                    />
+                                    {/* Input oculto para manter compatibilidade com FormData */}
+                                    <input type="hidden" name="curso" value={selectedCursoSigla || ""} required />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label htmlFor="campanha">Campanha</Label>
