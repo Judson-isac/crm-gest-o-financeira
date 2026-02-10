@@ -1106,6 +1106,25 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
 }
 
 export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<TipoCurso>('tipos_curso', data);
+
+export async function upsertTipoCurso(data: { nome: string, sigla: string, ativo: boolean, redeId: string }): Promise<TipoCurso> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `INSERT INTO tipos_curso (id, nome, sigla, ativo, "redeId")
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (nome, "redeId")
+             DO UPDATE SET 
+                sigla = EXCLUDED.sigla,
+                ativo = EXCLUDED.ativo
+             RETURNING *`,
+            [uuidv4(), data.nome, data.sigla, data.ativo, data.redeId]
+        );
+        return result.rows[0];
+    } finally {
+        client.release();
+    }
+}
 export const deleteTipoCurso = async (id: string) => genericDelete('tipos_curso', id);
 
 
@@ -1175,14 +1194,25 @@ export async function upsertCursos(cursos: Omit<Curso, 'id'>[], redeId: string):
     try {
         await client.query('BEGIN');
 
+        // Safeguard: Ensure tipoCursoId column exists
+        await client.query(`
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cursos' AND column_name='tipoCursoId') THEN
+                    ALTER TABLE cursos ADD COLUMN "tipoCursoId" UUID;
+                END IF;
+            END $$;
+        `);
+
         for (const curso of cursos) {
             await client.query(
-                `INSERT INTO cursos (id, sigla, nome, tipo, sigla_alternativa, nicho, ativo, "redeId") 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `INSERT INTO cursos (id, sigla, nome, tipo, "tipoCursoId", sigla_alternativa, nicho, ativo, "redeId") 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                  ON CONFLICT (sigla, "redeId") 
                  DO UPDATE SET 
                     nome = EXCLUDED.nome, 
                     tipo = EXCLUDED.tipo, 
+                    "tipoCursoId" = EXCLUDED."tipoCursoId",
                     sigla_alternativa = EXCLUDED.sigla_alternativa,
                     nicho = EXCLUDED.nicho,
                     ativo = EXCLUDED.ativo`,
@@ -1191,6 +1221,7 @@ export async function upsertCursos(cursos: Omit<Curso, 'id'>[], redeId: string):
                     curso.sigla,
                     curso.nome,
                     curso.tipo,
+                    curso.tipoCursoId || null,
                     curso.sigla_alternativa || null,
                     curso.nicho || null,
                     curso.ativo ?? true,
@@ -1232,8 +1263,8 @@ export async function upsertCurso(data: Curso, originalSigla?: string): Promise<
 
         if (originalSigla && originalSigla !== sigla) {
             const result = await client.query(
-                'UPDATE cursos SET sigla = $1, nome = $2, tipo = $3, sigla_alternativa = $4, nicho = $5, ativo = $6 WHERE sigla = $7 AND "redeId" = $8 RETURNING *',
-                [sigla, nome, tipo, sigla_alternativa, nicho, ativo ?? true, originalSigla, redeId]
+                'UPDATE cursos SET sigla = $1, nome = $2, tipo = $3, "tipoCursoId" = $4, sigla_alternativa = $5, nicho = $6, ativo = $7 WHERE sigla = $8 AND "redeId" = $9 RETURNING *',
+                [sigla, nome, tipo, data.tipoCursoId || null, sigla_alternativa, nicho, ativo ?? true, originalSigla, redeId]
             );
             if (result.rows.length === 0) {
                 throw new Error("Curso a ser atualizado não encontrado.");
@@ -1241,17 +1272,18 @@ export async function upsertCurso(data: Curso, originalSigla?: string): Promise<
             return result.rows[0];
         } else {
             const result = await client.query(
-                `INSERT INTO cursos (id, sigla, nome, tipo, sigla_alternativa, nicho, ativo, "redeId") 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `INSERT INTO cursos (id, sigla, nome, tipo, "tipoCursoId", sigla_alternativa, nicho, ativo, "redeId") 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (sigla, "redeId") 
          DO UPDATE SET 
             nome = EXCLUDED.nome, 
             tipo = EXCLUDED.tipo, 
+            "tipoCursoId" = EXCLUDED."tipoCursoId",
             sigla_alternativa = EXCLUDED.sigla_alternativa,
             nicho = EXCLUDED.nicho,
             ativo = EXCLUDED.ativo
          RETURNING *`,
-                [id || uuidv4(), sigla, nome, tipo, sigla_alternativa || null, nicho || null, ativo ?? true, redeId]
+                [id || uuidv4(), sigla, nome, tipo, data.tipoCursoId || null, sigla_alternativa || null, nicho || null, ativo ?? true, redeId]
             );
             return result.rows[0];
         }

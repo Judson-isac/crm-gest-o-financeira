@@ -38,12 +38,39 @@ export async function importCursosAction(cursosData: (CursoJsonItem | CursoBacku
       return { success: false, message: "Rede não identificada para este usuário." };
     }
 
-    // Extract unique modalidades (course types) from the import data
-    const modalidades = new Set<string>();
+    // 1. Identify all unique modalities first
+    const uniqueModalidades = new Set<string>();
+    cursosData.forEach(item => {
+      if (!('metodologia' in item)) {
+        const curso = item as CursoJsonItem;
+        const modalidade = (curso as any).MODALIDADE || (curso as any).UNIDADE || '';
+        if (modalidade) {
+          const normalizedModalidade = modalidade === 'pos-graduacao' ? 'Pós-Graduação' :
+            modalidade === 'tecnico' ? 'Técnico' :
+              modalidade === 'graduacao' ? 'Graduação' :
+                modalidade;
+          uniqueModalidades.add(normalizedModalidade);
+        }
+      }
+    });
 
+    // 2. Upsert modalities and create a map of Name -> ID
+    const modalidadeIdMap: Record<string, string> = {};
+    for (const modalidade of uniqueModalidades) {
+      const sigla = modalidade.toUpperCase().substring(0, 10).replace(/[^A-Z0-9]/g, '');
+      const savedTipo = await db.upsertTipoCurso({
+        nome: modalidade,
+        sigla: sigla,
+        ativo: true,
+        redeId: redeId,
+      });
+      modalidadeIdMap[modalidade] = savedTipo.id;
+    }
+
+    // 3. Map courses to their respective objects, including tipoCursoId
     const cursosToUpsert: Omit<Curso, 'id'>[] = cursosData.map(item => {
       if ('metodologia' in item) {
-        // This is for the manual JSON import with the user's desired format
+        // User-provided simplified format
         const curso = item as CursoBackupItem;
         return {
           sigla: curso.sigla,
@@ -54,24 +81,24 @@ export async function importCursosAction(cursosData: (CursoJsonItem | CursoBacku
           ativo: true,
         };
       } else {
-        // This is for the automatic import from the Unicesumar JSON
+        // Automatic import from Unicesumar JSON
         const curso = item as CursoJsonItem;
+        const modalidade = (curso as any).MODALIDADE || (curso as any).UNIDADE || '';
+        let tipoCursoId: string | undefined = undefined;
 
-        // Extract modalidade for tipos_curso
-        const modalidade = curso.MODALIDADE || curso.UNIDADE || '';
         if (modalidade) {
-          // Normalize modalidade names
           const normalizedModalidade = modalidade === 'pos-graduacao' ? 'Pós-Graduação' :
             modalidade === 'tecnico' ? 'Técnico' :
               modalidade === 'graduacao' ? 'Graduação' :
                 modalidade;
-          modalidades.add(normalizedModalidade);
+          tipoCursoId = modalidadeIdMap[normalizedModalidade];
         }
 
-        const tipo = curso.CD_GRUPO_CURSO === 'EAD_HIBRIDO' ? 'HIBRIDO' : 'EAD';
+        const tipo = (curso as any).CD_GRUPO_CURSO === 'EAD_HIBRIDO' ? 'HIBRIDO' : 'EAD';
         const cursoBase = {
           nome: curso.NM_CURSO,
           tipo: tipo,
+          tipoCursoId: tipoCursoId,
           nicho: curso.TIPO_NICHO,
           ativo: true,
         };
@@ -91,17 +118,6 @@ export async function importCursosAction(cursosData: (CursoJsonItem | CursoBacku
       }
     });
 
-    // Create/update tipos_curso for each unique modalidade
-    for (const modalidade of modalidades) {
-      const sigla = modalidade.toUpperCase().substring(0, 10).replace(/[^A-Z0-9]/g, '');
-      await db.saveTipoCurso({
-        nome: modalidade,
-        sigla: sigla,
-        ativo: true,
-        redeId: redeId,
-      });
-    }
-
     await db.upsertCursos(cursosToUpsert, redeId);
 
     revalidatePath('/importacao/cursos');
@@ -109,8 +125,10 @@ export async function importCursosAction(cursosData: (CursoJsonItem | CursoBacku
     revalidatePath('/cadastros/tipos-de-curso');
     revalidatePath('/matricula/nova');
 
-    const tiposMessage = modalidades.size > 0 ? ` e ${modalidades.size} tipo(s) de curso` : '';
-    return { success: true, message: `${cursosToUpsert.length} cursos${tiposMessage} foram importados/atualizados com sucesso.` };
+    return {
+      success: true,
+      message: `${cursosToUpsert.length} cursos foram importados/atualizados com sucesso. ${Object.keys(modalidadeIdMap).length} tipos de curso foram processados sem duplicidade.`
+    };
   } catch (error) {
     console.error("Erro ao importar cursos:", error);
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";

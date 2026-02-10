@@ -86,6 +86,7 @@ export type Curso = {
   sigla_alternativa?: string;
   ativo?: boolean;
   tipo: 'EAD' | 'HIBRIDO' | string;
+  tipoCursoId?: string;
   nicho?: string;
   redeId?: string;
 };
