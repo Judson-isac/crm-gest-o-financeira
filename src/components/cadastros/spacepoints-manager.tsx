@@ -92,11 +92,6 @@ function SpacepointsEditor({
         }, 500); // Simulate network delay
     }, [selectedProcesso, toast, allSpacepoints, tiposCurso]);
 
-    useEffect(() => {
-        if (selectedProcesso) {
-            handleLoadSpacepoints();
-        }
-    }, [selectedProcesso, selectedPolo, handleLoadSpacepoints]);
 
 
     const handleAddRow = () => {
@@ -190,7 +185,7 @@ function SpacepointsEditor({
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4 max-w-sm">
-                        <div className="space-y-2">
+                        <div className="space-y-2 text-left">
                             <Label htmlFor="processo-seletivo">Processo Seletivo</Label>
                             <Select value={selectedProcesso} onValueChange={setSelectedProcesso} disabled={!!initialProcesso}>
                                 <SelectTrigger id="processo-seletivo">
@@ -201,13 +196,13 @@ function SpacepointsEditor({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 text-left">
                             <Label htmlFor="polo-select">Polo</Label>
                             <Select
                                 value={selectedPolo}
                                 onValueChange={(val) => {
                                     setSelectedPolo(val);
-                                    // The useEffect will handle the load
+                                    setAreSpacepointsLoaded(false);
                                 }}
                             >
                                 <SelectTrigger id="polo-select">
@@ -218,6 +213,16 @@ function SpacepointsEditor({
                                     {polos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="pt-2">
+                            <Button
+                                onClick={handleLoadSpacepoints}
+                                disabled={isLoading || !selectedProcesso}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Carregar Spacepoints
+                            </Button>
                         </div>
                     </div>
 
@@ -291,7 +296,7 @@ function SpacepointsEditor({
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
 
