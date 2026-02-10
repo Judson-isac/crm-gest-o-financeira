@@ -1351,11 +1351,12 @@ export async function getEnrollmentRanking(
             SELECT 
                 u.id as "userId",
                 u.nome,
+                u."avatarUrl",
                 COUNT(m.id) as count
             FROM matriculas m
             JOIN usuarios u ON m."usuarioId" = u.id
             WHERE m."redeId" = $1 ${dateFilter}
-            GROUP BY u.id, u.nome
+            GROUP BY u.id, u.nome, u."avatarUrl"
             ORDER BY count DESC
         `;
 
@@ -1364,6 +1365,7 @@ export async function getEnrollmentRanking(
         return result.rows.map((row, index) => ({
             userId: row.userId,
             nome: row.nome,
+            avatarUrl: row.avatarUrl,
             count: parseInt(row.count, 10),
             position: index + 1
         }));

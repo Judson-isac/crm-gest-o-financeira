@@ -544,6 +544,7 @@ export default function RankingPage() {
                                 <span className="text-xl font-bold text-slate-500 w-8">#{item.position}</span>
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-10 w-10 border border-slate-700">
+                                        <AvatarImage src={item.avatarUrl} className="object-cover" />
                                         <AvatarFallback className="bg-slate-800 text-slate-300">
                                             {item.nome.substring(0, 2).toUpperCase()}
                                         </AvatarFallback>
@@ -739,6 +740,7 @@ function PodiumItem({ item, color, height, isFirst }: { item: RankingItem, color
                     style.border,
                     isFirst ? "h-32 w-32" : ""
                 )}>
+                    <AvatarImage src={item.avatarUrl} className="object-cover" />
                     <AvatarFallback className="bg-slate-800 text-slate-200 text-2xl font-bold">
                         {item.nome.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
