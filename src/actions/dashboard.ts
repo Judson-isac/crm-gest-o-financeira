@@ -36,42 +36,24 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
     let processSpacepoints: Spacepoint[] = [];
 
     if (polo && polo !== 'Todos') {
-        // Specific polo requested
+        // Specific polo requested - only show that polo's data
         processSpacepoints = processSpacepointsRaw
             .filter(sp => sp.polo === polo)
             .sort((a, b) => a.numeroSpace - b.numeroSpace);
-
-        // Fallback to global if no specific goals for this polo
-        if (processSpacepoints.length === 0) {
-            processSpacepoints = processSpacepointsRaw
-                .filter(sp => !sp.polo)
-                .sort((a, b) => a.numeroSpace - b.numeroSpace);
-        }
     } else {
         // "Todos" or no polo selected - Aggregate mode
-        // Find all unique space numbers for this process
         const spaceNumbers = Array.from(new Set(processSpacepointsRaw.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
 
         if (spaceNumbers.length > 0) {
             processSpacepoints = spaceNumbers.map(num => {
                 const spacesForNum = processSpacepointsRaw.filter(sp => sp.numeroSpace === num);
-
-                // If there are specific polo goals for this space number, we AGGREGATE them.
-                // NOTE: If a polo DOES NOT have a goal for this space, it contributes 0.
-                // We decide whether to include the "Global" (!sp.polo) goal in the sum 
-                // ONLY if there are NO specific polo goals for that space. 
-                // BUT usually "Global" is a separate configuration.
-                // Best approach: If ANY polo has a goal, sum only polo goals. 
-                // If NO polo has a goal, use the Global one if it exists.
-
                 const poloSpaces = spacesForNum.filter(sp => !!sp.polo);
-                const globalSpace = spacesForNum.find(sp => !sp.polo);
+
+                // SUM POLO GOALS ONLY (Ignore records with polo=null)
+                const aggregatedMetas: Record<string, number> = {};
+                let aggregatedTotal = 0;
 
                 if (poloSpaces.length > 0) {
-                    // SUM POLO GOALS
-                    const aggregatedMetas: Record<string, number> = {};
-                    let aggregatedTotal = 0;
-
                     poloSpaces.forEach(ps => {
                         aggregatedTotal += ps.metaTotal || 0;
                         if (ps.metasPorTipo) {
@@ -82,15 +64,13 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
                     });
 
                     return {
-                        ...poloSpaces[0], // Copy metadata from first one
+                        ...poloSpaces[0],
                         id: `agg-${num}`,
                         polo: undefined,
                         metaTotal: aggregatedTotal,
                         metasPorTipo: aggregatedMetas,
-                        dataSpace: globalSpace?.dataSpace || poloSpaces[0].dataSpace // Prefer global date if available
+                        dataSpace: poloSpaces[0].dataSpace
                     } as Spacepoint;
-                } else if (globalSpace) {
-                    return globalSpace;
                 }
                 return null;
             }).filter(sp => sp !== null) as Spacepoint[];

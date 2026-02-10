@@ -46,7 +46,7 @@ function SpacepointsEditor({
 }) {
     const { toast } = useToast();
     const [selectedProcesso, setSelectedProcesso] = useState<string>(initialProcesso || '');
-    const [selectedPolo, setSelectedPolo] = useState<string>(initialPolo || 'GLOBAL');
+    const [selectedPolo, setSelectedPolo] = useState<string>(initialPolo || (polos.length > 0 ? polos[0] : ''));
     const [spacepoints, setSpacepoints] = useState<EditorSpacepoint[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, startSavingTransition] = useTransition();
@@ -218,7 +218,6 @@ function SpacepointsEditor({
                                     <SelectValue placeholder="Selecione um polo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="GLOBAL">GLOBAL (Média da Rede)</SelectItem>
                                     {polos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                 </SelectContent>
                             </Select>
