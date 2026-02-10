@@ -47,7 +47,7 @@ export function Combobox({ options, value, onValueChange, placeholder = "Selecio
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" style={{ minWidth: 'var(--radix-popover-trigger-width)' }}>
-        <Command value={value}>
+        <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
@@ -57,7 +57,8 @@ export function Combobox({ options, value, onValueChange, placeholder = "Selecio
                   key={option.value}
                   value={option.value}
                   className="cursor-pointer py-3"
-                  onPointerDown={() => {
+                  onMouseDown={(e) => {
+                    // Force selection on mousedown as backup
                     onValueChange(option.value)
                     setOpen(false)
                   }}
