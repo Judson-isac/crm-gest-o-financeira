@@ -1110,40 +1110,32 @@ export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<Tip
 export async function upsertTipoCurso(data: { nome: string, sigla: string, ativo: boolean, redeId: string }): Promise<TipoCurso> {
     const client = await pool.connect();
     try {
-        // Safeguard: Ensure unique constraint exists for (nome, redeId)
-        await client.query(`
-            DO $$ 
-            BEGIN 
-                -- Cleanup duplicates if any exist before adding constraint
-                DELETE FROM tipos_curso tc1
-                WHERE tc1.id IN (
-                    SELECT id FROM (
-                        SELECT id, ROW_NUMBER() OVER (PARTITION BY nome, "redeId" ORDER BY id) as row_num
-                        FROM tipos_curso
-                    ) t WHERE t.row_num > 1
-                );
-
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_constraint 
-                    WHERE conrelid = 'tipos_curso'::regclass 
-                    AND conname = 'tipos_curso_nome_redeId_key'
-                ) THEN
-                    ALTER TABLE tipos_curso ADD CONSTRAINT tipos_curso_nome_redeId_key UNIQUE (nome, "redeId");
-                END IF;
-            END $$;
-        `);
-
-        const result = await client.query(
-            `INSERT INTO tipos_curso (id, nome, sigla, ativo, "redeId")
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (nome, "redeId")
-             DO UPDATE SET 
-                sigla = EXCLUDED.sigla,
-                ativo = EXCLUDED.ativo
-             RETURNING *`,
-            [uuidv4(), data.nome, data.sigla, data.ativo, data.redeId]
+        // Use a manual UPSERT logic to avoid requiring ALTER TABLE (DDL) or specific UNIQUE constraints
+        // This is safer for production users with restricted permissions.
+        const existing = await client.query(
+            'SELECT * FROM tipos_curso WHERE nome = $1 AND "redeId" = $2',
+            [data.nome, data.redeId]
         );
-        return result.rows[0];
+
+        if (existing.rows.length > 0) {
+            const result = await client.query(
+                `UPDATE tipos_curso SET 
+                    sigla = $1,
+                    ativo = $2
+                 WHERE id = $3
+                 RETURNING *`,
+                [data.sigla, data.ativo, existing.rows[0].id]
+            );
+            return result.rows[0];
+        } else {
+            const result = await client.query(
+                `INSERT INTO tipos_curso (id, nome, sigla, ativo, "redeId")
+                 VALUES ($1, $2, $3, $4, $5)
+                 RETURNING *`,
+                [uuidv4(), data.nome, data.sigla, data.ativo, data.redeId]
+            );
+            return result.rows[0];
+        }
     } finally {
         client.release();
     }
@@ -1216,16 +1208,6 @@ export async function upsertCursos(cursos: Omit<Curso, 'id'>[], redeId: string):
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        // Safeguard: Ensure tipoCursoId column exists
-        await client.query(`
-            DO $$ 
-            BEGIN 
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cursos' AND column_name='tipoCursoId') THEN
-                    ALTER TABLE cursos ADD COLUMN "tipoCursoId" UUID;
-                END IF;
-            END $$;
-        `);
 
         for (const curso of cursos) {
             await client.query(
