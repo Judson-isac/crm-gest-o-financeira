@@ -1,17 +1,17 @@
 
 'use client';
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +42,7 @@ export default function PoloDespesaPage() {
     const [isDataLoading, startDataLoading] = useTransition();
     const [isSaving, startSaving] = useTransition();
     const [isDeleting, startDeleting] = useTransition();
-    
+
     // Form state
     const [expenseMode, setExpenseMode] = useState<'geral' | 'curso' | 'nicho'>('geral');
     const [newDescricao, setNewDescricao] = useState("");
@@ -50,7 +50,7 @@ export default function PoloDespesaPage() {
     const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("");
     const [selectedCommonExpense, setSelectedCommonExpense] = useState("");
-    
+
     const { toast } = useToast();
 
     const refreshData = useCallback(() => {
@@ -79,7 +79,7 @@ export default function PoloDespesaPage() {
         const niches = new Set(cursos.map(c => c.nicho).filter(Boolean));
         return Array.from(niches).map(n => ({ value: n!, label: n! }));
     }, [cursos]);
-  
+
     const handleAddDespesa = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!polo || !ano || !mes) return;
@@ -117,7 +117,7 @@ export default function PoloDespesaPage() {
                 }
                 const failedCount = results.length - successful;
                 if (failedCount > 0) {
-                     toast({ variant: "destructive", title: "Falha Parcial", description: `${failedCount} despesas de curso falharam ao serem adicionadas.` });
+                    toast({ variant: "destructive", title: "Falha Parcial", description: `${failedCount} despesas de curso falharam ao serem adicionadas.` });
                 }
             });
 
@@ -126,7 +126,7 @@ export default function PoloDespesaPage() {
                 toast({ variant: "destructive", title: "Erro de Validação", description: "Selecione um nicho." });
                 return;
             }
-             startSaving(async () => {
+            startSaving(async () => {
                 const result = await addDespesaAction({
                     polo,
                     referencia_ano: Number(ano),
@@ -136,7 +136,7 @@ export default function PoloDespesaPage() {
                     descricao: `Despesa para nicho: ${selectedNiche}`,
                     valor: parseFloat(newValor || '0'),
                 });
-                 if (result.success) {
+                if (result.success) {
                     refreshData();
                     setNewValor("");
                     setSelectedNiche("");
@@ -144,7 +144,7 @@ export default function PoloDespesaPage() {
                 } else {
                     toast({ variant: "destructive", title: "Erro", description: result.message });
                 }
-             });
+            });
         } else { // 'geral'
             let descricaoFinal = newDescricao;
             if (selectedCommonExpense === 'Outros') {
@@ -154,7 +154,7 @@ export default function PoloDespesaPage() {
                 }
                 descricaoFinal = newDescricao;
             } else {
-                 if (!selectedCommonExpense) {
+                if (!selectedCommonExpense) {
                     toast({ variant: "destructive", title: "Erro de Validação", description: "Selecione um tipo de despesa." });
                     return;
                 }
@@ -193,7 +193,7 @@ export default function PoloDespesaPage() {
             }
         });
     }
-    
+
     const handleCommonExpenseClick = (expense: string) => {
         setSelectedCommonExpense(expense);
         if (expense !== 'Outros') {
@@ -205,10 +205,10 @@ export default function PoloDespesaPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                 <Button variant="outline" size="icon" onClick={() => router.back()}>
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-4 w-4" />
-                 </Button>
-                 <div>
+                </Button>
+                <div>
                     <h1 className="text-2xl font-bold">Lançar Despesas: {polo}</h1>
                     <p className="text-muted-foreground">Período: {String(mes).padStart(2, '0')}/{ano}</p>
                 </div>
@@ -221,7 +221,7 @@ export default function PoloDespesaPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleAddDespesa} className="space-y-6">
-                           <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label>Tipo de Lançamento</Label>
                                 <RadioGroup value={expenseMode} onValueChange={(v) => setExpenseMode(v as any)} className="flex gap-2 sm:gap-4 flex-wrap">
                                     <div className="flex items-center space-x-2">
@@ -238,7 +238,7 @@ export default function PoloDespesaPage() {
                                     </div>
                                 </RadioGroup>
                             </div>
-                            
+
                             {expenseMode === 'curso' && (
                                 <div className="space-y-4 p-4 border rounded-md bg-muted/50">
                                     <Label>Cursos</Label>
@@ -255,7 +255,7 @@ export default function PoloDespesaPage() {
                             {expenseMode === 'nicho' && (
                                 <div className="space-y-4 p-4 border rounded-md bg-muted/50">
                                     <Label>Nicho de Cursos</Label>
-                                     <Select value={selectedNiche} onValueChange={setSelectedNiche}>
+                                    <Select value={selectedNiche} onValueChange={setSelectedNiche}>
                                         <SelectTrigger><SelectValue placeholder="Selecione um nicho..." /></SelectTrigger>
                                         <SelectContent>
                                             {nicheOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}
@@ -279,14 +279,14 @@ export default function PoloDespesaPage() {
                                                 {exp}
                                             </Button>
                                         ))}
-                                         <Button
-                                                type="button"
-                                                variant={selectedCommonExpense === 'Outros' ? "secondary" : "outline"}
-                                                onClick={() => handleCommonExpenseClick('Outros')}
-                                                size="sm"
-                                            >
-                                                Outros
-                                            </Button>
+                                        <Button
+                                            type="button"
+                                            variant={selectedCommonExpense === 'Outros' ? "secondary" : "outline"}
+                                            onClick={() => handleCommonExpenseClick('Outros')}
+                                            size="sm"
+                                        >
+                                            Outros
+                                        </Button>
                                     </div>
                                     {selectedCommonExpense === 'Outros' && (
                                         <div className="space-y-2 pt-2">
@@ -297,26 +297,26 @@ export default function PoloDespesaPage() {
                                 </div>
                             )}
 
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="valor">Valor Total da Despesa (R$)</Label>
                                 <Input id="valor" type="number" value={newValor} onChange={e => setNewValor(e.target.value)} placeholder="1500.00" step="0.01" required />
                             </div>
                             <Button type="submit" disabled={isSaving}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4"/>}
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                                 Adicionar Despesa
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
 
-                 <Card>
+                <Card>
                     <CardHeader>
                         <CardTitle>Despesas Lançadas</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ScrollArea className="h-[450px] w-full rounded-md border">
                             {isDataLoading ? (
-                                <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin"/></div>
+                                <div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" /></div>
                             ) : (
                                 <Table>
                                     <TableHeader>
@@ -328,28 +328,28 @@ export default function PoloDespesaPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                    {despesas.length > 0 ? (
-                                        despesas.map(d => (
-                                            <TableRow key={d.id}>
-                                                <TableCell className="font-medium">{d.descricao}</TableCell>
-                                                <TableCell className="text-xs text-muted-foreground">{d.tipo_despesa}</TableCell>
-                                                <TableCell className="text-right font-mono">{formatCurrency(d.valor)}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteDespesa(d.id)} disabled={isDeleting}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow><TableCell colSpan={4} className="text-center h-24">Nenhuma despesa lançada neste período.</TableCell></TableRow>
-                                    )}
+                                        {despesas.length > 0 ? (
+                                            despesas.map(d => (
+                                                <TableRow key={d.id}>
+                                                    <TableCell className="font-medium">{d.descricao}</TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground">{d.tipo_despesa}</TableCell>
+                                                    <TableCell className="text-right font-mono">{formatCurrency(d.valor)}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteDespesa(d.id)} disabled={isDeleting}>
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow><TableCell colSpan={4} className="text-center h-24">Nenhuma despesa lançada neste período.</TableCell></TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             )}
                         </ScrollArea>
                     </CardContent>
-                 </Card>
+                </Card>
             </div>
         </div>
     );
