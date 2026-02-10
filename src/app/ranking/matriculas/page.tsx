@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Trophy, Medal, Crown, Volume2, VolumeX, Filter, Settings2, SlidersHorizontal, ChevronUp, ChevronDown, Target, TrendingUp, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const dynamic = "force-dynamic";
@@ -71,6 +72,8 @@ export default function RankingPage() {
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
     const [isRedAlert, setIsRedAlert] = useState(false);
     const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
+    const [sidebarTab, setSidebarTab] = useState<'vendas' | 'metas'>('vendas');
+    const [spacepointData, setSpacepointData] = useState<any>(null);
 
     // Removed localStorage logic
 
@@ -196,6 +199,9 @@ export default function RankingPage() {
                 }
                 if ((result as any).redeNome) {
                     setRedeNome((result as any).redeNome);
+                }
+                if ((result as any).spacepointData) {
+                    setSpacepointData((result as any).spacepointData);
                 }
 
                 // ... Sync Settings code ...
@@ -634,41 +640,148 @@ export default function RankingPage() {
                             </div>
                         </div>
 
-                        {/* Summary by Type */}
-                        <div className="space-y-3 relative">
-                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Resumo por Categoria</div>
-                            <div className="grid grid-cols-1 gap-2">
-                                {/* Ensure we map over ALL types returned by DB, including 0 counts */}
-                                {stats.byType?.map((t, i) => (
-                                    <div key={i} className="group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn(
-                                                "w-1 h-8 rounded-full",
-                                                t.count > 0 ? "bg-blue-500" : "bg-slate-700"
-                                            )} />
-                                            <span className={cn(
-                                                "font-semibold text-sm uppercase tracking-wide",
-                                                t.count > 0 ? "text-slate-200" : "text-slate-600"
-                                            )}>
-                                                {t.name}
-                                            </span>
-                                        </div>
-                                        <span className={cn(
-                                            "text-xl font-bold tabular-nums",
-                                            t.count > 0 ? "text-white" : "text-slate-700"
-                                        )}>
-                                            {String(t.count).padStart(2, '0')}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Total Card */}
-                            <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl shadow-blue-900/20 flex items-center justify-between">
-                                <span className="font-bold text-sm uppercase tracking-widest opacity-80">Total Geral</span>
-                                <span className="text-4xl font-black">{String(stats.total).padStart(2, '0')}</span>
-                            </div>
+                        {/* Tabs Switcher */}
+                        <div className="flex p-1 bg-white/5 rounded-xl border border-white/5 relative z-10">
+                            <button
+                                onClick={() => setSidebarTab('vendas')}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
+                                    sidebarTab === 'vendas'
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                                        : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                                )}
+                            >
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                Vendas
+                            </button>
+                            <button
+                                onClick={() => setSidebarTab('metas')}
+                                className={cn(
+                                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
+                                    sidebarTab === 'metas'
+                                        ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
+                                        : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                                )}
+                            >
+                                <Target className="w-3.5 h-3.5" />
+                                Metas
+                            </button>
                         </div>
+
+                        {sidebarTab === 'vendas' ? (
+                            <>
+                                {/* Summary by Type */}
+                                <div className="space-y-3 relative">
+                                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Resumo por Categoria</div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {/* Ensure we map over ALL types returned by DB, including 0 counts */}
+                                        {stats.byType?.map((t, i) => (
+                                            <div key={i} className="group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "w-1 h-8 rounded-full",
+                                                        t.count > 0 ? "bg-blue-500" : "bg-slate-700"
+                                                    )} />
+                                                    <span className={cn(
+                                                        "font-semibold text-sm uppercase tracking-wide",
+                                                        t.count > 0 ? "text-slate-200" : "text-slate-600"
+                                                    )}>
+                                                        {t.name}
+                                                    </span>
+                                                </div>
+                                                <span className={cn(
+                                                    "text-xl font-bold tabular-nums",
+                                                    t.count > 0 ? "text-white" : "text-slate-700"
+                                                )}>
+                                                    {String(t.count).padStart(2, '0')}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Total Card */}
+                                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl shadow-blue-900/20 flex items-center justify-between">
+                                        <span className="font-bold text-sm uppercase tracking-widest opacity-80">Total Geral</span>
+                                        <span className="text-4xl font-black">{String(stats.total).padStart(2, '0')}</span>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                                {/* Spacepoint Header */}
+                                {spacepointData ? (
+                                    <>
+                                        <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-xl overflow-hidden group">
+                                            <div className="absolute -top-4 -right-4 w-24 h-24 bg-purple-500/10 blur-3xl group-hover:bg-purple-500/20 transition-all" />
+                                            <div className="relative z-10 flex flex-col gap-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+                                                            <Target className="w-5 h-5 text-purple-400" />
+                                                        </div>
+                                                        <span className="text-sm font-bold uppercase tracking-tighter text-slate-300">Space {spacepointData.currentSpaceIndex + 1}</span>
+                                                    </div>
+                                                    <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 font-black uppercase tracking-widest text-[10px]">
+                                                        {spacepointData.daysRemaining} dias restantes
+                                                    </Badge>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Impacto Diário Sugerido</div>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-4xl font-black text-white">{spacepointData.dailyTarget.toFixed(1)}</span>
+                                                        <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Matrículas/Dia</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Product Progress Bars */}
+                                        <div className="space-y-4">
+                                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Acompanhamento de Metas</div>
+                                            <div className="space-y-3">
+                                                {spacepointData.stats.map((s: any, i: number) => (
+                                                    <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3 hover:bg-white/10 transition-all">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs font-bold uppercase tracking-wide text-slate-200">{s.product}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-slate-400">{s.realized} / {s.target}</span>
+                                                                <span className={cn(
+                                                                    "text-[10px] font-black px-1.5 py-0.5 rounded bg-white/10",
+                                                                    s.percentage >= 100 ? "text-emerald-400" : "text-amber-400"
+                                                                )}>
+                                                                    {s.percentage.toFixed(0)}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="relative h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.min(s.percentage, 100)}%` }}
+                                                                className={cn(
+                                                                    "absolute top-0 left-0 h-full rounded-full transition-all duration-1000",
+                                                                    s.percentage >= 100 ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-gradient-to-r from-blue-500 to-purple-500"
+                                                                )}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10 opacity-20">
+                                            <Target className="w-8 h-8" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Metas não configuradas</p>
+                                            <p className="text-xs text-slate-600">Selecione um processo seletivo válido para ver as metas.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="h-px bg-white/10 w-full" />
 

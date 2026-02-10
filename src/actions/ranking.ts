@@ -2,6 +2,7 @@
 
 import { getRankingConfig, saveRankingConfig, createRankingMessage, getLastRankingMessage, getEnrollmentRanking, getEnrollmentStats, getRedeById, getLastEnrollment, getSavedSounds, saveSound, deleteSound, getDistinctValuesForRanking } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { getSpacepointStatsAction } from '@/actions/dashboard';
 
 export async function getRankingAction(
     period: 'today' | 'month' | 'campaign',
@@ -35,6 +36,20 @@ export async function getRankingAction(
 
         const latestEnrollment = await getLastEnrollment(user.redeId);
 
+        // Fetch Spacepoint stats if we have a process selected or can find one
+        let spacepointData = null;
+        let processoId = filters?.processo;
+
+        if (!processoId && distinctValues?.processos?.length > 0) {
+            // Find an active process or just the first one
+            const activeProcesso = distinctValues.processos.find((p: any) => p.ativo) || distinctValues.processos[0];
+            processoId = activeProcesso.id;
+        }
+
+        if (processoId) {
+            spacepointData = await getSpacepointStatsAction(processoId, filters?.polos?.[0] || 'Todos');
+        }
+
         return {
             success: true,
             data: ranking,
@@ -43,6 +58,7 @@ export async function getRankingAction(
             config,
             latestMessage,
             distinctValues,
+            spacepointData,
             redeId: user.redeId,
             redeNome: (await getRedeById(user.redeId))?.nome || 'Minha Rede'
         };
