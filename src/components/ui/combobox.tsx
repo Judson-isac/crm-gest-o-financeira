@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/popover"
 
 type ComboboxProps = {
-    options: { value: string; label: string; }[];
-    value: string;
-    onValueChange: (value: string) => void;
-    placeholder?: string;
-    emptyText?: string;
-    className?: string;
+  options: { value: string; label: string; }[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  emptyText?: string;
+  className?: string;
 }
 
 export function Combobox({ options, value, onValueChange, placeholder = "Selecione...", emptyText = "Nenhum item encontrado.", className }: ComboboxProps) {
@@ -46,7 +46,7 @@ export function Combobox({ options, value, onValueChange, placeholder = "Selecio
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" style={{minWidth: 'var(--radix-popover-trigger-width)'}}>
+      <PopoverContent className="w-full p-0" style={{ minWidth: 'var(--radix-popover-trigger-width)' }}>
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
@@ -56,8 +56,9 @@ export function Combobox({ options, value, onValueChange, placeholder = "Selecio
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue)
+                  className="cursor-pointer"
+                  onSelect={() => {
+                    onValueChange(option.value === value ? "" : option.value)
                     setOpen(false)
                   }}
                 >
