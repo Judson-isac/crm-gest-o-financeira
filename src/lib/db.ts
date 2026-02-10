@@ -1110,6 +1110,29 @@ export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<Tip
 export async function upsertTipoCurso(data: { nome: string, sigla: string, ativo: boolean, redeId: string }): Promise<TipoCurso> {
     const client = await pool.connect();
     try {
+        // Safeguard: Ensure unique constraint exists for (nome, redeId)
+        await client.query(`
+            DO $$ 
+            BEGIN 
+                -- Cleanup duplicates if any exist before adding constraint
+                DELETE FROM tipos_curso tc1
+                WHERE tc1.id IN (
+                    SELECT id FROM (
+                        SELECT id, ROW_NUMBER() OVER (PARTITION BY nome, "redeId" ORDER BY id) as row_num
+                        FROM tipos_curso
+                    ) t WHERE t.row_num > 1
+                );
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint 
+                    WHERE conrelid = 'tipos_curso'::regclass 
+                    AND conname = 'tipos_curso_nome_redeId_key'
+                ) THEN
+                    ALTER TABLE tipos_curso ADD CONSTRAINT tipos_curso_nome_redeId_key UNIQUE (nome, "redeId");
+                END IF;
+            END $$;
+        `);
+
         const result = await client.query(
             `INSERT INTO tipos_curso (id, nome, sigla, ativo, "redeId")
              VALUES ($1, $2, $3, $4, $5)
