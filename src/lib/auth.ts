@@ -113,6 +113,11 @@ export async function checkUserPermissionForPath(request: NextRequest): Promise<
         return false;
     }
 
+    // Allowed for all authenticated users
+    if (pathname.startsWith('/perfil')) {
+        return true;
+    }
+
     // Superadmin check for /superadmin routes
     const isSuperAdminPath = pathname.startsWith('/superadmin');
     if (isSuperAdminPath) {
