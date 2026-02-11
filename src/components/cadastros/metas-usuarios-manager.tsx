@@ -227,9 +227,6 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                     <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-8">
                         <div className="max-w-xl">
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30 shadow-sm">
-                                    Enterprise Feature
-                                </div>
                                 <div className="bg-amber-400 text-amber-950 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
                                     Ação Global
                                 </div>
@@ -250,7 +247,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                     id="global-goal"
                                     type="number"
                                     placeholder="Ex: 5"
-                                    className="w-32 h-14 text-center text-2xl font-black text-indigo-900 bg-white border-0 rounded-xl shadow-lg focus-visible:ring-amber-400 transition-all"
+                                    className="w-32 h-14 text-center text-2xl font-black text-indigo-900 dark:text-gray-100 bg-white dark:bg-slate-800 border-0 rounded-xl shadow-lg focus-visible:ring-amber-400 transition-all"
                                 />
                             </div>
 
@@ -264,19 +261,19 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                             {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="border-2 border-indigo-100 rounded-2xl">
+                                    <AlertDialogContent className="border-2 border-indigo-100 dark:border-indigo-900 rounded-2xl bg-white dark:bg-slate-900">
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle className="text-2xl font-black text-indigo-900">Confirmar Ação Global?</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-base text-gray-600 leading-relaxed">
+                                            <AlertDialogTitle className="text-2xl font-black text-indigo-900 dark:text-indigo-100">Confirmar Ação Global?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                                                 Esta ação irá **sobrescrever as metas de todos os vendedores** em todas as semanas do processo {processosSeletivos.find(p => p.id === selectedProcesso)?.numero}/{processosSeletivos.find(p => p.id === selectedProcesso)?.ano}.
                                                 <br /><br />
-                                                <span className="text-amber-600 font-bold block bg-amber-50 p-2 rounded-lg border border-amber-200">
+                                                <span className="text-amber-600 dark:text-amber-400 font-bold block bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg border border-amber-200 dark:border-amber-900">
                                                     ⚠️ Esta operação não pode ser desfeita individualmente.
                                                 </span>
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter className="gap-2">
-                                            <AlertDialogCancel className="rounded-xl border-2 font-bold h-12">Cancelar</AlertDialogCancel>
+                                            <AlertDialogCancel className="rounded-xl border-2 font-bold h-12 dark:bg-slate-800 dark:border-slate-700">Cancelar</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => {
                                                     const input = document.getElementById('global-goal') as HTMLInputElement;
@@ -302,18 +299,18 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                         <Trash2 className="h-6 w-6 group-hover/trash:scale-110 transition-transform" />
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="border-2 border-red-100 rounded-2xl">
+                                <AlertDialogContent className="border-2 border-red-100 dark:border-red-900 rounded-2xl bg-white dark:bg-slate-900">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-2xl font-black text-red-700">ZERAR TODAS AS METAS?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-base text-gray-600 leading-relaxed">
+                                        <AlertDialogTitle className="text-2xl font-black text-red-700 dark:text-red-400 uppercase tracking-tight">ZERAR TODAS AS METAS?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                                             Você está prestes a definir a meta como **ZERO** para todos os vendedores e todas as semanas deste processo.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter className="gap-2">
-                                        <AlertDialogCancel className="rounded-xl border-2 font-bold h-12">Cancelar</AlertDialogCancel>
+                                        <AlertDialogCancel className="rounded-xl border-2 font-bold h-12 dark:bg-slate-800 dark:border-slate-700">Cancelar</AlertDialogCancel>
                                         <AlertDialogAction
                                             onClick={() => handleApplyGlobal('0')}
-                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold px-8 h-12 shadow-lg shadow-red-200"
+                                            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-xl font-bold px-8 h-12 shadow-lg shadow-red-200 dark:shadow-red-900/20"
                                         >
                                             Sim, Zerar Tudo
                                         </AlertDialogAction>
