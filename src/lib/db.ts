@@ -2130,3 +2130,20 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
         client.release();
     }
 }
+
+export async function getPolosSpacepointStatus(redeId: string, processoId: string): Promise<Record<string, boolean>> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'SELECT DISTINCT polo FROM spacepoints WHERE "redeId" = $1 AND "processoSeletivo" = $2 AND "metaTotal" > 0 AND "polo" IS NOT NULL',
+            [redeId, processoId]
+        );
+        const statuses: Record<string, boolean> = {};
+        result.rows.forEach(row => {
+            statuses[row.polo] = true;
+        });
+        return statuses;
+    } finally {
+        client.release();
+    }
+}

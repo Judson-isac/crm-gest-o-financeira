@@ -9,9 +9,12 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save, Database } from 'lucide-react';
-import { saveSpacepointsAction, deleteSpacepointsAction, syncSpacepointsStructureAction } from '@/actions/cadastros';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save, Database, CheckCircle2, Circle, Calendar, Target, LayoutDashboard } from 'lucide-react';
+import { saveSpacepointsAction, deleteSpacepointsAction, syncSpacepointsStructureAction, getPolosSpacepointStatusAction } from '@/actions/cadastros';
+import { cn } from '@/lib/utils';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -58,43 +61,46 @@ function SpacepointsEditor({
     const { toast } = useToast();
     const [selectedProcesso, setSelectedProcesso] = useState<string>(initialProcesso || '');
     const [selectedPolo, setSelectedPolo] = useState<string>(initialPolo || (polos.length > 0 ? polos[0] : ''));
+    const [activeTab, setActiveTab] = useState<'estrutura' | 'metas'>('estrutura');
     const [spacepoints, setSpacepoints] = useState<EditorSpacepoint[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, startSavingTransition] = useTransition();
-    const [areSpacepointsLoaded, setAreSpacepointsLoaded] = useState(false);
+    const [poloStatuses, setPoloStatuses] = useState<Record<string, boolean>>({});
 
     // Shared dates across all polos for this process
     const [sharedDates, setSharedDates] = useState<Record<number, Date | undefined>>({});
 
-    const handleLoadSpacepoints = useCallback(() => {
-        if (!selectedProcesso) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Por favor, selecione um processo seletivo.' });
-            return;
+    const loadPoloStatuses = useCallback(async () => {
+        if (!selectedProcesso) return;
+        const result = await getPolosSpacepointStatusAction(selectedProcesso);
+        if (result.success && result.statuses) {
+            setPoloStatuses(result.statuses);
         }
+    }, [selectedProcesso]);
+
+    const handleLoadData = useCallback((processoId: string, poloName: string) => {
+        if (!processoId) return;
         setIsLoading(true);
-        setAreSpacepointsLoaded(false);
 
         setTimeout(() => {
-            // Load ALL spacepoints for this process to find the established dates
-            const allForProcess = allSpacepoints.filter(sp => sp.processoSeletivo === selectedProcesso);
+            const allForProcess = allSpacepoints.filter(sp => sp.processoSeletivo === processoId);
 
-            // Map space numbers to their dates (preferring the ones that have been set)
             const dateMap: Record<number, Date | undefined> = {};
+            // Always establish a master structure from all existing records
             allForProcess.forEach(sp => {
-                if (sp.dataSpace && (!dateMap[sp.numeroSpace] || sp.polo === undefined)) {
+                if (sp.dataSpace && !dateMap[sp.numeroSpace]) {
                     dateMap[sp.numeroSpace] = new Date(sp.dataSpace);
                 }
             });
             setSharedDates(dateMap);
 
-            // Now load specific metas for the selected polo
+            // Load metas for the selected polo
             const dataForPolo = allForProcess
-                .filter(sp => (selectedPolo === 'GLOBAL' ? !sp.polo : sp.polo === selectedPolo))
+                .filter(sp => sp.polo === poloName)
                 .sort((a, b) => a.numeroSpace - b.numeroSpace);
 
-            // We want to show rows for ALL space numbers found in the process, not just the ones this polo has
             const spaceNumbers = Array.from(new Set(allForProcess.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
-            if (spaceNumbers.length === 0) spaceNumbers.push(1, 2, 3); // Default spaces for new
+            if (spaceNumbers.length === 0) spaceNumbers.push(1, 2, 3);
 
             const editorData = spaceNumbers.map(num => {
                 const sp = dataForPolo.find(s => s.numeroSpace === num);
@@ -116,9 +122,15 @@ function SpacepointsEditor({
 
             setSpacepoints(editorData);
             setIsLoading(false);
-            setAreSpacepointsLoaded(true);
-        }, 500);
-    }, [selectedProcesso, selectedPolo, toast, allSpacepoints, tiposCurso]);
+        }, 100);
+    }, [allSpacepoints, tiposCurso]);
+
+    useEffect(() => {
+        if (selectedProcesso) {
+            handleLoadData(selectedProcesso, selectedPolo);
+            loadPoloStatuses();
+        }
+    }, [selectedProcesso, selectedPolo, handleLoadData, loadPoloStatuses]);
 
     const handleAutoGenerateWeeks = () => {
         const proc = processoObjects.find(p => p.id === selectedProcesso);
@@ -281,13 +293,10 @@ function SpacepointsEditor({
         }
 
         startSavingTransition(async () => {
-            const poloToSave = selectedPolo === 'GLOBAL' ? undefined : selectedPolo;
-            const result = await saveSpacepointsAction(selectedProcesso, spacepointsToSave, poloToSave);
+            const result = await saveSpacepointsAction(selectedProcesso, spacepointsToSave, selectedPolo);
             if (result.success) {
                 toast({ title: 'Sucesso!', description: `Metas do polo ${selectedPolo} salvos com sucesso.` });
-                // We don't automatically go back to allow editing other polos
-                setAreSpacepointsLoaded(false);
-                handleLoadSpacepoints();
+                loadPoloStatuses();
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -296,207 +305,227 @@ function SpacepointsEditor({
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h1 className="text-xl font-semibold text-foreground">{initialProcesso ? `Editando Spacepoints: ${initialProcesso}` : 'Novos Spacepoints'}</h1>
-                <Button variant="secondary" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" />Voltar para Lista</Button>
-            </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Gerenciar Spacepoints</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4 max-w-sm">
-                        <div className="space-y-2 text-left">
-                            <Label htmlFor="processo-seletivo">Processo Seletivo</Label>
-                            <Select value={selectedProcesso} onValueChange={setSelectedProcesso} disabled={!!initialProcesso}>
-                                <SelectTrigger id="processo-seletivo">
-                                    <SelectValue placeholder="Selecione um processo seletivo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {allProcessos.map(pId => <SelectItem key={pId} value={pId}>{processoObjects.find(p => p.id === pId)?.numero}/{processoObjects.find(p => p.id === pId)?.ano}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2 text-left">
-                            <Label htmlFor="polo-select">Polo</Label>
-                            <Select
-                                value={selectedPolo}
-                                onValueChange={(val) => {
-                                    setSelectedPolo(val);
-                                    setAreSpacepointsLoaded(false);
-                                }}
-                            >
-                                <SelectTrigger id="polo-select">
-                                    <SelectValue placeholder="Selecione um polo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ESTRUTURA">📐 DEFINIR ESTRUTURA (Datas)</SelectItem>
-                                    {polos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="pt-2">
-                            <Button
-                                onClick={handleLoadSpacepoints}
-                                disabled={isLoading || !selectedProcesso}
-                                className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
-                            >
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {selectedPolo === 'ESTRUTURA' ? 'Carregar Estrutura' : 'Carregar Metas'}
-                            </Button>
-                        </div>
+            <div className="flex justify-between items-center bg-card p-4 rounded-xl border shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                        <LayoutDashboard className="h-6 w-6 text-primary" />
                     </div>
+                    <div>
+                        <h1 className="text-xl font-black text-foreground uppercase tracking-tight">Gestor de Metas</h1>
+                        <p className="text-xs text-muted-foreground font-bold">PROCESSO: <span className="text-primary">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.year}</span></p>
+                    </div>
+                </div>
+                <Button variant="ghost" className="font-bold text-xs uppercase" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>
+            </div>
 
-                    {areSpacepointsLoaded && (
-                        <div className="space-y-6 pt-6 border-t">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div>
-                                    <h3 className="text-lg font-bold">
-                                        {selectedPolo === 'ESTRUTURA' ? '1. Estrutura de Spacepoints (Datas)' : `2. Metas do Polo: ${selectedPolo}`}
-                                    </h3>
-                                    <CardDescription>
-                                        {selectedPolo === 'ESTRUTURA'
-                                            ? 'Defina quantos Spacepoints existem e suas respectivas datas. Esta estrutura será replicada para todos os polos.'
-                                            : 'Preencha as metas para cada produto. Caso não haja meta para a semana, deixe como 0.'}
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                                        onClick={handleRenumberByDate}
-                                    >
-                                        Renumerar por Data
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-red-200 text-red-700 hover:bg-red-50"
-                                        onClick={handleClearAll}
-                                    >
-                                        Zerar Lista
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="border rounded-lg overflow-x-auto bg-muted/20">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-[80px]">SPACE</TableHead>
-                                            <TableHead className="w-[180px]">DATA DO MARCO</TableHead>
-                                            {selectedPolo !== 'ESTRUTURA' && tiposCurso.map(tc => (
-                                                <TableHead key={tc.id} className="text-center min-w-[80px]">{tc.nome.toUpperCase()}</TableHead>
-                                            ))}
-                                            {selectedPolo !== 'ESTRUTURA' && <TableHead className="text-center font-bold">META TOTAL</TableHead>}
-                                            <TableHead className="text-right w-[100px]">AÇÕES</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {spacepoints.map((sp, index) => (
-                                            <TableRow key={sp.id} className={sp.numeroSpace === spacepoints.length ? "bg-primary/5 font-semibold" : ""}>
-                                                <TableCell className="font-medium">#{sp.numeroSpace} {sp.numeroSpace === spacepoints.length ? "(Final)" : ""}</TableCell>
-                                                <TableCell>
-                                                    <DatePicker value={sp.date} onValueChange={(date) => handleDateChange(sp.id, date)} />
-                                                </TableCell>
-                                                {selectedPolo !== 'ESTRUTURA' && tiposCurso.map(tc => (
-                                                    <TableCell key={tc.id}>
-                                                        <Input
-                                                            type="number"
-                                                            min="0"
-                                                            className="text-center h-8"
-                                                            value={sp.metasPorTipo[tc.id] || '0'}
-                                                            onChange={(e) => handleChange(sp.id, tc.id, e.target.value)}
-                                                        />
-                                                    </TableCell>
-                                                ))}
-                                                {selectedPolo !== 'ESTRUTURA' && (
-                                                    <TableCell className="text-center font-bold">
-                                                        {getTotal(sp)}
-                                                    </TableCell>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* SIdebar de Polos */}
+                <div className="lg:col-span-3 space-y-4">
+                    <Card className="overflow-hidden border-none shadow-md">
+                        <CardHeader className="bg-muted/50 py-4">
+                            <CardTitle className="text-sm font-black uppercase tracking-wider">Polos da Rede</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <ScrollArea className="h-[600px]">
+                                <div className="p-2 space-y-1">
+                                    {polos.map(poloName => (
+                                        <button
+                                            key={poloName}
+                                            onClick={() => setSelectedPolo(poloName)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-bold transition-all",
+                                                selectedPolo === poloName
+                                                    ? "bg-primary text-primary-foreground shadow-lg scale-[1.02]"
+                                                    : "hover:bg-muted text-muted-foreground"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {poloStatuses[poloName] ? (
+                                                    <CheckCircle2 className={cn("h-4 w-4", selectedPolo === poloName ? "text-primary-foreground" : "text-green-500")} />
+                                                ) : (
+                                                    <Circle className="h-4 w-4 opacity-20" />
                                                 )}
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveRow(sp.id)}>
-                                                        <Trash2 className="h-4 w-4" />
+                                                {poloName}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Área de Edição */}
+                <div className="lg:col-span-9">
+                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
+                        <div className="flex justify-between items-center bg-card p-2 rounded-xl border shadow-sm">
+                            <TabsList className="grid grid-cols-2 w-[400px]">
+                                <TabsTrigger value="estrutura" className="font-bold flex gap-2">
+                                    <Calendar className="h-4 w-4" /> 1. ESTRUTURA
+                                </TabsTrigger>
+                                <TabsTrigger value="metas" className="font-bold flex gap-2">
+                                    <Target className="h-4 w-4" /> 2. METAS
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <div className="flex items-center gap-2 pr-2">
+                                {activeTab === 'metas' && (
+                                    <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary font-black px-3 py-1">
+                                        POLO ATUAL: {selectedPolo}
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+
+                        <TabsContent value="estrutura" className="mt-0">
+                            <Card className="border-none shadow-md overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-lg font-black uppercase">Calendário Master</CardTitle>
+                                            <CardDescription className="font-bold text-xs uppercase opacity-70">Defina as datas e o número de Spacepoints para sincronizar com todos os polos</CardDescription>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" size="sm" onClick={handleRenumberByDate} className="font-bold uppercase text-[10px] h-8">Sincronizar Cronograma</Button>
+                                            <Button variant="outline" size="sm" onClick={handleClearAll} className="font-bold uppercase text-[10px] h-8 border-red-200 text-red-600">Zerar</Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow className="hover:bg-transparent border-none">
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6">Posição</TableHead>
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6">Data de Entrega (Spacepoint)</TableHead>
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6 text-right">Ações</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {spacepoints.map((sp, idx) => (
+                                                <TableRow key={sp.id} className={cn("px-6", sp.numeroSpace === spacepoints.length ? "bg-primary/5" : "")}>
+                                                    <TableCell className="px-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary text-xs">
+                                                                {sp.numeroSpace}
+                                                            </div>
+                                                            {sp.numeroSpace === spacepoints.length && <Badge className="text-[10px] bg-primary h-5">META FINAL</Badge>}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="px-6">
+                                                        <DatePicker value={sp.date} onValueChange={(d) => handleDateChange(sp.id, d)} />
+                                                    </TableCell>
+                                                    <TableCell className="px-6 text-right">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveRow(sp.id)} className="text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            <TableRow className="hover:bg-transparent border-none">
+                                                <TableCell colSpan={3} className="p-4 px-6">
+                                                    <Button variant="outline" onClick={handleAddRow} className="w-full border-dashed py-6 group hover:border-primary transition-all">
+                                                        <Plus className="mr-2 h-4 w-4 group-hover:scale-125 transition-transform" />
+                                                        Adicionar novo Spacepoint
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-6 border-t">
-                                <div>
-                                    <Button variant="outline" onClick={handleAddRow}>
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Adicionar Spacepoint
-                                    </Button>
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                                <div className="p-4 bg-muted/30 border-t flex justify-between items-center">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase">⚠️ AO SINCRONIZAR, TODOS OS POLOS TERÃO ESSAS DATAS.</p>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button disabled={isSaving} className="bg-primary hover:bg-primary/90 font-black uppercase text-xs px-8">Salvar e Sincronizar Calendário</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Sincronizar Estrutura?</AlertDialogTitle>
+                                                <AlertDialogDescription>Isso vai atualizar o calendário de todos os polos da rede para este processo.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleSyncStructure}>Sincronizar Rede</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    {selectedPolo === 'ESTRUTURA' ? (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-                                                    Salvar e Sincronizar Estrutura
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Sincronizar Estrutura com todos os Polos?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        Esta ação irá definir que **todos os polos** tenham exatamente esses mesmos Spacepoints (número e data).
-                                                        Se um polo não possuía o registro, ele será criado com meta zero.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleSyncStructure}>
-                                                        Confirmar Sincronização
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    ) : (
-                                        <>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="metas" className="mt-0">
+                            <Card className="border-none shadow-md overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-lg font-black uppercase">Metas do Polo: {selectedPolo}</CardTitle>
+                                            <CardDescription className="font-bold text-xs uppercase opacity-70">Preencha as metas quantitativas para cada marco</CardDescription>
+                                        </div>
+                                        <div className="flex gap-2">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" disabled={isSaving}>
-                                                        <Database className="mr-2 h-4 w-4" />
-                                                        Apagar Tudo do Banco
-                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="font-bold uppercase text-[10px] h-8 border-red-200 text-red-600">Limpar Banco</Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Apagar Metas do Banco?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Isso removerápermanentemente as metas do polo <strong>{selectedPolo}</strong> para este processo.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={handleDeleteFromDatabase} className="bg-red-600 hover:bg-red-700">
-                                                            Sim, apagar
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
+                                                    <AlertDialogHeader><AlertDialogTitle>Apagar Dados?</AlertDialogTitle><AlertDialogDescription>Isso remove todas as metas deste polo no banco.</AlertDialogDescription></AlertDialogHeader>
+                                                    <AlertDialogFooter><AlertDialogCancel>Não</AlertDialogCancel><AlertDialogAction onClick={handleDeleteFromDatabase} className="bg-red-600">Sim, Apagar</AlertDialogAction></AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
-
-                                            <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white px-8">
-                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                <Save className="mr-2 h-4 w-4" />
-                                                Salvar Metas
-                                            </Button>
-                                        </>
-                                    )}
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0 overflow-x-auto">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow className="hover:bg-transparent border-none">
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6">Space</TableHead>
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6">Data</TableHead>
+                                                {tiposCurso.map(tc => (
+                                                    <TableHead key={tc.id} className="font-black text-[10px] uppercase h-10 px-6 text-center">{tc.nome}</TableHead>
+                                                ))}
+                                                <TableHead className="font-black text-[10px] uppercase h-10 px-6 text-right">Acumulado</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {spacepoints.map((sp) => (
+                                                <TableRow key={sp.id} className={cn("px-6", sp.numeroSpace === spacepoints.length ? "bg-primary/5" : "")}>
+                                                    <TableCell className="px-6 font-black text-xs">#{sp.numeroSpace}</TableCell>
+                                                    <TableCell className="px-6 text-xs font-bold text-muted-foreground">{sp.date ? format(sp.date, 'dd/MM/yyyy') : 'DATA NÃO DEFINIDA'}</TableCell>
+                                                    {tiposCurso.map(tc => (
+                                                        <TableCell key={tc.id} className="px-4">
+                                                            <Input
+                                                                type="number"
+                                                                className="text-center font-bold h-9 bg-background border-none shadow-inner"
+                                                                value={sp.metasPorTipo[tc.id] || '0'}
+                                                                onChange={(e) => handleChange(sp.id, tc.id, e.target.value)}
+                                                            />
+                                                        </TableCell>
+                                                    ))}
+                                                    <TableCell className="px-6 text-right">
+                                                        <div className="bg-primary/10 px-3 py-1 rounded text-primary font-black text-sm">
+                                                            {getTotal(sp)}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                                <div className="p-6 bg-muted/10 border-t flex justify-end">
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={isSaving || spacepoints.length === 0}
+                                        className="bg-green-600 hover:bg-green-700 font-black uppercase tracking-wider px-12 py-6 rounded-xl shadow-lg hover:translate-y-[-2px] transition-all"
+                                    >
+                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        <Save className="mr-2 h-4 w-4" />
+                                        Salvar Metas do Polo
+                                    </Button>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div >
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </div>
+        </div>
     );
 }
 

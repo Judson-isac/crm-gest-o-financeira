@@ -228,6 +228,19 @@ export async function getMetasUsuariosAction(processoId?: string, usuarioId?: st
     const metas = await db.getMetasUsuarios(user.redeId, processoId, usuarioId);
     return { success: true, data: metas };
   } catch (e: any) {
+    console.error('Erro ao buscar metas de usuários:', e);
+    return { success: false, message: e.message };
+  }
+}
+
+export async function getPolosSpacepointStatusAction(processoId: string) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) throw new Error("Acesso negado.");
+    const statuses = await db.getPolosSpacepointStatus(user.redeId, processoId);
+    return { success: true, statuses };
+  } catch (e: any) {
+    console.error('Erro ao buscar status dos polos:', e);
     return { success: false, message: e.message };
   }
 }
