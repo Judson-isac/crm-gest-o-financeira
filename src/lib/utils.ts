@@ -21,11 +21,33 @@ export function formatDate(dateString: string) {
 }
 
 export function formatDateTime(dateString: string) {
-    return new Date(dateString).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+  return new Date(dateString).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+export function isWorkDay(date: Date) {
+  // 0 is Sunday
+  return date.getDay() !== 0;
+}
+
+export function getWorkingDaysBetween(start: Date, end: Date) {
+  const s = new Date(start);
+  s.setHours(0, 0, 0, 0);
+  const e = new Date(end);
+  e.setHours(0, 0, 0, 0);
+
+  let count = 0;
+  const current = new Date(s);
+
+  while (current <= e) {
+    if (isWorkDay(current)) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count;
 }

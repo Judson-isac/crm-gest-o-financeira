@@ -3,6 +3,7 @@
 import * as db from '@/lib/db';
 import { Spacepoint, Matricula, ProcessoSeletivo } from '@/lib/types';
 import { getAuthenticatedUser } from '@/lib/api';
+import { getWorkingDaysBetween, isWorkDay } from '@/lib/utils';
 
 export type SpacepointStats = {
     product: string; // 'EAD', 'HIBRIDO', 'POS', 'PROF', 'TEC', 'TOTAL'
@@ -112,32 +113,9 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
     const nextSpaceDate = new Date(nextSpace.dataSpace);
 
     // Calculate working days (excluding Sundays)
-    let daysRemaining = 0;
-    const tempDate = new Date(today);
-    tempDate.setHours(0, 0, 0, 0); // Start from beginning of today
+    let daysRemaining = getWorkingDaysBetween(today, nextSpaceDate);
 
-    // If today is Sunday, start counting from tomorrow? 
-    // Or just iterate. The user said "nobody works sunday". 
-    // Assumption: Sales happen on Saturdays but not Sundays.
-
-    const targetDate = new Date(nextSpaceDate);
-    targetDate.setHours(0, 0, 0, 0);
-
-    while (tempDate < targetDate) {
-        // Increment date first or check first?
-        // If today is Monday and target is Tuesday, diff is 1 day.
-        // We want the number of working days *available* to hit the target.
-        // If today (Mon) is already "spent" or assuming we have today?
-        // Usually "days remaining" includes today if the day is not over, or starts from tomorrow.
-        // Let's assume we count days forward.
-
-        tempDate.setDate(tempDate.getDate() + 1);
-        if (tempDate.getDay() !== 0) { // 0 is Sunday
-            daysRemaining++;
-        }
-    }
-
-    // Edge case: if today is the target day or passed, daysRemaining = 0.
+    // Edge case: if today is passed the target day (shouldn't happen with nextSpace logic but for safety)
     if (daysRemaining < 0) daysRemaining = 0;
 
     // 3. Get Matriculas

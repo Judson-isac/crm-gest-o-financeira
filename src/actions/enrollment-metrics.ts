@@ -4,6 +4,7 @@ import * as db from '@/lib/db';
 import { Filters, Matricula, Polo, Usuario, Canal, TipoCurso } from '@/lib/types';
 import { getAuthenticatedUser } from '@/lib/api';
 import { isSameDay, startOfMonth, subMonths, endOfMonth, eachDayOfInterval, format, isWithinInterval } from 'date-fns';
+import { getWorkingDaysBetween, isWorkDay } from '@/lib/utils';
 
 export type PaceDataPoint = {
     date: string;
@@ -167,20 +168,11 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         const nextMilestone = milestones.find(m => m.date >= today);
 
         if (nextMilestone) {
-            // Working Days Calculation (Excluding Sundays)
-            let daysLeft = 0;
-            const tempDate = new Date(today);
-            tempDate.setHours(0, 0, 0, 0);
-            const targetDate = new Date(nextMilestone.date);
-            targetDate.setHours(0, 0, 0, 0);
-
-            while (tempDate < targetDate) {
-                tempDate.setDate(tempDate.getDate() + 1);
-                if (tempDate.getDay() !== 0) daysLeft++;
-            }
+            // Calculate working days (excluding Sundays) using utility
+            const daysLeftCorrected = getWorkingDaysBetween(today, nextMilestone.date);
 
             const gap = nextMilestone.meta - realizedUntilToday;
-            const requiredPace = daysLeft > 0 ? gap / daysLeft : 0;
+            const requiredPace = daysLeftCorrected > 0 ? gap / daysLeftCorrected : 0;
             const status = currentDailyPace >= requiredPace ? 'success' : (currentDailyPace >= requiredPace * 0.8 ? 'warning' : 'danger');
 
             activeSpaceInfo = {
@@ -189,7 +181,7 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
                 target: nextMilestone.meta,
                 requiredPace,
                 currentPace: currentDailyPace,
-                daysRemaining: daysLeft,
+                daysRemaining: daysLeftCorrected,
                 status
             };
         }
@@ -210,9 +202,17 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
             const endDate = targetM ? targetM.date : interval!.end;
 
             if (endDate > startDate) {
-                const totalIntDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-                const daysElap = (dDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-                dailyMeta = startVal + (endVal - startVal) * (daysElap / totalIntDays);
+                const totalWorkDays = getWorkingDaysBetween(startDate, endDate);
+                if (isWorkDay(dDate)) {
+                    const workDaysElap = getWorkingDaysBetween(startDate, dDate);
+                    dailyMeta = startVal + (endVal - startVal) * (workDaysElap / totalWorkDays);
+                } else {
+                    // Weekend: Flat line from last working day
+                    const lastWorkDay = new Date(dDate);
+                    lastWorkDay.setDate(lastWorkDay.getDate() - 1); // Only excluding Sunday, so Sat is the last workday
+                    const workDaysElap = getWorkingDaysBetween(startDate, lastWorkDay);
+                    dailyMeta = startVal + (endVal - startVal) * (workDaysElap / totalWorkDays);
+                }
             } else {
                 dailyMeta = endVal;
             }
