@@ -126,13 +126,28 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         } else {
             // "Todos" view: Always sum Polo-specific goals (Ignore records with polo=null)
             const spaceNumbers = Array.from(new Set(relevantSpaces.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
+
+            // CARRY FORWARD LOGIC: If a polo is missing a later milestone, use its last known cumulative goal.
+            const poloNames = Array.from(new Set(relevantSpaces.filter(sp => !!sp.polo).map(sp => sp.polo!)));
+            const lastPoloMetas: Record<string, number> = {};
+
             milestones = spaceNumbers.map(num => {
                 const spacesForNum = relevantSpaces.filter(sp => sp.numeroSpace === num && !!sp.polo);
-                if (spacesForNum.length === 0) return null;
 
-                const metaSums = spacesForNum.reduce((acc, sp) => acc + (sp.metaTotal || 0), 0);
+                // Update last known meta for polos found in this milestone
+                spacesForNum.forEach(sp => {
+                    if (sp.polo) lastPoloMetas[sp.polo] = sp.metaTotal || 0;
+                });
+
+                // Sum all active polos for this process
+                const metaSums = poloNames.reduce((acc, p) => acc + (lastPoloMetas[p] || 0), 0);
+
+                // Get date from any record of this milestone (or global fallback)
+                const refSpace = spacesForNum[0] || relevantSpaces.find(sp => sp.numeroSpace === num);
+                if (!refSpace) return null;
+
                 return {
-                    date: new Date(spacesForNum[0].dataSpace),
+                    date: new Date(refSpace.dataSpace),
                     meta: metaSums
                 };
             }).filter(m => m !== null) as { date: Date, meta: number }[];

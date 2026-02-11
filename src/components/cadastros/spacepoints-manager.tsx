@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save, Database } from 'lucide-react';
-import { saveSpacepointsAction, deleteSpacepointsAction } from '@/actions/cadastros';
+import { saveSpacepointsAction, deleteSpacepointsAction, syncSpacepointsStructureAction } from '@/actions/cadastros';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -101,7 +101,8 @@ function SpacepointsEditor({
                 const dynamicMetas: Record<string, string> = {};
                 tiposCurso.forEach(tc => {
                     const key = tc.nome.toUpperCase();
-                    dynamicMetas[tc.id] = String(sp?.metasPorTipo?.[key] || 0);
+                    const val = sp?.metasPorTipo?.[key];
+                    dynamicMetas[tc.id] = (val !== undefined && val !== null) ? String(val) : '0';
                 });
 
                 return {
@@ -150,7 +151,7 @@ function SpacepointsEditor({
         }
 
         setSpacepoints(newSpacepoints);
-        toast({ title: 'Sucesso!', description: `${newSpacepoints.length} semanas geradas (7 em 7 dias).` });
+        toast({ title: 'Sucesso!', description: `${newSpacepoints.length} spacepoints gerados (7 em 7 dias).` });
     };
 
     const handleAddRow = () => {
@@ -173,7 +174,7 @@ function SpacepointsEditor({
 
     const handleClearAll = () => {
         setSpacepoints([]);
-        toast({ title: 'Lista limpa', description: 'Todas as semanas foram removidas da visualização (não do banco).' });
+        toast({ title: 'Lista limpa', description: 'Todos os spacepoints foram removidos da visualização (não do banco).' });
     };
 
     const handleDeleteFromDatabase = () => {
@@ -186,6 +187,33 @@ function SpacepointsEditor({
                 toast({ title: 'Sucesso!', description: `Todas as metas do polo ${selectedPolo} foram apagadas do banco.` });
                 setSpacepoints([]);
                 setAreSpacepointsLoaded(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+            }
+        });
+    };
+
+    const handleSyncStructure = () => {
+        if (!selectedProcesso) return;
+
+        const milestonesToSync = spacepoints
+            .filter(sp => sp.date)
+            .map(sp => ({
+                numeroSpace: sp.numeroSpace,
+                dataSpace: sp.date!
+            }));
+
+        if (milestonesToSync.length === 0) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Defina pelo menos uma semana com data para sincronizar.' });
+            return;
+        }
+
+        startSavingTransition(async () => {
+            const result = await syncSpacepointsStructureAction(selectedProcesso, milestonesToSync);
+            if (result.success) {
+                toast({ title: 'Sucesso!', description: 'Estrutura sincronizada com todos os polos da rede.' });
+                setAreSpacepointsLoaded(false);
+                handleLoadSpacepoints();
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -207,7 +235,7 @@ function SpacepointsEditor({
         }));
 
         setSpacepoints(renumbered);
-        toast({ title: 'Semanas renumeradas', description: 'A ordem foi ajustada cronologicamente.' });
+        toast({ title: 'Spacepoints renumerados', description: 'A ordem foi ajustada cronologicamente.' });
     };
 
     const handleDateChange = (id: string, newDate: Date | undefined) => {
@@ -302,6 +330,7 @@ function SpacepointsEditor({
                                     <SelectValue placeholder="Selecione um polo" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="ESTRUTURA">📐 DEFINIR ESTRUTURA (Datas)</SelectItem>
                                     {polos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                 </SelectContent>
                             </Select>
@@ -310,29 +339,28 @@ function SpacepointsEditor({
                             <Button
                                 onClick={handleLoadSpacepoints}
                                 disabled={isLoading || !selectedProcesso}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
                             >
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Carregar Spacepoints
+                                {selectedPolo === 'ESTRUTURA' ? 'Carregar Estrutura' : 'Carregar Metas'}
                             </Button>
                         </div>
                     </div>
 
                     {areSpacepointsLoaded && (
                         <div className="space-y-6 pt-6 border-t">
-                            <div className="flex justify-between items-center">
-                                <CardDescription>
-                                    Defina as datas e as metas para cada produto no processo seletivo <span className="font-semibold">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.ano}</span>.
-                                </CardDescription>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold">
+                                        {selectedPolo === 'ESTRUTURA' ? '1. Estrutura de Spacepoints (Datas)' : `2. Metas do Polo: ${selectedPolo}`}
+                                    </h3>
+                                    <CardDescription>
+                                        {selectedPolo === 'ESTRUTURA'
+                                            ? 'Defina quantos Spacepoints existem e suas respectivas datas. Esta estrutura será replicada para todos os polos.'
+                                            : 'Preencha as metas para cada produto. Caso não haja meta para a semana, deixe como 0.'}
+                                    </CardDescription>
+                                </div>
                                 <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-red-200 text-red-700 hover:bg-red-50"
-                                        onClick={handleClearAll}
-                                    >
-                                        Limpar Tudo
-                                    </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -341,30 +369,38 @@ function SpacepointsEditor({
                                     >
                                         Renumerar por Data
                                     </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-red-200 text-red-700 hover:bg-red-50"
+                                        onClick={handleClearAll}
+                                    >
+                                        Zerar Lista
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="border rounded-lg overflow-x-auto">
+                            <div className="border rounded-lg overflow-x-auto bg-muted/20">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[80px]">SEMANA</TableHead>
-                                            <TableHead className="w-[180px]">DATA</TableHead>
-                                            {tiposCurso.map(tc => (
+                                            <TableHead className="w-[80px]">SPACE</TableHead>
+                                            <TableHead className="w-[180px]">DATA DO MARCO</TableHead>
+                                            {selectedPolo !== 'ESTRUTURA' && tiposCurso.map(tc => (
                                                 <TableHead key={tc.id} className="text-center min-w-[80px]">{tc.nome.toUpperCase()}</TableHead>
                                             ))}
-                                            <TableHead className="text-center font-bold">TOTAL</TableHead>
+                                            {selectedPolo !== 'ESTRUTURA' && <TableHead className="text-center font-bold">META TOTAL</TableHead>}
                                             <TableHead className="text-right w-[100px]">AÇÕES</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {spacepoints.map((sp, index) => (
-                                            <TableRow key={sp.id}>
-                                                <TableCell className="font-medium">#{sp.numeroSpace}</TableCell>
+                                            <TableRow key={sp.id} className={sp.numeroSpace === spacepoints.length ? "bg-primary/5 font-semibold" : ""}>
+                                                <TableCell className="font-medium">#{sp.numeroSpace} {sp.numeroSpace === spacepoints.length ? "(Final)" : ""}</TableCell>
                                                 <TableCell>
                                                     <DatePicker value={sp.date} onValueChange={(date) => handleDateChange(sp.id, date)} />
                                                 </TableCell>
-                                                {tiposCurso.map(tc => (
+                                                {selectedPolo !== 'ESTRUTURA' && tiposCurso.map(tc => (
                                                     <TableCell key={tc.id}>
                                                         <Input
                                                             type="number"
@@ -375,9 +411,11 @@ function SpacepointsEditor({
                                                         />
                                                     </TableCell>
                                                 ))}
-                                                <TableCell className="text-center font-bold">
-                                                    {getTotal(sp)}
-                                                </TableCell>
+                                                {selectedPolo !== 'ESTRUTURA' && (
+                                                    <TableCell className="text-center font-bold">
+                                                        {getTotal(sp)}
+                                                    </TableCell>
+                                                )}
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleRemoveRow(sp.id)}>
                                                         <Trash2 className="h-4 w-4" />
@@ -393,38 +431,65 @@ function SpacepointsEditor({
                                 <div>
                                     <Button variant="outline" onClick={handleAddRow}>
                                         <PlusCircle className="mr-2 h-4 w-4" />
-                                        Adicionar Semana
+                                        Adicionar Spacepoint
                                     </Button>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" disabled={isSaving}>
-                                                <Database className="mr-2 h-4 w-4" />
-                                                Apagar Tudo do Banco
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    Esta ação irá apagar **todos** os Spacepoints cadastrados para o polo <strong>{selectedPolo}</strong> neste processo seletivo no banco de dados. Esta ação não pode ser desfeita.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleDeleteFromDatabase} className="bg-red-600 hover:bg-red-700">
-                                                    Sim, apagar do banco
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    {selectedPolo === 'ESTRUTURA' ? (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8">
+                                                    Salvar e Sincronizar Estrutura
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Sincronizar Estrutura com todos os Polos?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta ação irá definir que **todos os polos** tenham exatamente esses mesmos Spacepoints (número e data).
+                                                        Se um polo não possuía o registro, ele será criado com meta zero.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleSyncStructure}>
+                                                        Confirmar Sincronização
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    ) : (
+                                        <>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" disabled={isSaving}>
+                                                        <Database className="mr-2 h-4 w-4" />
+                                                        Apagar Tudo do Banco
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Apagar Metas do Banco?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Isso removerápermanentemente as metas do polo <strong>{selectedPolo}</strong> para este processo.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={handleDeleteFromDatabase} className="bg-red-600 hover:bg-red-700">
+                                                            Sim, apagar
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
 
-                                    <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white px-8">
-                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        <Save className="mr-2 h-4 w-4" />
-                                        Salvar Spacepoints
-                                    </Button>
+                                            <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white px-8">
+                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                <Save className="mr-2 h-4 w-4" />
+                                                Salvar Metas
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -493,7 +558,7 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
                         <TableHeader>
                             <TableRow>
                                 <TableHead>PROCESSO SELETIVO</TableHead>
-                                <TableHead className="text-center">QTD. SEMANAS</TableHead>
+                                <TableHead className="text-center">QTD. SPACEPOINTS</TableHead>
                                 <TableHead className="text-center">META TOTAL REDE</TableHead>
                                 <TableHead className="text-right w-[100px]">AÇÕES</TableHead>
                             </TableRow>

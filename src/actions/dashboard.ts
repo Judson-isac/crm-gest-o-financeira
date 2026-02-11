@@ -45,34 +45,46 @@ export async function getSpacepointStatsAction(processoSeletivoId: string, polo?
         const spaceNumbers = Array.from(new Set(processSpacepointsRaw.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
 
         if (spaceNumbers.length > 0) {
-            processSpacepoints = spaceNumbers.map(num => {
-                const spacesForNum = processSpacepointsRaw.filter(sp => sp.numeroSpace === num);
-                const poloSpaces = spacesForNum.filter(sp => !!sp.polo);
+            const poloNames = Array.from(new Set(processSpacepointsRaw.filter(sp => !!sp.polo).map(sp => sp.polo!)));
+            const lastPoloMetaTotal: Record<string, number> = {};
+            const lastPoloMetasPorTipo: Record<string, Record<string, number>> = {};
+            const lastPoloDataSpace: Record<string, Date> = {};
 
-                // SUM POLO GOALS ONLY (Ignore records with polo=null)
+            processSpacepoints = spaceNumbers.map(num => {
+                const spacesForNum = processSpacepointsRaw.filter(sp => sp.numeroSpace === num && !!sp.polo);
+
+                // Update last known state for each polo present in this milestone
+                spacesForNum.forEach(ps => {
+                    if (ps.polo) {
+                        lastPoloMetaTotal[ps.polo] = ps.metaTotal || 0;
+                        lastPoloMetasPorTipo[ps.polo] = ps.metasPorTipo || {};
+                        lastPoloDataSpace[ps.polo] = ps.dataSpace;
+                    }
+                });
+
+                // SUM POLO GOALS using Carry Forward
                 const aggregatedMetas: Record<string, number> = {};
                 let aggregatedTotal = 0;
+                let refDataSpace = spacesForNum[0]?.dataSpace || processSpacepointsRaw.find(sp => sp.numeroSpace === num)?.dataSpace;
 
-                if (poloSpaces.length > 0) {
-                    poloSpaces.forEach(ps => {
-                        aggregatedTotal += ps.metaTotal || 0;
-                        if (ps.metasPorTipo) {
-                            Object.entries(ps.metasPorTipo).forEach(([type, val]) => {
-                                aggregatedMetas[type] = (aggregatedMetas[type] || 0) + val;
-                            });
-                        }
+                poloNames.forEach(pName => {
+                    aggregatedTotal += (lastPoloMetaTotal[pName] || 0);
+                    const metas = lastPoloMetasPorTipo[pName] || {};
+                    Object.entries(metas).forEach(([type, val]) => {
+                        aggregatedMetas[type] = (aggregatedMetas[type] || 0) + val;
                     });
+                });
 
-                    return {
-                        ...poloSpaces[0],
-                        id: `agg-${num}`,
-                        polo: undefined,
-                        metaTotal: aggregatedTotal,
-                        metasPorTipo: aggregatedMetas,
-                        dataSpace: poloSpaces[0].dataSpace
-                    } as Spacepoint;
-                }
-                return null;
+                return {
+                    id: `agg-${num}`,
+                    numeroSpace: num,
+                    polo: undefined,
+                    metaTotal: aggregatedTotal,
+                    metasPorTipo: aggregatedMetas,
+                    dataSpace: refDataSpace || new Date(),
+                    processoSeletivo: processoSeletivoId,
+                    redeId: user.redeId
+                } as Spacepoint;
             }).filter(sp => sp !== null) as Spacepoint[];
         }
     }

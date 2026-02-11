@@ -1118,6 +1118,51 @@ export async function deleteSpacepoints(processoSeletivo: string, redeId: string
     }
 }
 
+export async function syncSpacepointsStructure(redeId: string, processoId: string, milestones: { numeroSpace: number, dataSpace: Date }[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Get all polos from the network
+        const redeResult = await client.query('SELECT polos FROM redes WHERE id = $1', [redeId]);
+        const polos = redeResult.rows[0]?.polos || [];
+
+        for (const polo of polos) {
+            for (const ms of milestones) {
+                // Check if record exists for this polo and space number
+                const existing = await client.query(
+                    'SELECT id FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" = $3 AND "numeroSpace" = $4',
+                    [processoId, redeId, polo, ms.numeroSpace]
+                );
+
+                if (existing.rows.length > 0) {
+                    // Update date to keep synced
+                    await client.query(
+                        'UPDATE spacepoints SET "dataSpace" = $1 WHERE id = $2',
+                        [ms.dataSpace, existing.rows[0].id]
+                    );
+                } else {
+                    // Create with meta 0
+                    const emptyMetas = {};
+                    await client.query(
+                        `INSERT INTO spacepoints (
+                            id, "processoSeletivo", "redeId", "numeroSpace", "dataSpace", "metasPorTipo", "metaTotal", "polo", "criadoEm"
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+                        [uuidv4(), processoId, redeId, ms.numeroSpace, ms.dataSpace, JSON.stringify(emptyMetas), 0, polo]
+                    );
+                }
+            }
+        }
+
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
 export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<TipoCurso>('tipos_curso', data);
 
 export async function upsertTipoCurso(data: { nome: string, sigla: string, ativo: boolean, redeId: string }): Promise<TipoCurso> {

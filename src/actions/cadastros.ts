@@ -203,6 +203,22 @@ export async function deleteSpacepointsAction(processoSeletivo: string, polo?: s
   }
 }
 
+export async function syncSpacepointsStructureAction(processoSeletivo: string, milestones: { numeroSpace: number, dataSpace: Date }[]) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) {
+      return { success: false, message: 'Usuário não autenticado ou sem rede associada' };
+    }
+    await db.syncSpacepointsStructure(user.redeId, processoSeletivo, milestones);
+    revalidatePath('/cadastros/space-points');
+    revalidatePath('/matricula/dashboard');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Erro ao sincronizar spacepoints:', e);
+    return { success: false, message: e.message };
+  }
+}
+
 // Metas de Usuários
 export async function getMetasUsuariosAction(processoId?: string, usuarioId?: string) {
   try {
