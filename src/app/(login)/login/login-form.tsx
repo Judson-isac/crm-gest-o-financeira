@@ -24,6 +24,8 @@ function LoginButton() {
 export default function LoginForm({
   appName,
   appLogo,
+  appLogoDark,
+  appLogoLoginDark,
   appLogoLoginHeight,
   appLogoLoginScale,
   appLogoLoginPosition,
@@ -32,6 +34,8 @@ export default function LoginForm({
 }: {
   appName: string,
   appLogo: string,
+  appLogoDark?: string,
+  appLogoLoginDark?: string,
   appLogoLoginHeight?: string,
   appLogoLoginScale?: string,
   appLogoLoginPosition?: 'center' | 'left' | 'right',
@@ -63,16 +67,33 @@ export default function LoginForm({
               'justify-center'
         )}>
           {appLogo ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={appLogo}
-              alt="Logo"
-              style={{
-                height: `${appLogoLoginHeight || '48'}px`,
-                transform: `scale(${appLogoLoginScale || '1'}) translate(${appLogoLoginOffsetX || 0}px, ${appLogoLoginOffsetY || 0}px)`
-              }}
-              className="w-auto max-w-full object-contain transition-all duration-300"
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={appLogo}
+                alt="Logo"
+                style={{
+                  height: `${appLogoLoginHeight || '48'}px`,
+                  transform: `scale(${appLogoLoginScale || '1'}) translate(${appLogoLoginOffsetX || 0}px, ${appLogoLoginOffsetY || 0}px)`
+                }}
+                className={cn(
+                  "w-auto max-w-full object-contain transition-all duration-300",
+                  (appLogoLoginDark || appLogoDark) ? "dark:hidden" : ""
+                )}
+              />
+              {(appLogoLoginDark || appLogoDark) && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={appLogoLoginDark || appLogoDark}
+                  alt="Logo Dark"
+                  style={{
+                    height: `${appLogoLoginHeight || '48'}px`,
+                    transform: `scale(${appLogoLoginScale || '1'}) translate(${appLogoLoginOffsetX || 0}px, ${appLogoLoginOffsetY || 0}px)`
+                  }}
+                  className="w-auto max-w-full object-contain transition-all duration-300 hidden dark:block"
+                />
+              )}
+            </>
           ) : (
             <div className="bg-primary p-3 rounded-lg inline-flex">
               <Key className="h-8 w-8 text-primary-foreground" />

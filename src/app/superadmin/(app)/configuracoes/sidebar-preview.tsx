@@ -34,6 +34,7 @@ interface SystemConfig {
     appLogoSidebarPosition?: 'left' | 'center' | 'right';
     appLogoSidebarOffsetX?: number;
     appLogoSidebarOffsetY?: number;
+    appLogoDark?: string; // New
 }
 
 export function SidebarPreviewWrapper({ config }: { config: SystemConfig }) {
@@ -100,20 +101,35 @@ function PreviewSidebarContent({ config }: { config: SystemConfig }) {
                             config.appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
                     )}>
                         {appLogo ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                                src={appLogo}
-                                alt="Logo"
-                                style={{
-                                    height: `${config.appLogoHeight || '32'}px`,
-                                    // Removed fixed maxHeight to allow user configuration
-                                    transform: `scale(${config.appLogoSidebarScale || '1'}) translate(${config.appLogoSidebarOffsetX || 0}px, ${config.appLogoSidebarOffsetY || 0}px)`
-                                }}
-                                className={cn(
-                                    "w-auto object-contain shrink-0 transition-all duration-300",
-                                    "object-contain"
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={appLogo}
+                                    alt="Logo"
+                                    style={{
+                                        height: `${config.appLogoHeight || '32'}px`,
+                                        transform: `scale(${config.appLogoSidebarScale || '1'}) translate(${config.appLogoSidebarOffsetX || 0}px, ${config.appLogoSidebarOffsetY || 0}px)`
+                                    }}
+                                    className={cn(
+                                        "w-auto object-contain shrink-0 transition-all duration-300",
+                                        config.appLogoDark ? "dark:hidden" : ""
+                                    )}
+                                />
+                                {config.appLogoDark && (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img
+                                        src={config.appLogoDark}
+                                        alt="Logo Dark"
+                                        style={{
+                                            height: `${config.appLogoHeight || '32'}px`,
+                                            transform: `scale(${config.appLogoSidebarScale || '1'}) translate(${config.appLogoSidebarOffsetX || 0}px, ${config.appLogoSidebarOffsetY || 0}px)`
+                                        }}
+                                        className={cn(
+                                            "w-auto object-contain shrink-0 transition-all duration-300 hidden dark:block"
+                                        )}
+                                    />
                                 )}
-                            />
+                            </>
                         ) : (
                             // Fallback Mock (Icon Only)
                             <div className="flex items-center justify-center">

@@ -24,6 +24,8 @@ function LoginButton() {
 export default function SuperAdminLoginForm({
   appName,
   appLogo,
+  appLogoDark,
+  appLogoSuperAdminDark,
   appLogoSuperAdminHeight,
   appLogoSuperAdminScale,
   appLogoSuperAdminPosition,
@@ -32,6 +34,8 @@ export default function SuperAdminLoginForm({
 }: {
   appName: string,
   appLogo: string,
+  appLogoDark?: string,
+  appLogoSuperAdminDark?: string,
   appLogoSuperAdminHeight?: string,
   appLogoSuperAdminScale?: string,
   appLogoSuperAdminPosition?: 'center' | 'left' | 'right',
@@ -51,16 +55,33 @@ export default function SuperAdminLoginForm({
               'justify-center'
         )}>
           {appLogo ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={appLogo}
-              alt="Logo"
-              style={{
-                height: `${appLogoSuperAdminHeight || '48'}px`,
-                transform: `scale(${appLogoSuperAdminScale || '1'}) translate(${appLogoSuperAdminOffsetX || 0}px, ${appLogoSuperAdminOffsetY || 0}px)`
-              }}
-              className="w-auto object-contain transition-all duration-300"
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={appLogo}
+                alt="Logo"
+                style={{
+                  height: `${appLogoSuperAdminHeight || '48'}px`,
+                  transform: `scale(${appLogoSuperAdminScale || '1'}) translate(${appLogoSuperAdminOffsetX || 0}px, ${appLogoSuperAdminOffsetY || 0}px)`
+                }}
+                className={cn(
+                  "w-auto object-contain transition-all duration-300",
+                  (appLogoSuperAdminDark || appLogoDark) ? "dark:hidden" : ""
+                )}
+              />
+              {(appLogoSuperAdminDark || appLogoDark) && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={appLogoSuperAdminDark || appLogoDark}
+                  alt="Logo Dark"
+                  style={{
+                    height: `${appLogoSuperAdminHeight || '48'}px`,
+                    transform: `scale(${appLogoSuperAdminScale || '1'}) translate(${appLogoSuperAdminOffsetX || 0}px, ${appLogoSuperAdminOffsetY || 0}px)`
+                  }}
+                  className="w-auto object-contain transition-all duration-300 hidden dark:block"
+                />
+              )}
+            </>
           ) : (
             <div className="bg-primary p-3 rounded-lg inline-flex">
               <ShieldCheck className="h-8 w-8 text-primary-foreground" />

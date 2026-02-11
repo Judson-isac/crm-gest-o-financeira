@@ -43,6 +43,7 @@ export default function AppSidebar({
   permissions,
   appName,
   appLogo,
+  appLogoDark,
   appLogoHeight,
   appLogoIconHeight,
   appLogoSidebarScale,
@@ -51,16 +52,17 @@ export default function AppSidebar({
   appLogoSidebarOffsetY,
   logoVerticalUrl
 }: {
-  permissions: Permissoes,
-  appName: string,
-  appLogo: string,
-  appLogoHeight?: string,
-  appLogoIconHeight?: string,
-  appLogoSidebarScale?: string,
-  appLogoSidebarPosition?: 'left' | 'center' | 'right',
-  appLogoSidebarOffsetX?: number,
-  appLogoSidebarOffsetY?: number,
-  logoVerticalUrl?: string
+  permissions: Permissoes;
+  appName: string;
+  appLogo: string;
+  appLogoDark?: string;
+  appLogoHeight?: string;
+  appLogoIconHeight?: string;
+  appLogoSidebarScale?: string;
+  appLogoSidebarPosition?: 'left' | 'center' | 'right';
+  appLogoSidebarOffsetX?: number;
+  appLogoSidebarOffsetY?: number;
+  logoVerticalUrl?: string;
 }) {
   const pathname = usePathname();
   const { state, toggleSidebar } = useSidebar();
@@ -88,21 +90,35 @@ export default function AppSidebar({
               appLogoSidebarPosition === 'right' ? 'justify-end' : 'justify-start'
           )}>
             {appLogo ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={appLogo}
-                alt="Logo"
-                style={{
-                  height: `${appLogoHeight || '32'}px`,
-                  // Removed fixed maxHeight to allow user configuration
-                  transform: `scale(${appLogoSidebarScale || '1'}) translate(${appLogoSidebarOffsetX || 0}px, ${appLogoSidebarOffsetY || 0}px)`
-                }}
-                className={cn(
-                  "w-auto object-contain shrink-0 transition-all duration-300",
-                  // Remove object-left forcing if we are controlling position via flex container
-                  "object-contain"
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={appLogo}
+                  alt="Logo"
+                  style={{
+                    height: `${appLogoHeight || '32'}px`,
+                    transform: `scale(${appLogoSidebarScale || '1'}) translate(${appLogoSidebarOffsetX || 0}px, ${appLogoSidebarOffsetY || 0}px)`
+                  }}
+                  className={cn(
+                    "w-auto object-contain shrink-0 transition-all duration-300",
+                    appLogoDark ? "dark:hidden" : ""
+                  )}
+                />
+                {appLogoDark && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={appLogoDark}
+                    alt="Logo Dark"
+                    style={{
+                      height: `${appLogoHeight || '32'}px`,
+                      transform: `scale(${appLogoSidebarScale || '1'}) translate(${appLogoSidebarOffsetX || 0}px, ${appLogoSidebarOffsetY || 0}px)`
+                    }}
+                    className={cn(
+                      "w-auto object-contain shrink-0 transition-all duration-300 hidden dark:block"
+                    )}
+                  />
                 )}
-              />
+              </>
             ) : (
               <Landmark className="text-primary h-8 w-8 shrink-0" />
             )}

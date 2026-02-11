@@ -43,6 +43,9 @@ export default function SystemConfigPage() {
         appLogoSuperAdminPosition: 'center',
         appLogoSuperAdminOffsetX: 0,
         appLogoSuperAdminOffsetY: 0,
+        appLogoDark: '',
+        appLogoLoginDark: '',
+        appLogoSuperAdminDark: '',
     });
 
     useEffect(() => {
@@ -72,9 +75,15 @@ export default function SystemConfigPage() {
 
         startTransition(async () => {
             let appLogo = config.appLogo;
+            let appLogoDark = config.appLogoDark;
+            let appLogoLoginDark = config.appLogoLoginDark;
+            let appLogoSuperAdminDark = config.appLogoSuperAdminDark;
             let appFavicon = config.appFavicon;
 
             const logoFile = formData.get('logoFile') as File;
+            const logoDarkFile = formData.get('logoDarkFile') as File;
+            const logoLoginDarkFile = formData.get('logoLoginDarkFile') as File;
+            const logoSuperAdminDarkFile = formData.get('logoSuperAdminDarkFile') as File;
             const faviconFile = formData.get('faviconFile') as File;
 
             if (logoFile && logoFile.size > 0) {
@@ -82,6 +91,33 @@ export default function SystemConfigPage() {
                     appLogo = await readFile(logoFile);
                 } catch (error) {
                     toast({ variant: "destructive", title: "Erro ao ler logo", description: "Falha ao processar arquivo da logo." });
+                    return;
+                }
+            }
+
+            if (logoDarkFile && logoDarkFile.size > 0) {
+                try {
+                    appLogoDark = await readFile(logoDarkFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler logo dark", description: "Falha ao processar arquivo da logo dark." });
+                    return;
+                }
+            }
+
+            if (logoLoginDarkFile && logoLoginDarkFile.size > 0) {
+                try {
+                    appLogoLoginDark = await readFile(logoLoginDarkFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler logo login dark", description: "Falha ao processar arquivo da logo login dark." });
+                    return;
+                }
+            }
+
+            if (logoSuperAdminDarkFile && logoSuperAdminDarkFile.size > 0) {
+                try {
+                    appLogoSuperAdminDark = await readFile(logoSuperAdminDarkFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler logo super admin dark", description: "Falha ao processar arquivo da logo super admin dark." });
                     return;
                 }
             }
@@ -98,11 +134,21 @@ export default function SystemConfigPage() {
             const result = await saveSystemConfigAction({
                 ...config,
                 appLogo: appLogo,
+                appLogoDark: appLogoDark,
+                appLogoLoginDark: appLogoLoginDark,
+                appLogoSuperAdminDark: appLogoSuperAdminDark,
                 appFavicon: appFavicon,
             });
 
             if (result.success) {
-                setConfig(prev => ({ ...prev, appLogo, appFavicon }));
+                setConfig(prev => ({
+                    ...prev,
+                    appLogo,
+                    appLogoDark,
+                    appLogoLoginDark,
+                    appLogoSuperAdminDark,
+                    appFavicon
+                }));
                 toast({
                     title: "Configuração atualizada!",
                     description: "As alterações podem levar alguns instantes para aparecer."
@@ -153,9 +199,15 @@ export default function SystemConfigPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="logoFile">Logo</Label>
-                                        <Input id="logoFile" name="logoFile" type="file" accept="image/*" />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="logoFile">Logo Principal (Modo Claro)</Label>
+                                            <Input id="logoFile" name="logoFile" type="file" accept="image/*" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="logoDarkFile">Logo Principal (Modo Escuro)</Label>
+                                            <Input id="logoDarkFile" name="logoDarkFile" type="file" accept="image/*" />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="faviconFile">Favicon / Ícone Sidebar Fechada</Label>
@@ -339,6 +391,14 @@ export default function SystemConfigPage() {
                                     </div>
                                 </div>
                             </div>
+
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label htmlFor="logoLoginDarkFile">Logo Login (Modo Escuro)</Label>
+                                <Input id="logoLoginDarkFile" name="logoLoginDarkFile" type="file" accept="image/*" />
+                                <p className="text-[10px] text-muted-foreground italic">Se não definido, usará a logo principal dark.</p>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -421,6 +481,14 @@ export default function SystemConfigPage() {
                                         <span className="text-xs text-muted-foreground">px</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label htmlFor="logoSuperAdminDarkFile">Logo Super Admin (Modo Escuro)</Label>
+                                <Input id="logoSuperAdminDarkFile" name="logoSuperAdminDarkFile" type="file" accept="image/*" />
+                                <p className="text-[10px] text-muted-foreground italic">Se não definido, usará a logo principal dark.</p>
                             </div>
                         </CardContent>
                     </Card>

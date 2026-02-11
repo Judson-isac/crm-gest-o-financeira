@@ -146,6 +146,7 @@ export type NumeroProcessoSeletivo = {
 export type SystemConfig = {
   appName: string;
   appLogo: string;
+  appLogoDark?: string; // New
   appFavicon?: string;
   // Sidebar
   appLogoHeight?: string; // Used as Sidebar Open Height
@@ -162,6 +163,7 @@ export type SystemConfig = {
   appLogoLoginPosition?: 'center' | 'left' | 'right';
   appLogoLoginOffsetX?: number;
   appLogoLoginOffsetY?: number;
+  appLogoLoginDark?: string; // New
 
   // Login (Super Admin)
   appLogoSuperAdminHeight?: string;
@@ -169,6 +171,7 @@ export type SystemConfig = {
   appLogoSuperAdminPosition?: 'left' | 'center' | 'right'; // New
   appLogoSuperAdminOffsetX?: number; // New
   appLogoSuperAdminOffsetY?: number; // New
+  appLogoSuperAdminDark?: string; // New
 };
 
 export type Meta = {
