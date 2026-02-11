@@ -1108,10 +1108,20 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
 export async function deleteSpacepoints(processoSeletivo: string, redeId: string, polo?: string): Promise<void> {
     const client = await pool.connect();
     try {
-        const query = polo
-            ? 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" = $3'
-            : 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" IS NULL';
-        const params = polo ? [processoSeletivo, redeId, polo] : [processoSeletivo, redeId];
+        let query = '';
+        let params = [];
+
+        if (polo === 'all') {
+            // Delete from ALL polos in the network for this process
+            query = 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2';
+            params = [processoSeletivo, redeId];
+        } else if (polo) {
+            query = 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" = $3';
+            params = [processoSeletivo, redeId, polo];
+        } else {
+            query = 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" IS NULL';
+            params = [processoSeletivo, redeId];
+        }
         await client.query(query, params);
     } finally {
         client.release();

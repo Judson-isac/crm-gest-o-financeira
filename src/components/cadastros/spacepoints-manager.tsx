@@ -79,7 +79,7 @@ function SpacepointsEditor({
         }
     }, [selectedProcesso]);
 
-    const handleLoadData = useCallback((processoId: string, poloName: string) => {
+    const handleLoadData = useCallback((processoId: string, poloName?: string) => {
         if (!processoId) return;
         setIsLoading(true);
 
@@ -97,7 +97,7 @@ function SpacepointsEditor({
 
             // Load metas for the selected polo
             const dataForPolo = allForProcess
-                .filter(sp => sp.polo === poloName)
+                .filter(sp => sp.polo === (poloName ?? null))
                 .sort((a, b) => a.numeroSpace - b.numeroSpace);
 
             const spaceNumbers = Array.from(new Set(allForProcess.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
@@ -198,9 +198,25 @@ function SpacepointsEditor({
             if (result.success) {
                 toast({ title: 'Sucesso!', description: `Todas as metas do polo ${selectedPolo} foram apagadas do banco.` });
                 setSpacepoints([]);
-                // Reload data to refresh indicators
                 loadPoloStatuses();
                 handleLoadData(selectedProcesso, selectedPolo);
+            } else {
+                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+            }
+        });
+    };
+
+    const handleDeleteEntireStructure = () => {
+        if (!selectedProcesso) return;
+
+        startSavingTransition(async () => {
+            // Passing 'all' instructs the backend to delete for ALL polos
+            const result = await deleteSpacepointsAction(selectedProcesso, 'all');
+            if (result.success) {
+                toast({ title: 'Sucesso!', description: 'Toda a estrutura e metas deste processo foram removidas de todos os polos.' });
+                setSpacepoints([]);
+                loadPoloStatuses();
+                handleLoadData(selectedProcesso, undefined);
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -388,7 +404,23 @@ function SpacepointsEditor({
                                         </div>
                                         <div className="flex gap-2">
                                             <Button variant="outline" size="sm" onClick={handleRenumberByDate} className="font-bold uppercase text-[10px] h-8">Sincronizar Cronograma</Button>
-                                            <Button variant="outline" size="sm" onClick={handleClearAll} className="font-bold uppercase text-[10px] h-8 border-red-200 text-red-600">Zerar</Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="font-bold uppercase text-[10px] h-8 border-red-200 text-red-600">Zerar Banco</Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Apagar Estrutura Inteira?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Isso vai remover permanentemente todos os marcos (spacepoints) e todas as metas de **TODOS** os polos deste processo no banco de dados.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={handleDeleteEntireStructure} className="bg-red-600 hover:bg-red-700">Sim, Limpar Tudo</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                     </div>
                                 </CardHeader>
