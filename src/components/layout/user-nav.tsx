@@ -29,7 +29,7 @@ export function UserNav({ user }: { user: Omit<Usuario, 'senha'> | null }) {
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9 border-2 border-primary/20 hover:border-primary/50 transition-colors">
             <AvatarImage src={user?.avatarUrl} className="object-cover" />
-            <AvatarFallback>{getInitials(user?.nome)}</AvatarFallback>
+            <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">{getInitials(user?.nome)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

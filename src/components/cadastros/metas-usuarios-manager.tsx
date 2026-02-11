@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, Save, ArrowLeft, Search, Calendar, ChevronRight, CheckCircle2, Circle, Trash2, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Usuario, ProcessoSeletivo, Spacepoint, MetaUsuario } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { saveMetasUsuariosAction, getMetasUsuariosAction, saveGlobalMetasUsuariosAction } from '@/actions/cadastros';
 import {
     AlertDialog,
@@ -192,10 +193,10 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
     if (view === 'dashboard') {
         return (
             <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-lg border shadow-sm">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-blue-50 rounded-full">
-                            <Calendar className="h-6 w-6 text-blue-600" />
+                        <div className="p-3 bg-blue-500/10 rounded-full">
+                            <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold tracking-tight">Metas de Usuários</h2>
@@ -217,7 +218,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-2xl border border-white/20 relative overflow-hidden group mb-8">
+                <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 dark:from-indigo-900 dark:via-blue-900 dark:to-indigo-950 rounded-2xl p-8 text-white shadow-2xl border border-white/10 relative overflow-hidden group mb-8">
                     {/* Background decoration elements */}
                     <div className="absolute -right-10 -bottom-10 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
                         <Zap size={240} />
@@ -247,7 +248,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                     id="global-goal"
                                     type="number"
                                     placeholder="Ex: 5"
-                                    className="w-32 h-14 text-center text-2xl font-black text-indigo-900 dark:text-gray-100 bg-white dark:bg-slate-800 border-0 rounded-xl shadow-lg focus-visible:ring-amber-400 transition-all"
+                                    className="w-32 h-14 text-center text-2xl font-black text-indigo-950 dark:text-blue-50 bg-white/90 dark:bg-slate-950/50 border-0 rounded-xl shadow-lg focus-visible:ring-amber-400 transition-all"
                                 />
                             </div>
 
@@ -261,7 +262,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                             {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="border-2 border-indigo-100 dark:border-indigo-900 rounded-2xl bg-white dark:bg-slate-900">
+                                    <AlertDialogContent className="border-2 border-indigo-100 dark:border-indigo-900 rounded-2xl bg-background shadow-2xl">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle className="text-2xl font-black text-indigo-900 dark:text-indigo-100">Confirmar Ação Global?</AlertDialogTitle>
                                             <AlertDialogDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -299,7 +300,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                         <Trash2 className="h-6 w-6 group-hover/trash:scale-110 transition-transform" />
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="border-2 border-red-100 dark:border-red-900 rounded-2xl bg-white dark:bg-slate-900">
+                                <AlertDialogContent className="border-2 border-red-100 dark:border-red-900 rounded-2xl bg-background shadow-2xl">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="text-2xl font-black text-red-700 dark:text-red-400 uppercase tracking-tight">ZERAR TODAS AS METAS?</AlertDialogTitle>
                                         <AlertDialogDescription className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -325,7 +326,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                     <CardHeader className="bg-muted/30 pb-4">
                         <div className="flex justify-between items-center">
                             <CardTitle className="text-lg">Gestão de Vendedores</CardTitle>
-                            <div className="text-xs text-muted-foreground bg-white px-2 py-1 rounded border">
+                            <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded border">
                                 Hoje: <span className="font-bold">{format(today, "PP", { locale: ptBR })}</span>
                             </div>
                         </div>
@@ -345,16 +346,29 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                     const assigned = getGoalStatus(user.id);
                                     return (
                                         <TableRow key={user.id} className="hover:bg-muted/5 transition-colors group">
-                                            <TableCell className="px-6 py-4 font-semibold text-base">{user.nome}</TableCell>
-                                            <TableCell className="text-muted-foreground">{user.funcao}</TableCell>
+                                            <TableCell className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
+                                                        <AvatarImage src={user.avatarUrl} alt={user.nome} />
+                                                        <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
+                                                            {user.nome.substring(0, 2).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-base">{user.nome}</span>
+                                                        <span className="text-[10px] text-muted-foreground uppercase font-medium">{user.email}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground font-medium">{user.funcao}</TableCell>
                                             <TableCell className="text-center">
                                                 {assigned ? (
-                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
                                                         <CheckCircle2 className="h-3.5 w-3.5" />
                                                         Definida
                                                     </div>
                                                 ) : (
-                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 uppercase tracking-widest">
+                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-widest">
                                                         <Circle className="h-3 w-3" />
                                                         Pendente
                                                     </div>
@@ -383,13 +397,13 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
 
     return (
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-            <div className="flex items-center justify-between bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between bg-card p-4 rounded-lg border shadow-sm">
                 <Button variant="outline" size="sm" onClick={() => setView('dashboard')} className="font-bold">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Painel Geral
                 </Button>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-blue-50 p-1.5 rounded-md border border-blue-100 italic">
-                        <Label htmlFor="batch-goal" className="text-[10px] font-bold text-blue-800 uppercase px-2">Meta Rápida (todas):</Label>
+                    <div className="flex items-center gap-2 bg-blue-500/5 p-1.5 rounded-md border border-blue-500/10 italic">
+                        <Label htmlFor="batch-goal" className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase px-2">Meta Rápida (todas):</Label>
                         <div className="flex gap-1">
                             <Input
                                 id="batch-goal"
@@ -460,7 +474,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                 <TableBody>
                                     {availableWeeks.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="h-48 text-center bg-gray-50/50">
+                                            <TableCell colSpan={3} className="h-48 text-center bg-muted/5">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <Search className="h-8 w-8 text-muted-foreground/30" />
                                                     <p className="text-muted-foreground font-medium">Nenhuma semana configurada para este processo.</p>
@@ -507,7 +521,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                                                                 type="number"
                                                                 min="0"
                                                                 className={cn(
-                                                                    "w-24 text-center text-lg font-black bg-white shadow-sm ring-blue-500",
+                                                                    "w-24 text-center text-lg font-black bg-background shadow-sm ring-blue-500",
                                                                     isTodayWeek ? "border-2 border-blue-500 ring-2 ring-blue-100 h-12" : "h-11 border-muted group-hover:border-foreground"
                                                                 )}
                                                                 value={weeklyMetas[week.numero] ?? 0}
@@ -540,8 +554,8 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                 </CardContent>
             </Card>
 
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="bg-blue-500/5 p-4 rounded-lg border border-blue-500/10 flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="text-xs text-blue-800 space-y-1">
                     <p className="font-bold uppercase tracking-wider">Dica:</p>
                     <p>As metas são salvas individualmente para cada vendedor. O destaque azul indica em qual semana vocês estão hoje, facilitando o acompanhamento.</p>

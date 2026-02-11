@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, Loader2, Save } from 'lucide-react';
-import type { Usuario } from '@/lib/types';
+import type { Usuario, Funcao } from '@/lib/types';
 import { saveUsuarioAction, deleteUsuarioAction } from '@/actions/cadastros';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -117,13 +117,15 @@ export function UsuariosManager({ initialUsuarios, funcoes }: { initialUsuarios:
               {initialUsuarios.map(user => (
                 <li key={user.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
                   <div className="flex items-center gap-4">
-                    <Avatar>
+                    <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
                       <AvatarImage src={user.avatarUrl} />
-                      <AvatarFallback>{getInitials(user.nome)}</AvatarFallback>
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
+                        {getInitials(user.nome)}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{user.nome}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="font-bold">{user.nome}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">{user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-8 text-sm">

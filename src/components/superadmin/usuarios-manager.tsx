@@ -177,13 +177,15 @@ export function SuperAdminUsuariosManager({ initialUsuarios, redes, funcoes, red
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-4">
-                        <Avatar>
+                        <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
                           <AvatarImage src={user.avatarUrl} />
-                          <AvatarFallback>{getInitials(user.nome)}</AvatarFallback>
+                          <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
+                            {getInitials(user.nome)}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-semibold">{user.nome}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <p className="font-bold">{user.nome}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">{user.email}</p>
                         </div>
                       </div>
                     </TableCell>
