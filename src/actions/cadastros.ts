@@ -187,6 +187,22 @@ export async function saveSpacepointsAction(processoSeletivo: string, spacepoint
   }
 }
 
+export async function deleteSpacepointsAction(processoSeletivo: string, polo?: string) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) {
+      return { success: false, message: 'Usuário não autenticado ou sem rede associada' };
+    }
+    await db.deleteSpacepoints(processoSeletivo, user.redeId, polo);
+    revalidatePath('/cadastros/space-points');
+    revalidatePath('/matricula/dashboard'); // Vital for cleaning up the peaks
+    return { success: true };
+  } catch (e: any) {
+    console.error('Erro ao excluir spacepoints:', e);
+    return { success: false, message: e.message };
+  }
+}
+
 // Metas de Usuários
 export async function getMetasUsuariosAction(processoId?: string, usuarioId?: string) {
   try {

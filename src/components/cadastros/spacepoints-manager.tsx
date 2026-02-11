@@ -10,8 +10,19 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save } from 'lucide-react';
-import { saveSpacepointsAction } from '@/actions/cadastros';
+import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save, Database } from 'lucide-react';
+import { saveSpacepointsAction, deleteSpacepointsAction } from '@/actions/cadastros';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { Spacepoint as DbSpacepoint, TipoCurso, ProcessoSeletivo } from '@/lib/types';
 import { format, addDays } from 'date-fns';
 
@@ -162,7 +173,23 @@ function SpacepointsEditor({
 
     const handleClearAll = () => {
         setSpacepoints([]);
-        toast({ title: 'Lista limpa', description: 'Todas as semanas foram removidas.' });
+        toast({ title: 'Lista limpa', description: 'Todas as semanas foram removidas da visualização (não do banco).' });
+    };
+
+    const handleDeleteFromDatabase = () => {
+        if (!selectedProcesso) return;
+
+        startSavingTransition(async () => {
+            const poloToDelete = selectedPolo === 'GLOBAL' ? undefined : selectedPolo;
+            const result = await deleteSpacepointsAction(selectedProcesso, poloToDelete);
+            if (result.success) {
+                toast({ title: 'Sucesso!', description: `Todas as metas do polo ${selectedPolo} foram apagadas do banco.` });
+                setSpacepoints([]);
+                setAreSpacepointsLoaded(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Erro!', description: result.message });
+            }
+        });
     };
 
     const handleRenumberByDate = () => {
@@ -370,6 +397,29 @@ function SpacepointsEditor({
                                     </Button>
                                 </div>
                                 <div className="flex items-center gap-4">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" disabled={isSaving}>
+                                                <Database className="mr-2 h-4 w-4" />
+                                                Apagar Tudo do Banco
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta ação irá apagar **todos** os Spacepoints cadastrados para o polo <strong>{selectedPolo}</strong> neste processo seletivo no banco de dados. Esta ação não pode ser desfeita.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteFromDatabase} className="bg-red-600 hover:bg-red-700">
+                                                    Sim, apagar do banco
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+
                                     <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white px-8">
                                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         <Save className="mr-2 h-4 w-4" />

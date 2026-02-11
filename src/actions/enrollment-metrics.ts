@@ -136,6 +136,7 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
                     meta: metaSums
                 };
             }).filter(m => m !== null) as { date: Date, meta: number }[];
+            milestones.sort((a, b) => a.date.getTime() - b.date.getTime());
         }
 
         const days = eachDayOfInterval({ start: interval.start, end: interval.end });

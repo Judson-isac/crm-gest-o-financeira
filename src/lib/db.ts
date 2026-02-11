@@ -1105,6 +1105,19 @@ export async function saveSpacepoints(processoSeletivo: string, spacepoints: Omi
     }
 }
 
+export async function deleteSpacepoints(processoSeletivo: string, redeId: string, polo?: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        const query = polo
+            ? 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" = $3'
+            : 'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "polo" IS NULL';
+        const params = polo ? [processoSeletivo, redeId, polo] : [processoSeletivo, redeId];
+        await client.query(query, params);
+    } finally {
+        client.release();
+    }
+}
+
 export const saveTipoCurso = async (data: Partial<TipoCurso>) => genericSave<TipoCurso>('tipos_curso', data);
 
 export async function upsertTipoCurso(data: { nome: string, sigla: string, ativo: boolean, redeId: string }): Promise<TipoCurso> {
