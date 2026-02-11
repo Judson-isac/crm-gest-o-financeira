@@ -15,7 +15,6 @@ export default async function LoginPage() {
         appName={config.appName}
         appLogo={config.appLogo}
         appLogoDark={config.appLogoDark}
-        appLogoLoginDark={config.appLogoLoginDark}
         appLogoLoginHeight={config.appLogoLoginHeight}
         appLogoLoginScale={config.appLogoLoginScale}
         appLogoLoginPosition={config.appLogoLoginPosition}

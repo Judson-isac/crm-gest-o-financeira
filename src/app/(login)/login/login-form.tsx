@@ -25,7 +25,6 @@ export default function LoginForm({
   appName,
   appLogo,
   appLogoDark,
-  appLogoLoginDark,
   appLogoLoginHeight,
   appLogoLoginScale,
   appLogoLoginPosition,
@@ -35,7 +34,6 @@ export default function LoginForm({
   appName: string,
   appLogo: string,
   appLogoDark?: string,
-  appLogoLoginDark?: string,
   appLogoLoginHeight?: string,
   appLogoLoginScale?: string,
   appLogoLoginPosition?: 'center' | 'left' | 'right',
@@ -78,13 +76,13 @@ export default function LoginForm({
                 }}
                 className={cn(
                   "w-auto max-w-full object-contain transition-all duration-300",
-                  (appLogoLoginDark || appLogoDark) ? "dark:hidden" : ""
+                  appLogoDark ? "dark:hidden" : ""
                 )}
               />
-              {(appLogoLoginDark || appLogoDark) && (
+              {appLogoDark && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={appLogoLoginDark || appLogoDark}
+                  src={appLogoDark}
                   alt="Logo Dark"
                   style={{
                     height: `${appLogoLoginHeight || '48'}px`,

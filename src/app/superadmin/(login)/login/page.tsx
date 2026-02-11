@@ -11,7 +11,6 @@ export default async function SuperAdminLoginPage() {
         appName={config.appName}
         appLogo={config.appLogo}
         appLogoDark={config.appLogoDark}
-        appLogoSuperAdminDark={config.appLogoSuperAdminDark}
         appLogoSuperAdminHeight={config.appLogoSuperAdminHeight}
         appLogoSuperAdminScale={config.appLogoSuperAdminScale}
         appLogoSuperAdminPosition={config.appLogoSuperAdminPosition}

@@ -25,7 +25,6 @@ export default function SuperAdminLoginForm({
   appName,
   appLogo,
   appLogoDark,
-  appLogoSuperAdminDark,
   appLogoSuperAdminHeight,
   appLogoSuperAdminScale,
   appLogoSuperAdminPosition,
@@ -35,7 +34,6 @@ export default function SuperAdminLoginForm({
   appName: string,
   appLogo: string,
   appLogoDark?: string,
-  appLogoSuperAdminDark?: string,
   appLogoSuperAdminHeight?: string,
   appLogoSuperAdminScale?: string,
   appLogoSuperAdminPosition?: 'center' | 'left' | 'right',
@@ -66,13 +64,13 @@ export default function SuperAdminLoginForm({
                 }}
                 className={cn(
                   "w-auto object-contain transition-all duration-300",
-                  (appLogoSuperAdminDark || appLogoDark) ? "dark:hidden" : ""
+                  appLogoDark ? "dark:hidden" : ""
                 )}
               />
-              {(appLogoSuperAdminDark || appLogoDark) && (
+              {appLogoDark && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={appLogoSuperAdminDark || appLogoDark}
+                  src={appLogoDark}
                   alt="Logo Dark"
                   style={{
                     height: `${appLogoSuperAdminHeight || '48'}px`,

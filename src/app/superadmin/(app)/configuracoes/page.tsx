@@ -44,8 +44,6 @@ export default function SystemConfigPage() {
         appLogoSuperAdminOffsetX: 0,
         appLogoSuperAdminOffsetY: 0,
         appLogoDark: '',
-        appLogoLoginDark: '',
-        appLogoSuperAdminDark: '',
     });
 
     useEffect(() => {
@@ -76,14 +74,10 @@ export default function SystemConfigPage() {
         startTransition(async () => {
             let appLogo = config.appLogo;
             let appLogoDark = config.appLogoDark;
-            let appLogoLoginDark = config.appLogoLoginDark;
-            let appLogoSuperAdminDark = config.appLogoSuperAdminDark;
             let appFavicon = config.appFavicon;
 
             const logoFile = formData.get('logoFile') as File;
             const logoDarkFile = formData.get('logoDarkFile') as File;
-            const logoLoginDarkFile = formData.get('logoLoginDarkFile') as File;
-            const logoSuperAdminDarkFile = formData.get('logoSuperAdminDarkFile') as File;
             const faviconFile = formData.get('faviconFile') as File;
 
             if (logoFile && logoFile.size > 0) {
@@ -104,24 +98,6 @@ export default function SystemConfigPage() {
                 }
             }
 
-            if (logoLoginDarkFile && logoLoginDarkFile.size > 0) {
-                try {
-                    appLogoLoginDark = await readFile(logoLoginDarkFile);
-                } catch (error) {
-                    toast({ variant: "destructive", title: "Erro ao ler logo login dark", description: "Falha ao processar arquivo da logo login dark." });
-                    return;
-                }
-            }
-
-            if (logoSuperAdminDarkFile && logoSuperAdminDarkFile.size > 0) {
-                try {
-                    appLogoSuperAdminDark = await readFile(logoSuperAdminDarkFile);
-                } catch (error) {
-                    toast({ variant: "destructive", title: "Erro ao ler logo super admin dark", description: "Falha ao processar arquivo da logo super admin dark." });
-                    return;
-                }
-            }
-
             if (faviconFile && faviconFile.size > 0) {
                 try {
                     appFavicon = await readFile(faviconFile);
@@ -135,8 +111,6 @@ export default function SystemConfigPage() {
                 ...config,
                 appLogo: appLogo,
                 appLogoDark: appLogoDark,
-                appLogoLoginDark: appLogoLoginDark,
-                appLogoSuperAdminDark: appLogoSuperAdminDark,
                 appFavicon: appFavicon,
             });
 
@@ -145,8 +119,6 @@ export default function SystemConfigPage() {
                     ...prev,
                     appLogo,
                     appLogoDark,
-                    appLogoLoginDark,
-                    appLogoSuperAdminDark,
                     appFavicon
                 }));
                 toast({
@@ -391,14 +363,6 @@ export default function SystemConfigPage() {
                                     </div>
                                 </div>
                             </div>
-
-                            <Separator />
-
-                            <div className="space-y-2">
-                                <Label htmlFor="logoLoginDarkFile">Logo Login (Modo Escuro)</Label>
-                                <Input id="logoLoginDarkFile" name="logoLoginDarkFile" type="file" accept="image/*" />
-                                <p className="text-[10px] text-muted-foreground italic">Se não definido, usará a logo principal dark.</p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -481,14 +445,6 @@ export default function SystemConfigPage() {
                                         <span className="text-xs text-muted-foreground">px</span>
                                     </div>
                                 </div>
-                            </div>
-
-                            <Separator />
-
-                            <div className="space-y-2">
-                                <Label htmlFor="logoSuperAdminDarkFile">Logo Super Admin (Modo Escuro)</Label>
-                                <Input id="logoSuperAdminDarkFile" name="logoSuperAdminDarkFile" type="file" accept="image/*" />
-                                <p className="text-[10px] text-muted-foreground italic">Se não definido, usará a logo principal dark.</p>
                             </div>
                         </CardContent>
                     </Card>
