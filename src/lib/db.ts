@@ -738,6 +738,7 @@ export async function getDistinctValues(permissions: UserPermissions): Promise<a
             categorias: distinctCategorias,
             anos: distinctAnos,
             cidades: distinctCidades,
+            estados: Array.from(estadoSet).sort(),
             processos: distinctProcessos,
             parsedPolos,
         };
