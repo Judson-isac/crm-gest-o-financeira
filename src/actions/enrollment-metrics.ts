@@ -39,6 +39,7 @@ export type EnrollmentDashboardMetrics = {
         date: string;
         target: number;
         requiredPace: number;
+        currentPace: number;
         daysRemaining: number;
     };
 };
@@ -90,7 +91,12 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         const selected = processos.find(p => p.id === filters.processo || p.numero === filters.processo);
         if (selected) {
             interval = { start: new Date(selected.dataInicial), end: new Date(selected.dataFinal) };
-            relevantSpaces = spacepoints.filter(sp => sp.processoSeletivo === (selected.id || selected.numero));
+            // FIX: Use ONLY the ID if available, or ONLY the numero. Usually spacepoints table stores the ID (string)
+            // but older records might use numero. Let's be precise.
+            relevantSpaces = spacepoints.filter(sp => sp.processoSeletivo === selected.id);
+            if (relevantSpaces.length === 0) {
+                relevantSpaces = spacepoints.filter(sp => sp.processoSeletivo === selected.numero);
+            }
         }
     } else if (filters.mes && filters.ano) {
         const startDate = startOfMonth(new Date(filters.ano, filters.mes - 1));
@@ -109,26 +115,26 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
             const poloFilterArray = Array.isArray(filters.polo) ? filters.polo : [filters.polo];
             const poloSpaces = relevantSpaces.filter(sp => sp.polo && poloFilterArray.includes(sp.polo));
 
-            const grouped = poloSpaces.reduce((acc, sp) => {
+            const grouped: Record<string, { date: Date, meta: number }> = poloSpaces.reduce((acc, sp) => {
                 const dayKey = format(new Date(sp.dataSpace), 'yyyy-MM-dd');
                 if (!acc[dayKey]) acc[dayKey] = { date: new Date(sp.dataSpace), meta: 0 };
                 acc[dayKey].meta += (sp.metaTotal || 0);
                 return acc;
             }, {} as Record<string, { date: Date, meta: number }>);
-            milestones = Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
+            milestones = Object.values(grouped).sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
         } else {
             const globalSpaces = relevantSpaces.filter(sp => !sp.polo || sp.polo === '');
             if (globalSpaces.length > 0) {
                 milestones = globalSpaces.map(sp => ({ date: new Date(sp.dataSpace), meta: Number(sp.metaTotal) }))
                     .sort((a, b) => a.date.getTime() - b.date.getTime());
             } else {
-                const grouped = relevantSpaces.reduce((acc, sp) => {
+                const grouped: Record<string, { date: Date, meta: number }> = relevantSpaces.reduce((acc, sp) => {
                     const dayKey = format(new Date(sp.dataSpace), 'yyyy-MM-dd');
                     if (!acc[dayKey]) acc[dayKey] = { date: new Date(sp.dataSpace), meta: 0 };
                     acc[dayKey].meta += (sp.metaTotal || 0);
                     return acc;
                 }, {} as Record<string, { date: Date, meta: number }>);
-                milestones = Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
+                milestones = Object.values(grouped).sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
             }
         }
 
@@ -136,29 +142,36 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         const today = new Date();
         let cumulative = 0;
 
+        // Calculate current pace (avg per day since start or since today - X)
+        const daysElapsedSinceStart = Math.max(1, Math.round((today.getTime() - interval.start.getTime()) / (1000 * 60 * 60 * 24)));
+        const realizedUntilToday = filteredMatriculas.filter(m => new Date(m.dataMatricula) <= today).length;
+        const currentDailyPace = realizedUntilToday / daysElapsedSinceStart;
+
         // Calculate Active Spacepoint and Required Pace
-        const realizedSoFar = filteredMatriculas.filter(m => new Date(m.dataMatricula) <= today).length;
         const nextMilestone = milestones.find(m => m.date >= today);
 
         if (nextMilestone) {
             const daysLeft = Math.max(1, Math.round((nextMilestone.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-            const gap = nextMilestone.meta - realizedSoFar;
+            const gap = nextMilestone.meta - realizedUntilToday;
             activeSpaceInfo = {
                 name: `Space ${milestones.indexOf(nextMilestone) + 1}`,
                 date: format(nextMilestone.date, 'dd/MM'),
                 target: nextMilestone.meta,
                 requiredPace: gap > 0 ? gap / daysLeft : 0,
+                currentPace: currentDailyPace,
                 daysRemaining: daysLeft
             };
         }
 
         pace = days.map(day => {
-            const dayCount = filteredMatriculas.filter(m => isSameDay(new Date(m.dataMatricula), day)).length;
+            const dDate = new Date(day);
+            const dayCount = filteredMatriculas.filter(m => isSameDay(new Date(m.dataMatricula), dDate)).length;
             cumulative += dayCount;
 
+            // Meta Calculation (Segmented)
             let dailyMeta = 0;
-            const targetM = milestones.find(m => m.date >= day);
-            const prevM = [...milestones].reverse().find(m => m.date < day);
+            const targetM = milestones.find(m => m.date >= dDate);
+            const prevM = [...milestones].reverse().find(m => m.date < dDate);
 
             const startVal = prevM ? prevM.meta : 0;
             const startDate = prevM ? prevM.date : interval!.start;
@@ -166,17 +179,22 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
             const endDate = targetM ? targetM.date : interval!.end;
 
             if (endDate > startDate) {
-                const totalIntervalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-                const daysElapsed = (day.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-                dailyMeta = startVal + (endVal - startVal) * (daysElapsed / totalIntervalDays);
+                const totalIntDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+                const daysElap = (dDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+                dailyMeta = startVal + (endVal - startVal) * (daysElap / totalIntDays);
             } else {
                 dailyMeta = endVal;
             }
 
+            // Projection (if current pace continues)
+            const daysFromStart = Math.max(0, Math.round((dDate.getTime() - interval!.start.getTime()) / (1000 * 60 * 60 * 24)));
+            const projected = currentDailyPace * daysFromStart;
+
             return {
-                date: format(day, 'dd/MM'),
-                atual: day <= today ? cumulative : undefined as any,
-                meta: Math.round(dailyMeta)
+                date: format(dDate, 'dd/MM'),
+                atual: dDate <= today ? cumulative : undefined as any,
+                meta: Math.round(dailyMeta),
+                projected: Math.round(projected)
             };
         });
     }

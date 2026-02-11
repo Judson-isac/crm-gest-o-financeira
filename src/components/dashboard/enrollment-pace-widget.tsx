@@ -3,7 +3,7 @@
 import React, { useTransition, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEnrollmentDashboardMetricsAction, PaceDataPoint } from "@/actions/enrollment-metrics";
 import { Filters } from "@/lib/types";
 import { Loader2, TrendingUp, X } from "lucide-react";
@@ -15,10 +15,14 @@ const chartConfig = {
         color: "hsl(var(--primary))",
     },
     meta: {
-        label: "Meta Linear",
+        label: "Objetivo Spacepoints",
         color: "hsl(var(--muted-foreground))",
     },
-};
+    projected: {
+        label: "Projeção (Ritmo Atual)",
+        color: "hsl(var(--chart-2))",
+    }
+} satisfies ChartConfig;
 
 export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, onRemove?: () => void }) {
     const [data, setData] = useState<PaceDataPoint[]>([]);
@@ -61,9 +65,16 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
             <CardContent className="flex-1 min-h-[300px] p-0 flex flex-col">
                 {/* Ritmo Highlight */}
                 {activeSpace && (
-                    <div className="px-6 py-3 border-b bg-muted/30 grid grid-cols-3 gap-4">
+                    <div className="px-6 py-3 border-b bg-muted/30 grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Necessário</div>
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Atual</div>
+                            <div className="text-xl font-black text-blue-500">
+                                {activeSpace.currentPace.toFixed(1)}
+                                <span className="text-[10px] ml-1 font-bold opacity-70">POR DIA</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Ideal</div>
                             <div className="text-xl font-black text-primary">
                                 {activeSpace.requiredPace.toFixed(1)}
                                 <span className="text-[10px] ml-1 font-bold opacity-70">POR DIA</span>
@@ -72,7 +83,7 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
                         <div>
                             <div className="text-[10px] uppercase font-bold text-muted-foreground">Faltam</div>
                             <div className="text-xl font-black">
-                                {Math.ceil(activeSpace.target - (data.find(d => !d.atual) ? data.filter(d => d.atual).slice(-1)[0]?.atual : 0))}
+                                {Math.max(0, Math.ceil(activeSpace.target - (data.filter(d => d.atual !== undefined).slice(-1)[0]?.atual || 0)))}
                                 <span className="text-[10px] ml-1 font-bold opacity-70">MATRÍCULAS</span>
                             </div>
                         </div>
@@ -136,7 +147,16 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
                                     fill="transparent"
                                     stroke="var(--color-meta)"
                                     strokeWidth={2}
-                                    strokeDasharray="5 5"
+                                    strokeDasharray="4 4"
+                                />
+                                <Area
+                                    dataKey="projected"
+                                    type="monotone"
+                                    fill="transparent"
+                                    stroke="var(--color-projected)"
+                                    strokeWidth={2}
+                                    strokeDasharray="2 2"
+                                    opacity={0.6}
                                 />
                             </AreaChart>
                         </ChartContainer>
