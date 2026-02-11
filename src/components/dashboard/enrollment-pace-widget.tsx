@@ -56,7 +56,7 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
                     </div>
                 ) : data.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                        Selecione mês e ano para ver o ritmo
+                        Selecione um Processo, Mês ou Ano para ver o ritmo
                     </div>
                 ) : (
                     <ChartContainer config={chartConfig} className="h-full w-full">

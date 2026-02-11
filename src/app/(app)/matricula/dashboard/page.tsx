@@ -18,18 +18,27 @@ export default async function MatriculaDashboardPage({ searchParams }: { searchP
     // Let's ensure type compatibility. The Filters type expects `polo?: string | string[]`.
     // MultiSelect usually sends values.
 
+    // Parallel Fetching
+    const [distinctValues] = await Promise.all([
+        getDistinctValues()
+    ]);
+
+    // Handle Default Processo If Missing
+    let currentProcesso = processo;
+    if (!currentProcesso && distinctValues.processos && distinctValues.processos.length > 0) {
+        // Since they are ordered by numero DESC, the first one is the "most recent"
+        currentProcesso = distinctValues.processos[0].id;
+    }
+
     const filters: Filters = {
         ano: year,
         mes: month,
         polo: polo ? (polo.includes(',') ? polo.split(',') : polo) : undefined,
-        processo: processo
+        processo: currentProcesso
     };
 
-    // Parallel Fetching
-    const [distinctValues, summaryData] = await Promise.all([
-        getDistinctValues(),
-        getEnrollmentSummaryData(filters)
-    ]);
+    // Re-fetch summary with resolved filters
+    const summaryData = await getEnrollmentSummaryData(filters);
 
     return (
         <DashboardProvider>

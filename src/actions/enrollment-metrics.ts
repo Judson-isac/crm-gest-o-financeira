@@ -73,12 +73,30 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
     });
 
     // --- PACE CALCULATION ---
-    // We'll show day-by-day accumulation if month is selected
+    // Calculate interval for pace
     let pace: PaceDataPoint[] = [];
-    if (filters.mes && filters.ano) {
+    let interval: { start: Date, end: Date } | null = null;
+    let paceTitle = "";
+
+    // 1. Check for Processo Filter (Highest Priority)
+    if (filters.processo && filters.processo !== 'all') {
+        const processos = await db.getDistinctProcessos(redeId);
+        const selected = processos.find(p => p.id === filters.processo || p.numero === filters.processo);
+        if (selected) {
+            interval = { start: new Date(selected.dataInicial), end: new Date(selected.dataFinal) };
+            paceTitle = `Processo ${selected.numero}`;
+        }
+    }
+    // 2. Fallback to Month/Year
+    else if (filters.mes && filters.ano) {
         const startDate = startOfMonth(new Date(filters.ano, filters.mes - 1));
         const endDate = endOfMonth(startDate);
-        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        interval = { start: startDate, end: endDate };
+        paceTitle = format(startDate, 'MMMM/yyyy');
+    }
+
+    if (interval) {
+        const days = eachDayOfInterval({ start: interval.start, end: interval.end });
 
         let cumulative = 0;
         pace = days.map(day => {
@@ -91,14 +109,21 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         });
 
         // Add "Ideal Pace" (Meta Linear) if possible
-        // Let's find spacepoints for this month/process
-        const monthSpaces = spacepoints.filter(sp => {
-            const spDate = new Date(sp.dataSpace);
-            return spDate.getMonth() + 1 === filters.mes && spDate.getFullYear() === filters.ano;
-        });
+        let totalMeta = 0;
+        if (filters.processo && filters.processo !== 'all') {
+            // Use specific process spacepoints
+            const processSpaces = spacepoints.filter(sp => sp.processoSeletivo === filters.processo);
+            totalMeta = processSpaces.reduce((acc, curr) => acc + (curr.metaTotal || 0), 0);
+        } else if (filters.mes && filters.ano) {
+            // Use current month spacepoints
+            const monthSpaces = spacepoints.filter(sp => {
+                const spDate = new Date(sp.dataSpace);
+                return spDate.getMonth() + 1 === filters.mes && spDate.getFullYear() === filters.ano;
+            });
+            totalMeta = monthSpaces.reduce((acc, curr) => acc + (curr.metaTotal || 0), 0);
+        }
 
-        if (monthSpaces.length > 0) {
-            const totalMeta = monthSpaces.reduce((acc, curr) => acc + (curr.metaTotal || 0), 0);
+        if (totalMeta > 0) {
             const dailyMeta = totalMeta / days.length;
             let metaCumulative = 0;
             pace = pace.map((p, i) => {

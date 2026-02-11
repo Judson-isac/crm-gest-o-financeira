@@ -9,7 +9,8 @@ param (
     [string]$Message,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Yes = $false
+    [Alias("y")]
+    [switch]$Yes = $true
 )
 
 $ErrorActionPreference = "Stop"
