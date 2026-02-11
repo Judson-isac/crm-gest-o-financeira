@@ -23,7 +23,9 @@ export default function SystemConfigPage() {
     const [config, setConfig] = useState<SystemConfig>({
         appName: '',
         appLogo: '',
+        appLogoDark: '',
         appFavicon: '',
+        appFaviconDark: '',
         appLogoHeight: '48',
         appLogoSidebarWidth: 'auto',
         appLogoIconHeight: '32',
@@ -43,7 +45,6 @@ export default function SystemConfigPage() {
         appLogoSuperAdminPosition: 'center',
         appLogoSuperAdminOffsetX: 0,
         appLogoSuperAdminOffsetY: 0,
-        appLogoDark: '',
     });
 
     useEffect(() => {
@@ -75,10 +76,12 @@ export default function SystemConfigPage() {
             let appLogo = config.appLogo;
             let appLogoDark = config.appLogoDark;
             let appFavicon = config.appFavicon;
+            let appFaviconDark = config.appFaviconDark;
 
             const logoFile = formData.get('logoFile') as File;
             const logoDarkFile = formData.get('logoDarkFile') as File;
             const faviconFile = formData.get('faviconFile') as File;
+            const faviconDarkFile = formData.get('faviconDarkFile') as File;
 
             if (logoFile && logoFile.size > 0) {
                 try {
@@ -107,11 +110,21 @@ export default function SystemConfigPage() {
                 }
             }
 
+            if (faviconDarkFile && faviconDarkFile.size > 0) {
+                try {
+                    appFaviconDark = await readFile(faviconDarkFile);
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Erro ao ler favicon dark", description: "Falha ao processar arquivo do favicon dark." });
+                    return;
+                }
+            }
+
             const result = await saveSystemConfigAction({
                 ...config,
                 appLogo: appLogo,
                 appLogoDark: appLogoDark,
                 appFavicon: appFavicon,
+                appFaviconDark: appFaviconDark,
             });
 
             if (result.success) {
@@ -119,7 +132,8 @@ export default function SystemConfigPage() {
                     ...prev,
                     appLogo,
                     appLogoDark,
-                    appFavicon
+                    appFavicon,
+                    appFaviconDark
                 }));
                 toast({
                     title: "Configuração atualizada!",
@@ -181,9 +195,15 @@ export default function SystemConfigPage() {
                                             <Input id="logoDarkFile" name="logoDarkFile" type="file" accept="image/*" />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="faviconFile">Favicon / Ícone Sidebar Fechada</Label>
-                                        <Input id="faviconFile" name="faviconFile" type="file" accept="image/*" />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="faviconFile">Favicon / Ícone Sidebar Fechada</Label>
+                                            <Input id="faviconFile" name="faviconFile" type="file" accept="image/*" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="faviconDarkFile">Favicon / Icone Sidebar Fechada (Modo Escuro)</Label>
+                                            <Input id="faviconDarkFile" name="faviconDarkFile" type="file" accept="image/*" />
+                                        </div>
                                     </div>
                                 </div>
                             </form>

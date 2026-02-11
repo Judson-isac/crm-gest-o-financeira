@@ -35,6 +35,7 @@ interface SystemConfig {
     appLogoSidebarOffsetX?: number;
     appLogoSidebarOffsetY?: number;
     appLogoDark?: string; // New
+    appFaviconDark?: string; // New
 }
 
 export function SidebarPreviewWrapper({ config }: { config: SystemConfig }) {
@@ -151,13 +152,27 @@ function PreviewSidebarContent({ config }: { config: SystemConfig }) {
                     {/* Vertical Logo (Visible when Collapsed) */}
                     <div className="hidden group-data-[state=collapsed]:flex items-center justify-center w-full">
                         {(config.appFavicon || appLogo) ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                                src={config.appFavicon || appLogo}
-                                alt="Icon"
-                                style={{ height: `${config.appLogoIconHeight || '32'}px` }}
-                                className="w-auto object-contain shrink-0 mx-auto"
-                            />
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={config.appFavicon || appLogo}
+                                    alt="Icon"
+                                    style={{ height: `${config.appLogoIconHeight || '32'}px` }}
+                                    className={cn(
+                                        "w-auto object-contain shrink-0 mx-auto transition-all duration-300",
+                                        (config.appFaviconDark || config.appLogoDark) ? "dark:hidden" : ""
+                                    )}
+                                />
+                                {(config.appFaviconDark || config.appLogoDark) && (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img
+                                        src={config.appFaviconDark || config.appLogoDark}
+                                        alt="Icon Dark"
+                                        style={{ height: `${config.appLogoIconHeight || '32'}px` }}
+                                        className="w-auto object-contain shrink-0 mx-auto transition-all duration-300 hidden dark:block"
+                                    />
+                                )}
+                            </>
                         ) : (
                             <div className="h-6 w-6 bg-primary/20 rounded mx-auto" />
                         )}

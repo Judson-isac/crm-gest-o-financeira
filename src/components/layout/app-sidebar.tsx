@@ -44,7 +44,9 @@ export default function AppSidebar({
   appName,
   appLogo,
   appLogoDark,
-  appLogoHeight,
+  appFavicon,
+  appFaviconDark,
+  appLogoHeight = "32",
   appLogoIconHeight,
   appLogoSidebarScale,
   appLogoSidebarPosition,
@@ -54,8 +56,10 @@ export default function AppSidebar({
 }: {
   permissions: Permissoes;
   appName: string;
-  appLogo: string;
+  appLogo?: string;
   appLogoDark?: string;
+  appFavicon?: string;
+  appFaviconDark?: string;
   appLogoHeight?: string;
   appLogoIconHeight?: string;
   appLogoSidebarScale?: string;
@@ -132,16 +136,30 @@ export default function AppSidebar({
 
           {/* Vertical Logo (Visible when Collapsed) */}
           <div className="hidden group-data-[state=collapsed]:flex items-center justify-center w-full">
-            {logoVerticalUrl || appLogo ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={logoVerticalUrl || appLogo}
-                alt="Icon"
-                style={{ height: `${appLogoIconHeight || '32'}px` }}
-                className="w-auto object-contain shrink-0 mx-auto"
-              />
+            {(appFavicon || appLogo) ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={appFavicon || appLogo}
+                  alt="Icon"
+                  style={{ height: `${appLogoIconHeight || '32'}px` }}
+                  className={cn(
+                    "w-auto object-contain shrink-0 mx-auto transition-all duration-300",
+                    (appFaviconDark || appLogoDark) ? "dark:hidden" : ""
+                  )}
+                />
+                {(appFaviconDark || appLogoDark) && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={appFaviconDark || appLogoDark}
+                    alt="Icon Dark"
+                    style={{ height: `${appLogoIconHeight || '32'}px` }}
+                    className="w-auto object-contain shrink-0 mx-auto transition-all duration-300 hidden dark:block"
+                  />
+                )}
+              </>
             ) : (
-              <Landmark className="text-primary h-6 w-6 shrink-0 mx-auto" />
+              <Landmark className="text-primary h-6 w-6 mx-auto" />
             )}
           </div>
 

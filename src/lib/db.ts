@@ -1936,6 +1936,7 @@ export async function getSystemConfig(): Promise<SystemConfig> {
 
             // Dark Mode Logos
             if (row.key === 'APP_LOGO_DARK') config.appLogoDark = row.value;
+            if (row.key === 'APP_FAVICON_DARK') config.appFaviconDark = row.value;
         });
 
         return config;
@@ -2057,6 +2058,11 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
             INSERT INTO system_config (key, value) VALUES ('APP_LOGO_DARK', $1)
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         `, [config.appLogoDark || '']);
+
+        await client.query(`
+            INSERT INTO system_config (key, value) VALUES ('APP_FAVICON_DARK', $1)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        `, [config.appFaviconDark || '']);
 
         await client.query('COMMIT');
     } catch (e) {

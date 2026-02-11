@@ -23,6 +23,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           appName={config.appName}
           appLogo={config.appLogo}
           appLogoDark={config.appLogoDark}
+          appFavicon={config.appFavicon}
+          appFaviconDark={config.appFaviconDark}
           appLogoHeight={config.appLogoHeight}
           appLogoIconHeight={config.appLogoIconHeight}
           appLogoSidebarScale={config.appLogoSidebarScale}

@@ -13,23 +13,21 @@ import { getAuthenticatedUser } from '@/lib/api';
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSystemConfig();
-  const user = await getAuthenticatedUser();
 
-  // Default to system favicon or logo
-  let iconUrl = config.appFavicon || config.appLogo;
-
-  if (user?.redeId) {
-    // Priority: user.redeId exists, but we removed network specific logos. 
-    // So we just use system config. 
-    // The previous logic for customized logos per network is removed.
-    // We can keep the block if we plan to add other network specific metadata later, 
-    // but for now, the iconUrl is decided by config.
-  }
+  // Theme-aware icons
+  const lightIcon = config.appFavicon || config.appLogo;
+  const darkIcon = config.appFaviconDark || config.appLogoDark || lightIcon;
 
   return {
     title: config.appName || 'Gestão Financeira e CRM',
     description: 'Sistema de gestão financeira e dashboards analíticos',
-    icons: iconUrl ? { icon: iconUrl } : undefined
+    icons: lightIcon ? {
+      icon: [
+        { url: lightIcon, media: '(prefers-color-scheme: light)' },
+        { url: darkIcon, media: '(prefers-color-scheme: dark)' },
+      ],
+      apple: lightIcon,
+    } : undefined
   };
 }
 

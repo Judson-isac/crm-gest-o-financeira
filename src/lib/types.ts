@@ -148,6 +148,7 @@ export type SystemConfig = {
   appLogo: string;
   appLogoDark?: string; // New
   appFavicon?: string;
+  appFaviconDark?: string; // New
   // Sidebar
   appLogoHeight?: string; // Used as Sidebar Open Height
   appLogoIconHeight?: string; // Sidebar Collapsed Height
