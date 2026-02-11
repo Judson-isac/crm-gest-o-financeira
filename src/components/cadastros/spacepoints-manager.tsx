@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -193,12 +194,13 @@ function SpacepointsEditor({
         if (!selectedProcesso) return;
 
         startSavingTransition(async () => {
-            const poloToDelete = selectedPolo === 'GLOBAL' ? undefined : selectedPolo;
-            const result = await deleteSpacepointsAction(selectedProcesso, poloToDelete);
+            const result = await deleteSpacepointsAction(selectedProcesso, selectedPolo);
             if (result.success) {
                 toast({ title: 'Sucesso!', description: `Todas as metas do polo ${selectedPolo} foram apagadas do banco.` });
                 setSpacepoints([]);
-                setAreSpacepointsLoaded(false);
+                // Reload data to refresh indicators
+                loadPoloStatuses();
+                handleLoadData(selectedProcesso, selectedPolo);
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -224,8 +226,7 @@ function SpacepointsEditor({
             const result = await syncSpacepointsStructureAction(selectedProcesso, milestonesToSync);
             if (result.success) {
                 toast({ title: 'Sucesso!', description: 'Estrutura sincronizada com todos os polos da rede.' });
-                setAreSpacepointsLoaded(false);
-                handleLoadSpacepoints();
+                handleLoadData(selectedProcesso, selectedPolo);
             } else {
                 toast({ variant: 'destructive', title: 'Erro!', description: result.message });
             }
@@ -312,7 +313,7 @@ function SpacepointsEditor({
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-foreground uppercase tracking-tight">Gestor de Metas</h1>
-                        <p className="text-xs text-muted-foreground font-bold">PROCESSO: <span className="text-primary">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.year}</span></p>
+                        <p className="text-xs text-muted-foreground font-bold">PROCESSO: <span className="text-primary">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.ano}</span></p>
                     </div>
                 </div>
                 <Button variant="ghost" className="font-bold text-xs uppercase" onClick={onBack}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>
@@ -611,7 +612,8 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
 
                                 // Calculate network-wide total meta (sum of all polos for the latest space)
                                 const latestSpaceNum = Math.max(...sps.map(s => s.numeroSpace));
-                                const latestSpacepoints = sps.filter(s => s.numeroSpace === latestSpaceNum);
+                                // IMPORTANT: Only sum records that have a polo (ignore old global records)
+                                const latestSpacepoints = sps.filter(s => s.numeroSpace === latestSpaceNum && !!s.polo);
                                 const networkTotalMeta = latestSpacepoints.reduce((acc, curr) => acc + (curr.metaTotal || 0), 0);
                                 const numSpaces = Array.from(new Set(sps.map(s => s.numeroSpace))).length;
 
