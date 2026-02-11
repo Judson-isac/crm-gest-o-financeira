@@ -15,6 +15,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Filters } from "@/lib/types";
 import { ColorPaletteSwitcher } from "@/components/dashboard/color-palette-switcher";
+import { EnrollmentPaceWidget } from "@/components/dashboard/enrollment-pace-widget";
+import { PoloPerformanceWidget } from "@/components/dashboard/polo-performance-widget";
+import { ConversionChannelsWidget } from "@/components/dashboard/conversion-channels-widget";
+import { SellerLeaderboardWidget } from "@/components/dashboard/seller-leaderboard-widget";
 import { SpacepointAttainmentWidget } from "@/components/dashboard/spacepoint-attainment-widget";
 import { SpacepointCompositionWidget } from "@/components/dashboard/spacepoint-composition-widget";
 import { EnrollmentSummaryStats } from "./enrollment-summary-stats";
@@ -29,13 +33,31 @@ const WIDGET_CONFIG = {
         component: SpacepointAttainmentWidget,
         defaultLayout: { i: "spacepoint-attainment", x: 0, y: 0, w: 12, h: 14, minW: 6, minH: 8 }
     },
+    'enrollment-pace': {
+        title: 'Ritmo de Matrículas',
+        component: EnrollmentPaceWidget,
+        defaultLayout: { i: "enrollment-pace", x: 0, y: 14, w: 8, h: 12, minW: 6, minH: 8 }
+    },
+    'seller-leaderboard': {
+        title: 'Top Sellers',
+        component: SellerLeaderboardWidget,
+        defaultLayout: { i: "seller-leaderboard", x: 8, y: 14, w: 4, h: 12, minW: 3, minH: 8 }
+    },
+    'polo-performance': {
+        title: 'Performance por Polo',
+        component: PoloPerformanceWidget,
+        defaultLayout: { i: "polo-performance", x: 0, y: 26, w: 6, h: 12, minW: 4, minH: 8 }
+    },
+    'conversion-channels': {
+        title: 'Canais de Conversão',
+        component: ConversionChannelsWidget,
+        defaultLayout: { i: "conversion-channels", x: 6, y: 26, w: 6, h: 12, minW: 4, minH: 8 }
+    },
     'spacepoint-composition': {
         title: 'Composição de Spacepoints por Polo',
         component: SpacepointCompositionWidget,
-        defaultLayout: { i: "spacepoint-composition", x: 0, y: 14, w: 6, h: 12, minW: 4, minH: 6 }
+        defaultLayout: { i: "spacepoint-composition", x: 0, y: 38, w: 12, h: 12, minW: 4, minH: 6 }
     },
-    // Future widgets can be added here
-    // 'enrollment-by-polo': { ... }
 };
 
 const defaultWidgetKeys = Object.keys(WIDGET_CONFIG);
@@ -120,6 +142,10 @@ export function EnrollmentDashboardView({ summary, filters }: EnrollmentDashboar
             processoFilter: filters.processo,
             poloFilter: Array.isArray(filters.polo) ? filters.polo.join(',') : filters.polo
         },
+        'enrollment-pace': { filters },
+        'seller-leaderboard': { filters },
+        'polo-performance': { filters },
+        'conversion-channels': { filters },
         'spacepoint-composition': {
             processoFilter: filters.processo
         },
