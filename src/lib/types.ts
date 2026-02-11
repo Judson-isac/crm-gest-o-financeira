@@ -184,6 +184,16 @@ export type Meta = {
   redeId: string;
 };
 
+export type MetaUsuario = {
+  id: string;
+  usuarioId: string;
+  processoId: string;
+  numeroSemana: number;
+  metaQtd: number;
+  redeId: string;
+  criadoEm?: Date;
+};
+
 export type Spacepoint = {
   id: string;
   processoSeletivo: string;

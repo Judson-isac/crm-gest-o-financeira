@@ -1,9 +1,8 @@
-
 'use server';
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig } from './types';
+import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, MetaUsuario, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig } from './types';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -1155,6 +1154,53 @@ export async function getMetas(redeId?: string): Promise<Meta[]> {
         }
         const result = await client.query(query, params);
         return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getMetasUsuarios(redeId: string, processoId?: string, usuarioId?: string): Promise<MetaUsuario[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM metas_usuarios WHERE "redeId" = $1';
+        const params: any[] = [redeId];
+        let paramIndex = 2;
+
+        if (processoId) {
+            query += ` AND "processoId" = $${paramIndex++}`;
+            params.push(processoId);
+        }
+        if (usuarioId) {
+            query += ` AND "usuarioId" = $${paramIndex++}`;
+            params.push(usuarioId);
+        }
+
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveMetasUsuarios(redeId: string, usuarioId: string, processoId: string, metas: { numeroSemana: number, metaQtd: number }[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        for (const meta of metas) {
+            await client.query(
+                `INSERT INTO metas_usuarios (id, "usuarioId", "processoId", "numeroSemana", "metaQtd", "redeId")
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 ON CONFLICT ("usuarioId", "processoId", "numeroSemana", "redeId")
+                 DO UPDATE SET "metaQtd" = EXCLUDED."metaQtd"`,
+                [uuidv4(), usuarioId, processoId, meta.numeroSemana, meta.metaQtd, redeId]
+            );
+        }
+
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
     } finally {
         client.release();
     }

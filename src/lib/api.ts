@@ -100,7 +100,7 @@ export async function getImports(): Promise<ImportInfo[]> {
 // REGRAS DE CADASTRO (Segregação por RedeId)
 // ==========================================================================
 
-async function getRedeContext(): Promise<{ isSuperAdmin: boolean, sessionRedeId: string | null }> {
+export async function getRedeContext(): Promise<{ isSuperAdmin: boolean, sessionRedeId: string | null }> {
     const user = await getAuthUser();
     return {
         isSuperAdmin: user?.isSuperadmin ?? false,

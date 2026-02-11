@@ -1,19 +1,22 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { UserCog } from 'lucide-react';
+import { MetasUsuariosManager } from '@/components/cadastros/metas-usuarios-manager';
+import { getUsuarios, getProcessosSeletivos, getSpacepoints, getRedeContext } from '@/lib/api';
 
-export default function MetasUsuariosPage() {
+export default async function MetasUsuariosPage() {
+  const { sessionRedeId } = await getRedeContext();
+
+  const [usuarios, processosSeletivos, allSpacepoints] = await Promise.all([
+    getUsuarios(),
+    getProcessosSeletivos(),
+    getSpacepoints()
+  ]);
+
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle>Metas de Usuários</CardTitle>
-            <CardDescription>Esta funcionalidade está em desenvolvimento.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="flex flex-col h-48 items-center justify-center rounded-md border-2 border-dashed text-center">
-                <UserCog className="h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground mt-4">A tela para gerenciamento de metas individuais de usuários estará disponível em breve.</p>
-            </div>
-        </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <MetasUsuariosManager
+        usuarios={usuarios}
+        processosSeletivos={processosSeletivos}
+        allSpacepoints={allSpacepoints}
+      />
+    </div>
   );
 }

@@ -187,6 +187,32 @@ export async function saveSpacepointsAction(processoSeletivo: string, spacepoint
   }
 }
 
+// Metas de Usuários
+export async function getMetasUsuariosAction(processoId?: string, usuarioId?: string) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) throw new Error("Acesso negado.");
+
+    const metas = await db.getMetasUsuarios(user.redeId, processoId, usuarioId);
+    return { success: true, data: metas };
+  } catch (e: any) {
+    return { success: false, message: e.message };
+  }
+}
+
+export async function saveMetasUsuariosAction(usuarioId: string, processoId: string, metas: { numeroSemana: number, metaQtd: number }[]) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) throw new Error("Acesso negado.");
+
+    await db.saveMetasUsuarios(user.redeId, usuarioId, processoId, metas);
+    revalidatePath('/cadastros/metas-usuarios');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, message: e.message };
+  }
+}
+
 // Tipos de Curso
 export async function saveTipoCursoAction(tipo: Partial<TipoCurso>) {
   try {
