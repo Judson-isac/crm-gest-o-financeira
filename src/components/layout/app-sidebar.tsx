@@ -27,7 +27,6 @@ import type { Permissoes } from '@/lib/types';
 
 
 const cadastrosSubItems = [
-  { href: "/cadastros/metas-rede-polo", label: "Metas Rede/Polo" },
   { href: "/cadastros/metas-usuarios", label: "Metas Usuários" },
   { href: "/cadastros/space-points", label: "SpacePoints" },
   { href: "/cadastros/campanhas", label: "Campanhas" },
@@ -82,6 +81,17 @@ export default function AppSidebar({
   const [isMatriculaOpen, setIsMatriculaOpen] = React.useState(isMatriculaActive);
   const [isGestaoOpen, setIsGestaoOpen] = React.useState(isGestaoFinanceiraActive);
   const [isImportacaoOpen, setIsImportacaoOpen] = React.useState(isImportacaoActive);
+
+  // Auto-close submenus when sidebar collapses to prevent vertical spacing issues
+  React.useEffect(() => {
+    if (state === 'collapsed') {
+      setIsCadastrosOpen(false);
+      setIsUsuariosOpen(false);
+      setIsMatriculaOpen(false);
+      setIsGestaoOpen(false);
+      setIsImportacaoOpen(false);
+    }
+  }, [state]);
 
   return (
     <>
