@@ -12,7 +12,7 @@ import { Loader2, Save, ArrowLeft, Search, Calendar, ChevronRight, CheckCircle2,
 import { useToast } from '@/hooks/use-toast';
 import type { Usuario, ProcessoSeletivo, Spacepoint, MetaUsuario } from '@/lib/types';
 import { saveMetasUsuariosAction, getMetasUsuariosAction, saveGlobalMetasUsuariosAction } from '@/actions/cadastros';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -33,8 +33,13 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
     const [weeklyMetas, setWeeklyMetas] = useState<Record<number, number>>({});
     const [isLoadingMetas, setIsLoadingMetas] = useState(false);
     const [allMetas, setAllMetas] = useState<MetaUsuario[]>(initialMetas);
+    const [isMounted, setIsMounted] = useState(false);
 
-    const today = new Date();
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    const today = useMemo(() => isMounted ? new Date() : new Date(0), [isMounted]);
 
     // Helper to check if a user has any metas for the selected process
     const getGoalStatus = (userId: string) => {
