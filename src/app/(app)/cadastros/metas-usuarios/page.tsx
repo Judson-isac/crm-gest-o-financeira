@@ -5,21 +5,19 @@ import { getMetasUsuariosAction } from '@/actions/cadastros';
 export default async function MetasUsuariosPage() {
   const { sessionRedeId } = await getRedeContext();
 
-  const [usuarios, processosSeletivos, allSpacepoints, initialMetasResult] = await Promise.all([
+  const [usuarios, processosSeletivos, initialMetasResult] = await Promise.all([
     getUsuarios(),
     getProcessosSeletivos(),
-    getSpacepoints(),
     getMetasUsuariosAction()
   ]);
 
-  const initialMetas = initialMetasResult.success ? initialMetasResult.data : [];
+  const initialMetas = (initialMetasResult.success && initialMetasResult.data) ? initialMetasResult.data : [];
 
   return (
     <div className="space-y-6">
       <MetasUsuariosManager
         usuarios={usuarios}
         processosSeletivos={processosSeletivos}
-        allSpacepoints={allSpacepoints}
         initialMetas={initialMetas}
       />
     </div>

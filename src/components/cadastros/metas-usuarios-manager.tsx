@@ -19,11 +19,10 @@ import { cn } from '@/lib/utils';
 type MetasUsuariosManagerProps = {
     usuarios: Usuario[];
     processosSeletivos: ProcessoSeletivo[];
-    allSpacepoints: Spacepoint[];
     initialMetas: MetaUsuario[];
 };
 
-export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoints, initialMetas }: MetasUsuariosManagerProps) {
+export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMetas }: MetasUsuariosManagerProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -44,31 +43,36 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
         return hasAnyMeta;
     };
 
-    const availableSpaces = useMemo(() => {
-        if (!selectedProcesso) return [];
-        const processSpaces = allSpacepoints.filter(sp => sp.processoSeletivo === selectedProcesso);
+    const availableWeeks = useMemo(() => {
+        const proc = processosSeletivos.find(p => p.id === selectedProcesso);
+        if (!proc || !proc.dataInicial) return [];
 
-        const weeksMap = new Map<number, Date>();
-        processSpaces.sort((a, b) => a.numeroSpace - b.numeroSpace).forEach(sp => {
-            if (!weeksMap.has(sp.numeroSpace) || !sp.polo) {
-                weeksMap.set(sp.numeroSpace, new Date(sp.dataSpace));
-            }
-        });
+        const startDate = new Date(proc.dataInicial);
+        const endDate = new Date(proc.dataFinal);
+        const weeks: { numero: number, data: Date }[] = [];
 
-        return Array.from(weeksMap.entries())
-            .map(([num, date]) => ({
-                numero: num,
-                data: date
-            }))
-            .sort((a, b) => a.data.getTime() - b.data.getTime());
-    }, [selectedProcesso, allSpacepoints]);
+        let currentDate = startDate;
+        let weekNum = 1;
+
+        // Generate weeks of 7 days until endDate
+        while (currentDate <= endDate && weekNum <= 52) { // Safety cap
+            weeks.push({
+                numero: weekNum,
+                data: new Date(currentDate)
+            });
+            currentDate = addDays(currentDate, 7);
+            weekNum++;
+        }
+
+        return weeks;
+    }, [selectedProcesso, processosSeletivos]);
 
     // Determine current week number
     const currentWeekNumber = useMemo(() => {
-        if (availableSpaces.length === 0) return null;
+        if (availableWeeks.length === 0) return null;
 
         // Sort weeks by date (past to future)
-        const sortedWeeks = [...availableSpaces].sort((a, b) => a.data.getTime() - b.data.getTime());
+        const sortedWeeks = [...availableWeeks].sort((a, b) => a.data.getTime() - b.data.getTime());
 
         // Find the week that is currently active (today is between week date and next week date)
         for (let i = 0; i < sortedWeeks.length; i++) {
@@ -87,7 +91,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
             }
         }
         return null;
-    }, [availableSpaces, today]);
+    }, [availableWeeks, today]);
 
     const loadMetas = async (userId: string) => {
         setIsLoadingMetas(true);
@@ -110,18 +114,18 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
     const handleApplyToAll = (value: string) => {
         const val = parseInt(value) || 0;
         const newMetas: Record<number, number> = {};
-        availableSpaces.forEach(week => {
+        availableWeeks.forEach(week => {
             newMetas[week.numero] = val;
         });
         setWeeklyMetas(newMetas);
-        toast({ title: 'Meta replicada!', description: `Valor ${val} aplicado a todas as ${availableSpaces.length} semanas.` });
+        toast({ title: 'Meta replicada!', description: `Valor ${val} aplicado a todas as ${availableWeeks.length} semanas.` });
     };
 
     const handleApplyGlobal = (value: string) => {
         const val = parseInt(value) || 0;
         if (!selectedProcesso) return;
 
-        const metasToSave = availableSpaces.map(week => ({
+        const metasToSave = availableWeeks.map(week => ({
             numeroSemana: week.numero,
             metaQtd: val
         }));
@@ -225,7 +229,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                                     handleApplyGlobal(input.value);
                                     input.value = '';
                                 }}
-                                disabled={isPending || availableSpaces.length === 0}
+                                disabled={isPending || availableWeeks.length === 0}
                                 className="h-12 px-6 bg-white text-blue-700 hover:bg-blue-50 font-black shadow-lg"
                             >
                                 {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
@@ -371,7 +375,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {availableSpaces.length === 0 ? (
+                                    {availableWeeks.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={3} className="h-48 text-center bg-gray-50/50">
                                                 <div className="flex flex-col items-center gap-2">
@@ -381,7 +385,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        availableSpaces.map((week) => {
+                                        availableWeeks.map((week) => {
                                             const isTodayWeek = week.numero === currentWeekNumber;
                                             return (
                                                 <TableRow
@@ -441,7 +445,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                                 </Button>
                                 <Button
                                     onClick={handleSave}
-                                    disabled={isPending || availableSpaces.length === 0}
+                                    disabled={isPending || availableWeeks.length === 0}
                                     className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px] h-12 text-base font-bold shadow-lg shadow-blue-200"
                                 >
                                     {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
