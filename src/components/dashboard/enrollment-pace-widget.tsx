@@ -6,8 +6,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEnrollmentDashboardMetricsAction, PaceDataPoint } from "@/actions/enrollment-metrics";
 import { Filters } from "@/lib/types";
-import { Loader2, TrendingUp, X } from "lucide-react";
+import { Loader2, TrendingUp, X, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const chartConfig = {
     atual: {
@@ -65,17 +67,28 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
             <CardContent className="flex-1 min-h-[300px] p-0 flex flex-col">
                 {/* Ritmo Highlight */}
                 {activeSpace && (
-                    <div className="px-6 py-3 border-b bg-muted/30 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className={cn(
+                        "px-6 py-3 border-b grid grid-cols-2 md:grid-cols-4 gap-4 transition-colors",
+                        activeSpace.status === 'success' ? "bg-green-500/5 dark:bg-green-500/10" :
+                            activeSpace.status === 'warning' ? "bg-amber-500/5 dark:bg-amber-500/10" : "bg-red-500/5 dark:bg-red-500/10"
+                    )}>
                         <div>
-                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Atual</div>
-                            <div className="text-xl font-black text-blue-500">
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                Ritmo Atual
+                                {activeSpace.status === 'success' ? <ArrowUp className="h-2 w-2 text-green-500" /> : <ArrowDown className="h-2 w-2 text-red-500" />}
+                            </div>
+                            <div className={cn(
+                                "text-xl font-black transition-colors",
+                                activeSpace.status === 'success' ? "text-green-600 dark:text-green-500" :
+                                    activeSpace.status === 'warning' ? "text-amber-600 dark:text-amber-500" : "text-red-600 dark:text-red-500"
+                            )}>
                                 {activeSpace.currentPace.toFixed(1)}
                                 <span className="text-[10px] ml-1 font-bold opacity-70">POR DIA</span>
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Ideal</div>
-                            <div className="text-xl font-black text-primary">
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Ritmo Necessário</div>
+                            <div className="text-xl font-black text-foreground">
                                 {activeSpace.requiredPace.toFixed(1)}
                                 <span className="text-[10px] ml-1 font-bold opacity-70">POR DIA</span>
                             </div>
@@ -88,10 +101,11 @@ export function EnrollmentPaceWidget({ filters, onRemove }: { filters: Filters, 
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Prazo</div>
-                            <div className="text-xl font-black">
-                                {activeSpace.daysRemaining}
-                                <span className="text-[10px] ml-1 font-bold opacity-70">DIAS</span>
+                            <div className="text-[10px] uppercase font-bold text-muted-foreground">Status</div>
+                            <div className="mt-1 flex items-center">
+                                <Badge variant={activeSpace.status === 'success' ? 'default' : (activeSpace.status === 'warning' ? 'secondary' : 'destructive')} className="font-bold text-[10px] h-6 px-2 uppercase">
+                                    {activeSpace.status === 'success' ? 'No Ritmo' : (activeSpace.status === 'warning' ? 'Atenção' : 'Abaixo do Ritmo')}
+                                </Badge>
                             </div>
                         </div>
                     </div>

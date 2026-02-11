@@ -41,6 +41,7 @@ export type EnrollmentDashboardMetrics = {
         requiredPace: number;
         currentPace: number;
         daysRemaining: number;
+        status: 'success' | 'warning' | 'danger';
     };
 };
 
@@ -109,7 +110,7 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
     }
 
     if (interval) {
-        // Filter spaces by Polo context
+        // Unified Spacepoint Logic (Matching Attainment Widget)
         let milestones: { date: Date, meta: number }[] = [];
         if (filters.polo && filters.polo !== 'all') {
             const poloFilterArray = Array.isArray(filters.polo) ? filters.polo : [filters.polo];
@@ -123,19 +124,18 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
             }, {} as Record<string, { date: Date, meta: number }>);
             milestones = Object.values(grouped).sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
         } else {
-            const globalSpaces = relevantSpaces.filter(sp => !sp.polo || sp.polo === '');
-            if (globalSpaces.length > 0) {
-                milestones = globalSpaces.map(sp => ({ date: new Date(sp.dataSpace), meta: Number(sp.metaTotal) }))
-                    .sort((a, b) => a.date.getTime() - b.date.getTime());
-            } else {
-                const grouped: Record<string, { date: Date, meta: number }> = relevantSpaces.reduce((acc, sp) => {
-                    const dayKey = format(new Date(sp.dataSpace), 'yyyy-MM-dd');
-                    if (!acc[dayKey]) acc[dayKey] = { date: new Date(sp.dataSpace), meta: 0 };
-                    acc[dayKey].meta += (sp.metaTotal || 0);
-                    return acc;
-                }, {} as Record<string, { date: Date, meta: number }>);
-                milestones = Object.values(grouped).sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
-            }
+            // "Todos" view: Always sum Polo-specific goals (Ignore records with polo=null)
+            const spaceNumbers = Array.from(new Set(relevantSpaces.map(sp => sp.numeroSpace))).sort((a, b) => a - b);
+            milestones = spaceNumbers.map(num => {
+                const spacesForNum = relevantSpaces.filter(sp => sp.numeroSpace === num && !!sp.polo);
+                if (spacesForNum.length === 0) return null;
+
+                const metaSums = spacesForNum.reduce((acc, sp) => acc + (sp.metaTotal || 0), 0);
+                return {
+                    date: new Date(spacesForNum[0].dataSpace),
+                    meta: metaSums
+                };
+            }).filter(m => m !== null) as { date: Date, meta: number }[];
         }
 
         const days = eachDayOfInterval({ start: interval.start, end: interval.end });
@@ -151,15 +151,30 @@ export async function getEnrollmentDashboardMetricsAction(filters: Filters): Pro
         const nextMilestone = milestones.find(m => m.date >= today);
 
         if (nextMilestone) {
-            const daysLeft = Math.max(1, Math.round((nextMilestone.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+            // Working Days Calculation (Excluding Sundays)
+            let daysLeft = 0;
+            const tempDate = new Date(today);
+            tempDate.setHours(0, 0, 0, 0);
+            const targetDate = new Date(nextMilestone.date);
+            targetDate.setHours(0, 0, 0, 0);
+
+            while (tempDate < targetDate) {
+                tempDate.setDate(tempDate.getDate() + 1);
+                if (tempDate.getDay() !== 0) daysLeft++;
+            }
+
             const gap = nextMilestone.meta - realizedUntilToday;
+            const requiredPace = daysLeft > 0 ? gap / daysLeft : 0;
+            const status = currentDailyPace >= requiredPace ? 'success' : (currentDailyPace >= requiredPace * 0.8 ? 'warning' : 'danger');
+
             activeSpaceInfo = {
                 name: `Space ${milestones.indexOf(nextMilestone) + 1}`,
                 date: format(nextMilestone.date, 'dd/MM'),
                 target: nextMilestone.meta,
-                requiredPace: gap > 0 ? gap / daysLeft : 0,
+                requiredPace,
                 currentPace: currentDailyPace,
-                daysRemaining: daysLeft
+                daysRemaining: daysLeft,
+                status
             };
         }
 
