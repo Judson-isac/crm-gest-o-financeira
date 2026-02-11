@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save } from 'lucide-react';
 import { saveSpacepointsAction } from '@/actions/cadastros';
-import type { Spacepoint as DbSpacepoint, TipoCurso } from '@/lib/types';
+import type { Spacepoint as DbSpacepoint, TipoCurso, ProcessoSeletivo } from '@/lib/types';
 import { format, addDays } from 'date-fns';
 
 type EditorSpacepoint = {
@@ -160,6 +160,29 @@ function SpacepointsEditor({
         setSpacepoints(spacepoints.filter(sp => sp.id !== id));
     };
 
+    const handleClearAll = () => {
+        setSpacepoints([]);
+        toast({ title: 'Lista limpa', description: 'Todas as semanas foram removidas.' });
+    };
+
+    const handleRenumberByDate = () => {
+        if (spacepoints.length === 0) return;
+
+        const sorted = [...spacepoints].sort((a, b) => {
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return a.date.getTime() - b.date.getTime();
+        });
+
+        const renumbered = sorted.map((sp, idx) => ({
+            ...sp,
+            numeroSpace: idx + 1
+        }));
+
+        setSpacepoints(renumbered);
+        toast({ title: 'Semanas renumeradas', description: 'A ordem foi ajustada cronologicamente.' });
+    };
+
     const handleDateChange = (id: string, newDate: Date | undefined) => {
         setSpacepoints(prev => prev.map(sp => sp.id === id ? { ...sp, date: newDate } : sp));
     };
@@ -274,15 +297,33 @@ function SpacepointsEditor({
                                 <CardDescription>
                                     Defina as datas e as metas para cada produto no processo seletivo <span className="font-semibold">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.ano}</span>.
                                 </CardDescription>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                                    onClick={handleAutoGenerateWeeks}
-                                >
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Gerar Semanas (7 em 7 dias)
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-red-200 text-red-700 hover:bg-red-50"
+                                        onClick={handleClearAll}
+                                    >
+                                        Limpar Tudo
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                        onClick={handleRenumberByDate}
+                                    >
+                                        Renumerar por Data
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-green-200 text-green-700 hover:bg-green-50"
+                                        onClick={handleAutoGenerateWeeks}
+                                    >
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Gerar (7 em 7 dias)
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="border rounded-lg overflow-x-auto">
