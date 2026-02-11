@@ -55,10 +55,12 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
             }
         });
 
-        return Array.from(weeksMap.entries()).map(([num, date]) => ({
-            numero: num,
-            data: date
-        }));
+        return Array.from(weeksMap.entries())
+            .map(([num, date]) => ({
+                numero: num,
+                data: date
+            }))
+            .sort((a, b) => a.data.getTime() - b.data.getTime());
     }, [selectedProcesso, allSpacepoints]);
 
     // Determine current week number

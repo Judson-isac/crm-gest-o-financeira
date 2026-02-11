@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Save } from 'lucide-react';
 import { saveSpacepointsAction } from '@/actions/cadastros';
 import type { Spacepoint as DbSpacepoint, TipoCurso } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 
 type EditorSpacepoint = {
     id: string; // Use string for temp IDs too
@@ -29,7 +29,7 @@ function SpacepointsEditor({
     onBack,
     onSaveSuccess,
     allProcessos,
-    processoLabels,
+    processoObjects,
     allSpacepoints,
     tiposCurso,
     polos,
@@ -39,7 +39,7 @@ function SpacepointsEditor({
     onBack: () => void;
     onSaveSuccess: () => void;
     allProcessos: string[];
-    processoLabels?: Map<string, string>;
+    processoObjects: ProcessoSeletivo[];
     allSpacepoints: DbSpacepoint[];
     tiposCurso: TipoCurso[];
     polos: string[];
@@ -107,6 +107,40 @@ function SpacepointsEditor({
             setAreSpacepointsLoaded(true);
         }, 500);
     }, [selectedProcesso, selectedPolo, toast, allSpacepoints, tiposCurso]);
+
+    const handleAutoGenerateWeeks = () => {
+        const proc = processoObjects.find(p => p.id === selectedProcesso);
+        if (!proc || !proc.dataInicial) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'O processo selecionado não possui data inicial cadastrada.' });
+            return;
+        }
+
+        const startDate = new Date(proc.dataInicial);
+        const endDate = new Date(proc.dataFinal);
+        const newSpacepoints: EditorSpacepoint[] = [];
+
+        let currentDate = startDate;
+        let weekNum = 1;
+
+        while (currentDate <= endDate && weekNum <= 52) { // Safety cap at 52 weeks
+            const initialMetas: Record<string, string> = {};
+            tiposCurso.forEach(tc => initialMetas[tc.id] = '0');
+
+            newSpacepoints.push({
+                id: `auto_${weekNum}_${Date.now()}`,
+                numeroSpace: weekNum,
+                date: currentDate,
+                metaTotal: 0,
+                metasPorTipo: initialMetas
+            });
+
+            currentDate = addDays(currentDate, 7);
+            weekNum++;
+        }
+
+        setSpacepoints(newSpacepoints);
+        toast({ title: 'Sucesso!', description: `${newSpacepoints.length} semanas geradas (7 em 7 dias).` });
+    };
 
     const handleAddRow = () => {
         const nextNum = spacepoints.length > 0 ? Math.max(...spacepoints.map(s => s.numeroSpace)) + 1 : 1;
@@ -201,7 +235,7 @@ function SpacepointsEditor({
                                     <SelectValue placeholder="Selecione um processo seletivo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {allProcessos.map(pId => <SelectItem key={pId} value={pId}>{processoLabels?.get(pId) || pId}</SelectItem>)}
+                                    {allProcessos.map(pId => <SelectItem key={pId} value={pId}>{processoObjects.find(p => p.id === pId)?.numero}/{processoObjects.find(p => p.id === pId)?.ano}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -236,15 +270,26 @@ function SpacepointsEditor({
 
                     {areSpacepointsLoaded && (
                         <div className="space-y-6 pt-6 border-t">
-                            <CardDescription>
-                                Defina as datas e as metas para cada produto no processo seletivo <span className="font-semibold">{processoLabels?.get(selectedProcesso)}</span>.
-                            </CardDescription>
+                            <div className="flex justify-between items-center">
+                                <CardDescription>
+                                    Defina as datas e as metas para cada produto no processo seletivo <span className="font-semibold">{processoObjects.find(p => p.id === selectedProcesso)?.numero}/{processoObjects.find(p => p.id === selectedProcesso)?.ano}</span>.
+                                </CardDescription>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                    onClick={handleAutoGenerateWeeks}
+                                >
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Gerar Semanas (7 em 7 dias)
+                                </Button>
+                            </div>
 
                             <div className="border rounded-lg overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-[80px]">SPACE</TableHead>
+                                            <TableHead className="w-[80px]">SEMANA</TableHead>
                                             <TableHead className="w-[180px]">DATA</TableHead>
                                             {tiposCurso.map(tc => (
                                                 <TableHead key={tc.id} className="text-center min-w-[80px]">{tc.nome.toUpperCase()}</TableHead>
@@ -289,14 +334,14 @@ function SpacepointsEditor({
                                 <div>
                                     <Button variant="outline" onClick={handleAddRow}>
                                         <PlusCircle className="mr-2 h-4 w-4" />
-                                        Adicionar Space
+                                        Adicionar Semana
                                     </Button>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white">
+                                    <Button onClick={handleSave} disabled={isSaving || spacepoints.length === 0} className="bg-green-600 hover:bg-green-700 text-white px-8">
                                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         <Save className="mr-2 h-4 w-4" />
-                                        Salvar
+                                        Salvar Spacepoints
                                     </Button>
                                 </div>
                             </div>
@@ -309,14 +354,12 @@ function SpacepointsEditor({
 }
 
 
-export default function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso, polos }: { processosSeletivos: { id: string, numero: string, ano: number }[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[], polos: string[] }) {
+export default function SpacepointsManager({ processosSeletivos, allSpacepoints, allDates, tiposCurso, polos }: { processosSeletivos: ProcessoSeletivo[], allSpacepoints: DbSpacepoint[], allDates: Date[], tiposCurso: TipoCurso[], polos: string[] }) {
     const [view, setView] = useState<'list' | 'editor'>('list');
     const [editingProcesso, setEditingProcesso] = useState<string | null>(null);
     const [editingPolo, setEditingPolo] = useState<string | undefined>(undefined);
     const router = useRouter();
 
-    // Create a map for display labels
-    const processoLabels = new Map(processosSeletivos.map(p => [p.id, `${p.numero}/${p.ano}`]));
     const processoIds = processosSeletivos.map(p => p.id);
 
     const handleEdit = (processoId: string, polo?: string) => {
@@ -338,7 +381,7 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
             onBack={() => setView('list')}
             onSaveSuccess={() => { setView('list'); router.refresh(); }}
             allProcessos={processoIds}
-            processoLabels={processoLabels}
+            processoObjects={processosSeletivos}
             allSpacepoints={allSpacepoints}
             tiposCurso={tiposCurso}
             polos={polos}
@@ -351,10 +394,10 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center">
-                    <CardTitle>Spacepoints por Processo Seletivo</CardTitle>
+                    <CardTitle>Cronograma de Semanas (Spacepoints)</CardTitle>
                     <Button onClick={handleNew}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Gerenciar Spacepoints
+                        Novo Cronograma
                     </Button>
                 </div>
             </CardHeader>
@@ -368,17 +411,18 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
                         <TableHeader>
                             <TableRow>
                                 <TableHead>PROCESSO SELETIVO</TableHead>
-                                <TableHead className="text-center">QTD. SPACES</TableHead>
-                                <TableHead className="text-center">META TOTAL</TableHead>
+                                <TableHead className="text-center">QTD. SEMANAS</TableHead>
+                                <TableHead className="text-center">META TOTAL REDE</TableHead>
                                 <TableHead className="text-right w-[100px]">AÇÕES</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {processoIds.map(pId => {
+                            {processosSeletivos.map(proc => {
+                                const pId = proc.id;
                                 const sps = allSpacepoints.filter(sp => sp.processoSeletivo === pId);
                                 if (sps.length === 0) return (
                                     <TableRow key={pId}>
-                                        <TableCell className="font-medium">{processoLabels.get(pId)}</TableCell>
+                                        <TableCell className="font-medium">{proc.numero}/{proc.ano}</TableCell>
                                         <TableCell className="text-center">0</TableCell>
                                         <TableCell className="text-center">-</TableCell>
                                         <TableCell className="text-right">
@@ -398,7 +442,7 @@ export default function SpacepointsManager({ processosSeletivos, allSpacepoints,
                                 return (
                                     <TableRow key={pId}>
                                         <TableCell className="font-medium">
-                                            {processoLabels.get(pId)}
+                                            {proc.numero}/{proc.ano}
                                         </TableCell>
                                         <TableCell className="text-center">{numSpaces}</TableCell>
                                         <TableCell className="text-center font-bold text-primary">{networkTotalMeta}</TableCell>
