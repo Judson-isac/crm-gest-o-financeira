@@ -81,6 +81,7 @@ export default function AppSidebar({
   const [isMatriculaOpen, setIsMatriculaOpen] = React.useState(isMatriculaActive);
   const [isGestaoOpen, setIsGestaoOpen] = React.useState(isGestaoFinanceiraActive);
   const [isImportacaoOpen, setIsImportacaoOpen] = React.useState(isImportacaoActive);
+  const [isRankingOpen, setIsRankingOpen] = React.useState(pathname.startsWith('/ranking'));
 
   // Auto-close submenus when sidebar collapses to prevent vertical spacing issues
   React.useEffect(() => {
@@ -90,6 +91,7 @@ export default function AppSidebar({
       setIsMatriculaOpen(false);
       setIsGestaoOpen(false);
       setIsImportacaoOpen(false);
+      setIsRankingOpen(false);
     }
   }, [state]);
 
@@ -277,7 +279,7 @@ export default function AppSidebar({
 
           {/* Ranking Link - Accessible to all verified users or specific permission if needed. */}
           {(permissions.verRanking) && (
-            <Collapsible asChild className="group/collapsible">
+            <Collapsible asChild open={isRankingOpen} onOpenChange={setIsRankingOpen} className="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Ranking Matrículas">
