@@ -1206,6 +1206,35 @@ export async function saveMetasUsuarios(redeId: string, usuarioId: string, proce
     }
 }
 
+export async function saveGlobalMetasUsuarios(redeId: string, processoId: string, metas: { numeroSemana: number, metaQtd: number }[]): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Get all users for this rede (excluding superadmins)
+        const usersResult = await client.query('SELECT id FROM usuarios WHERE "redeId" = $1 AND "isSuperadmin" = FALSE', [redeId]);
+        const userIds = usersResult.rows.map(r => r.id);
+
+        for (const userId of userIds) {
+            for (const meta of metas) {
+                await client.query(
+                    `INSERT INTO metas_usuarios (id, "usuarioId", "processoId", "numeroSemana", "metaQtd", "redeId")
+                     VALUES ($1, $2, $3, $4, $5, $6)
+                     ON CONFLICT ("usuarioId", "processoId", "numeroSemana", "redeId")
+                     DO UPDATE SET "metaQtd" = EXCLUDED."metaQtd"`,
+                    [uuidv4(), userId, processoId, meta.numeroSemana, meta.metaQtd, redeId]
+                );
+            }
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
 export async function getSpacepoints(redeId?: string): Promise<Spacepoint[]> {
     const client = await pool.connect();
     try {

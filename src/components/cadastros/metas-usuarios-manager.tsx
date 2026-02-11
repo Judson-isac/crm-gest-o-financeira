@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, Save, ArrowLeft, Search, Calendar, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Usuario, ProcessoSeletivo, Spacepoint, MetaUsuario } from '@/lib/types';
-import { saveMetasUsuariosAction, getMetasUsuariosAction } from '@/actions/cadastros';
+import { saveMetasUsuariosAction, getMetasUsuariosAction, saveGlobalMetasUsuariosAction } from '@/actions/cadastros';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -117,6 +117,29 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
         toast({ title: 'Meta replicada!', description: `Valor ${val} aplicado a todas as ${availableSpaces.length} semanas.` });
     };
 
+    const handleApplyGlobal = (value: string) => {
+        const val = parseInt(value) || 0;
+        if (!selectedProcesso) return;
+
+        const metasToSave = availableSpaces.map(week => ({
+            numeroSemana: week.numero,
+            metaQtd: val
+        }));
+
+        startTransition(async () => {
+            const result = await saveGlobalMetasUsuariosAction(selectedProcesso, metasToSave);
+            if (result.success) {
+                toast({ title: 'Meta Global Aplicada!', description: `Valor ${val} aplicado a TODOS os vendedores.` });
+                // Refresh all metas to update dashboard statuses
+                const updatedMetas = await getMetasUsuariosAction(selectedProcesso);
+                if (updatedMetas.success) setAllMetas(updatedMetas.data || []);
+                router.refresh();
+            } else {
+                toast({ variant: 'destructive', title: 'Erro ao aplicar meta global', description: result.message });
+            }
+        });
+    };
+
     const handleSave = () => {
         if (!selectedUsuario || !selectedProcesso) return;
 
@@ -171,6 +194,43 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+                </div>
+
+                <div className="bg-blue-600 rounded-lg p-6 text-white shadow-lg border-2 border-blue-400 relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 -mt-4 -mr-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                        <Save size={120} />
+                    </div>
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                                <span className="bg-white text-blue-600 rounded px-2 py-0.5 text-sm">PRO</span>
+                                Meta Global (TODOS os Vendedores)
+                            </h3>
+                            <p className="text-blue-100 text-sm mt-1 font-medium">Define o mesmo valor para **todas as semanas** de **todos os usuários** de uma vez.</p>
+                        </div>
+                        <div className="flex items-center gap-3 bg-blue-700/50 p-3 rounded-xl border border-blue-400/50 backdrop-blur-sm">
+                            <div className="flex flex-col">
+                                <Label htmlFor="global-goal" className="text-[10px] font-black text-blue-200 uppercase mb-1">Valor da Meta</Label>
+                                <Input
+                                    id="global-goal"
+                                    type="number"
+                                    placeholder="Ex: 5"
+                                    className="w-24 h-12 text-center text-xl font-black text-blue-900 bg-white border-0"
+                                />
+                            </div>
+                            <Button
+                                onClick={() => {
+                                    const input = document.getElementById('global-goal') as HTMLInputElement;
+                                    handleApplyGlobal(input.value);
+                                    input.value = '';
+                                }}
+                                disabled={isPending || availableSpaces.length === 0}
+                                className="h-12 px-6 bg-white text-blue-700 hover:bg-blue-50 font-black shadow-lg"
+                            >
+                                {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

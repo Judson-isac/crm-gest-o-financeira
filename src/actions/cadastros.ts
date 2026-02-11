@@ -213,6 +213,19 @@ export async function saveMetasUsuariosAction(usuarioId: string, processoId: str
   }
 }
 
+export async function saveGlobalMetasUsuariosAction(processoId: string, metas: { numeroSemana: number, metaQtd: number }[]) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user || !user.redeId) throw new Error("Acesso negado.");
+
+    await db.saveGlobalMetasUsuarios(user.redeId, processoId, metas);
+    revalidatePath('/cadastros/metas-usuarios');
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, message: e.message };
+  }
+}
+
 // Tipos de Curso
 export async function saveTipoCursoAction(tipo: Partial<TipoCurso>) {
   try {
