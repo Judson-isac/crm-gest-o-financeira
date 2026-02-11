@@ -1123,7 +1123,25 @@ export async function syncSpacepointsStructure(redeId: string, processoId: strin
     try {
         await client.query('BEGIN');
 
-        // 1. Get all polos from the network
+        // 1. Get all allowed space numbers
+        const activeSpaceNumbers = milestones.map(m => m.numeroSpace);
+
+        // 2. DELETE any spacepoint for this process/network that ISN'T in the master list
+        // This ensures that if a space was removed from the target list, it's removed from ALL polos
+        if (activeSpaceNumbers.length > 0) {
+            await client.query(
+                'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2 AND "numeroSpace" != ALL($3)',
+                [processoId, redeId, activeSpaceNumbers]
+            );
+        } else {
+            // If milestones is empty, clear everything for this process/network
+            await client.query(
+                'DELETE FROM spacepoints WHERE "processoSeletivo" = $1 AND "redeId" = $2',
+                [processoId, redeId]
+            );
+        }
+
+        // 3. Get all polos from the network to ensure they all have the structure
         const redeResult = await client.query('SELECT polos FROM redes WHERE id = $1', [redeId]);
         const polos = redeResult.rows[0]?.polos || [];
 
