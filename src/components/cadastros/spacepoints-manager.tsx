@@ -29,6 +29,25 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Spacepoint as DbSpacepoint, TipoCurso, ProcessoSeletivo } from '@/lib/types';
 import { format, addDays } from 'date-fns';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { GripVertical } from 'lucide-react';
 
 type EditorSpacepoint = {
     id: string; // Use string for temp IDs too
@@ -37,6 +56,74 @@ type EditorSpacepoint = {
     metaTotal: number;
     metasPorTipo: Record<string, string>; // Key: Tipo ID, Value: string input
 };
+
+interface SortableRowProps {
+    sp: EditorSpacepoint;
+    idx: number;
+    spacepointsCount: number;
+    onDateChange: (id: string, date: Date | undefined) => void;
+    onRemoveRow: (id: string) => void;
+}
+
+function SortableRow({ sp, idx, spacepointsCount, onDateChange, onRemoveRow }: SortableRowProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: sp.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+    };
+
+    return (
+        <TableRow
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                "px-6 transition-colors duration-200",
+                sp.numeroSpace === spacepointsCount ? "bg-primary/5" : "",
+                isDragging ? "bg-accent shadow-lg border-primary/20" : ""
+            )}
+        >
+            <TableCell className="px-6">
+                <div className="flex items-center gap-3">
+                    <div
+                        {...attributes}
+                        {...listeners}
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors p-1"
+                    >
+                        <GripVertical className="h-4 w-4" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary text-xs">
+                            {sp.numeroSpace}
+                        </div>
+                        {sp.numeroSpace === spacepointsCount && <Badge className="text-[10px] bg-primary h-5">META FINAL</Badge>}
+                    </div>
+                </div>
+            </TableCell>
+            <TableCell className="px-6">
+                <DatePicker value={sp.date} onValueChange={(d) => onDateChange(sp.id, d)} />
+            </TableCell>
+            <TableCell className="px-6 text-right">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemoveRow(sp.id)}
+                    className="text-red-500 hover:bg-red-50"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </TableCell>
+        </TableRow>
+    );
+}
 
 function SpacepointsEditor({
     initialProcesso,
@@ -67,6 +154,13 @@ function SpacepointsEditor({
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, startSavingTransition] = useTransition();
     const [poloStatuses, setPoloStatuses] = useState<Record<string, boolean>>({});
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     // Shared dates across all polos for this process
     const [sharedDates, setSharedDates] = useState<Record<number, Date | undefined>>({});
@@ -267,6 +361,26 @@ function SpacepointsEditor({
         toast({ title: 'Spacepoints renumerados', description: 'A ordem foi ajustada cronologicamente.' });
     };
 
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setSpacepoints((items) => {
+                const oldIndex = items.findIndex(i => i.id === active.id);
+                const newIndex = items.findIndex(i => i.id === over.id);
+
+                const reordered = arrayMove(items, oldIndex, newIndex);
+
+                // Automatically renumber after reordering
+                return reordered.map((sp, idx) => ({
+                    ...sp,
+                    numeroSpace: idx + 1
+                }));
+            });
+            toast({ title: 'Ordem alterada', description: 'A numeração dos spacepoints foi atualizada.' });
+        }
+    };
+
     const handleDateChange = (id: string, newDate: Date | undefined) => {
         setSpacepoints(prev => prev.map(sp => sp.id === id ? { ...sp, date: newDate } : sp));
     };
@@ -434,24 +548,28 @@ function SpacepointsEditor({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {spacepoints.map((sp, idx) => (
-                                                <TableRow key={sp.id} className={cn("px-6", sp.numeroSpace === spacepoints.length ? "bg-primary/5" : "")}>
-                                                    <TableCell className="px-6">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary text-xs">
-                                                                {sp.numeroSpace}
-                                                            </div>
-                                                            {sp.numeroSpace === spacepoints.length && <Badge className="text-[10px] bg-primary h-5">META FINAL</Badge>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="px-6">
-                                                        <DatePicker value={sp.date} onValueChange={(d) => handleDateChange(sp.id, d)} />
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-right">
-                                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveRow(sp.id)} className="text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                onDragEnd={handleDragEnd}
+                                                modifiers={[restrictToVerticalAxis]}
+                                            >
+                                                <SortableContext
+                                                    items={spacepoints.map(sp => sp.id)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {spacepoints.map((sp, idx) => (
+                                                        <SortableRow
+                                                            key={sp.id}
+                                                            sp={sp}
+                                                            idx={idx}
+                                                            spacepointsCount={spacepoints.length}
+                                                            onDateChange={handleDateChange}
+                                                            onRemoveRow={handleRemoveRow}
+                                                        />
+                                                    ))}
+                                                </SortableContext>
+                                            </DndContext>
                                             <TableRow className="hover:bg-transparent border-none">
                                                 <TableCell colSpan={3} className="p-4 px-6">
                                                     <Button variant="outline" onClick={handleAddRow} className="w-full border-dashed py-6 group hover:border-primary transition-all">
