@@ -8,10 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Save, ArrowLeft, Search, Calendar, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Search, Calendar, ChevronRight, CheckCircle2, Circle, Trash2, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Usuario, ProcessoSeletivo, Spacepoint, MetaUsuario } from '@/lib/types';
 import { saveMetasUsuariosAction, getMetasUsuariosAction, saveGlobalMetasUsuariosAction } from '@/actions/cadastros';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -206,39 +217,109 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, initialMeta
                     </div>
                 </div>
 
-                <div className="bg-blue-600 rounded-lg p-6 text-white shadow-lg border-2 border-blue-400 relative overflow-hidden group">
-                    <div className="absolute right-0 top-0 -mt-4 -mr-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                        <Save size={120} />
+                <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-2xl border border-white/20 relative overflow-hidden group mb-8">
+                    {/* Background decoration elements */}
+                    <div className="absolute -right-10 -bottom-10 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                        <Zap size={240} />
                     </div>
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                            <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                                <span className="bg-white text-blue-600 rounded px-2 py-0.5 text-sm">PRO</span>
-                                Meta Global (TODOS os Vendedores)
+                    <div className="absolute -left-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+                        <div className="max-w-xl">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30 shadow-sm">
+                                    Enterprise Feature
+                                </div>
+                                <div className="bg-amber-400 text-amber-950 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                    Ação Global
+                                </div>
+                            </div>
+                            <h3 className="text-3xl font-black tracking-tighter flex items-center gap-3 italic">
+                                META GLOBAL
+                                <span className="text-blue-200 not-italic font-light">(TODOS OS VENDEDORES)</span>
                             </h3>
-                            <p className="text-blue-100 text-sm mt-1 font-medium">Define o mesmo valor para **todas as semanas** de **todos os usuários** de uma vez.</p>
+                            <p className="text-blue-50 text-base mt-3 leading-relaxed font-medium max-w-lg">
+                                Potencialize a operação definindo um objetivo único para <span className="underline decoration-amber-400 decoration-2 underline-offset-4 font-bold">todas as semanas</span> de <span className="underline decoration-amber-400 decoration-2 underline-offset-4 font-bold">todos os usuários</span> simultaneamente.
+                            </p>
                         </div>
-                        <div className="flex items-center gap-3 bg-blue-700/50 p-3 rounded-xl border border-blue-400/50 backdrop-blur-sm">
-                            <div className="flex flex-col">
-                                <Label htmlFor="global-goal" className="text-[10px] font-black text-blue-200 uppercase mb-1">Valor da Meta</Label>
+
+                        <div className="flex flex-wrap items-end gap-4 bg-white/10 p-6 rounded-2xl border border-white/20 backdrop-blur-md shadow-inner">
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="global-goal" className="text-xs font-black text-blue-100 uppercase tracking-wider ml-1">Valor do Objetivo</Label>
                                 <Input
                                     id="global-goal"
                                     type="number"
                                     placeholder="Ex: 5"
-                                    className="w-24 h-12 text-center text-xl font-black text-blue-900 bg-white border-0"
+                                    className="w-32 h-14 text-center text-2xl font-black text-indigo-900 bg-white border-0 rounded-xl shadow-lg focus-visible:ring-amber-400 transition-all"
                                 />
                             </div>
-                            <Button
-                                onClick={() => {
-                                    const input = document.getElementById('global-goal') as HTMLInputElement;
-                                    handleApplyGlobal(input.value);
-                                    input.value = '';
-                                }}
-                                disabled={isPending || availableWeeks.length === 0}
-                                className="h-12 px-6 bg-white text-blue-700 hover:bg-blue-50 font-black shadow-lg"
-                            >
-                                {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
-                            </Button>
+
+                            <div className="flex flex-col gap-2">
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            disabled={isPending || availableWeeks.length === 0}
+                                            className="h-14 px-8 bg-amber-400 text-amber-950 hover:bg-amber-300 font-black text-base shadow-lg hover:shadow-amber-400/20 active:scale-95 transition-all rounded-xl border-b-4 border-amber-600"
+                                        >
+                                            {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "APLICAR EM TUDO"}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="border-2 border-indigo-100 rounded-2xl">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="text-2xl font-black text-indigo-900">Confirmar Ação Global?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-base text-gray-600 leading-relaxed">
+                                                Esta ação irá **sobrescrever as metas de todos os vendedores** em todas as semanas do processo {processosSeletivos.find(p => p.id === selectedProcesso)?.numero}/{processosSeletivos.find(p => p.id === selectedProcesso)?.ano}.
+                                                <br /><br />
+                                                <span className="text-amber-600 font-bold block bg-amber-50 p-2 rounded-lg border border-amber-200">
+                                                    ⚠️ Esta operação não pode ser desfeita individualmente.
+                                                </span>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="gap-2">
+                                            <AlertDialogCancel className="rounded-xl border-2 font-bold h-12">Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => {
+                                                    const input = document.getElementById('global-goal') as HTMLInputElement;
+                                                    handleApplyGlobal(input.value);
+                                                    input.value = '';
+                                                }}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-8 h-12 shadow-lg shadow-indigo-200"
+                                            >
+                                                Confirmar e Aplicar
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        disabled={isPending || availableWeeks.length === 0}
+                                        className="h-14 w-14 p-0 bg-white/10 hover:bg-red-500 hover:text-white border-white/30 text-white transition-all rounded-xl shadow-md group/trash" title="Zerar Todas as Metas"
+                                    >
+                                        <Trash2 className="h-6 w-6 group-hover/trash:scale-110 transition-transform" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="border-2 border-red-100 rounded-2xl">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-2xl font-black text-red-700">ZERAR TODAS AS METAS?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-base text-gray-600 leading-relaxed">
+                                            Você está prestes a definir a meta como **ZERO** para todos os vendedores e todas as semanas deste processo.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="gap-2">
+                                        <AlertDialogCancel className="rounded-xl border-2 font-bold h-12">Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handleApplyGlobal('0')}
+                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold px-8 h-12 shadow-lg shadow-red-200"
+                                        >
+                                            Sim, Zerar Tudo
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </div>
                 </div>
