@@ -314,15 +314,6 @@ function SpacepointsEditor({
                                     >
                                         Renumerar por Data
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-green-200 text-green-700 hover:bg-green-50"
-                                        onClick={handleAutoGenerateWeeks}
-                                    >
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Gerar (7 em 7 dias)
-                                    </Button>
                                 </div>
                             </div>
 
