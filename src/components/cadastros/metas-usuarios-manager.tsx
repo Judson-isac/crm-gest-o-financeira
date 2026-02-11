@@ -107,6 +107,16 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
         setWeeklyMetas(prev => ({ ...prev, [semana]: val }));
     };
 
+    const handleApplyToAll = (value: string) => {
+        const val = parseInt(value) || 0;
+        const newMetas: Record<number, number> = {};
+        availableSpaces.forEach(week => {
+            newMetas[week.numero] = val;
+        });
+        setWeeklyMetas(newMetas);
+        toast({ title: 'Meta replicada!', description: `Valor ${val} aplicado a todas as ${availableSpaces.length} semanas.` });
+    };
+
     const handleSave = () => {
         if (!selectedUsuario || !selectedProcesso) return;
 
@@ -121,7 +131,7 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                 toast({ title: 'Metas salvas com sucesso!' });
                 // Refresh all metas to update dashboard statuses
                 const updatedMetas = await getMetasUsuariosAction(selectedProcesso);
-                if (updatedMetas.success) setAllMetas(updatedMetas.data);
+                if (updatedMetas.success) setAllMetas(updatedMetas.data || []);
                 setView('dashboard');
                 router.refresh();
             } else {
@@ -230,11 +240,42 @@ export function MetasUsuariosManager({ usuarios, processosSeletivos, allSpacepoi
                 <Button variant="outline" size="sm" onClick={() => setView('dashboard')} className="font-bold">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Painel Geral
                 </Button>
-                <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Data de Referência Real</span>
-                    <span className="text-sm font-bold text-blue-700 underline underline-offset-4 decoration-blue-200">
-                        {format(today, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                    </span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-blue-50 p-1.5 rounded-md border border-blue-100 italic">
+                        <Label htmlFor="batch-goal" className="text-[10px] font-bold text-blue-800 uppercase px-2">Meta Rápida (todas):</Label>
+                        <div className="flex gap-1">
+                            <Input
+                                id="batch-goal"
+                                type="number"
+                                placeholder="..."
+                                className="w-16 h-8 text-center font-bold"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleApplyToAll((e.target as HTMLInputElement).value);
+                                        (e.target as HTMLInputElement).value = '';
+                                    }
+                                }}
+                            />
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-blue-700 hover:bg-blue-100"
+                                onClick={() => {
+                                    const input = document.getElementById('batch-goal') as HTMLInputElement;
+                                    handleApplyToAll(input.value);
+                                    input.value = '';
+                                }}
+                            >
+                                Ok
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Data de Referência Real</span>
+                        <span className="text-sm font-bold text-blue-700 underline underline-offset-4 decoration-blue-200">
+                            {format(today, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                        </span>
+                    </div>
                 </div>
             </div>
 
