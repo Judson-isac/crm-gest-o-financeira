@@ -239,61 +239,62 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                         </DialogContent>
                     </Dialog>
                 </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Instâncias Ativas</CardTitle>
-                        <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Rede</TableHead>
-                                    <TableHead>Nome da Instância</TableHead>
-                                    <TableHead>API URL</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Número</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {instances.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                            Nenhuma instância cadastrada.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    instances.map((instance) => {
-                                        const rede = redes.find(r => r.id === instance.redeId);
-                                        return (
-                                            <TableRow key={instance.id}>
-                                                <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
-                                                <TableCell>{instance.instanceName}</TableCell>
-                                                <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
-                                                    {instance.apiUrl || 'Padrão'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                        }`}>
-                                                        {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>{instance.phoneNumber || '-'}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(instance.id)}>
-                                                        <Trash2 size={16} className="text-destructive" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
             </div>
-            );
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Instâncias Ativas</CardTitle>
+                    <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Rede</TableHead>
+                                <TableHead>Nome da Instância</TableHead>
+                                <TableHead>API URL</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Número</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {instances.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                        Nenhuma instância cadastrada.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                instances.map((instance) => {
+                                    const rede = redes.find(r => r.id === instance.redeId);
+                                    return (
+                                        <TableRow key={instance.id}>
+                                            <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
+                                            <TableCell>{instance.instanceName}</TableCell>
+                                            <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
+                                                {instance.apiUrl || 'Padrão'}
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                    {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>{instance.phoneNumber || '-'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(instance.id)}>
+                                                    <Trash2 size={16} className="text-destructive" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
