@@ -2224,11 +2224,11 @@ export async function saveWhatsAppInstance(instance: Partial<WhatsAppInstance>):
             return result.rows[0];
         } else {
             const newId = uuidv4();
-            const { redeId, apiUrl, instanceName, instanceToken, ownerId, status, phoneNumber } = instance;
+            const { redeId, apiUrl, instanceName, instanceToken, ownerId, status, phoneNumber, profileName } = instance;
             const result = await client.query(
-                `INSERT INTO whatsapp_instances(id, "redeId", "apiUrl", "instanceName", "instanceToken", "ownerId", status, "phoneNumber")
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING * `,
-                [newId, redeId, apiUrl, instanceName, instanceToken, ownerId, status || 'Disconnected', phoneNumber]
+                `INSERT INTO whatsapp_instances(id, "redeId", "apiUrl", "instanceName", "instanceToken", "ownerId", status, "phoneNumber", "profileName")
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING * `,
+                [newId, redeId, apiUrl, instanceName, instanceToken, ownerId, status || 'Disconnected', phoneNumber, profileName]
             );
             return result.rows[0];
         }

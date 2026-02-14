@@ -77,9 +77,14 @@ export function WhatsAppUserDashboard({ instances }: WhatsAppUserDashboardProps)
                                 <div className={`p-2 rounded-full ${instance.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
                                     <Smartphone size={24} />
                                 </div>
-                                <div className="text-sm">
-                                    <p className="font-medium text-foreground">{instance.phoneNumber || 'Não conectado'}</p>
-                                    <p>Clique para gerenciar</p>
+                                <div className="text-sm truncate">
+                                    <p className="font-medium text-foreground truncate" title={instance.profileName || instance.phoneNumber}>
+                                        {instance.profileName || instance.phoneNumber || (instance.status === 'open' ? 'Conectado' : 'Não conectado')}
+                                    </p>
+                                    {instance.profileName && instance.phoneNumber && (
+                                        <p className="text-xs truncate">{instance.phoneNumber}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Clique para gerenciar</p>
                                 </div>
                             </div>
                         </CardContent>

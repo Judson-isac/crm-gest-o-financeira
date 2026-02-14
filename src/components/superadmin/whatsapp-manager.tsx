@@ -373,7 +373,14 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 </Button>
                                             </TableCell>
                                             <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
-                                            <TableCell>{instance.instanceName}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{instance.instanceName}</span>
+                                                    {instance.profileName && (
+                                                        <span className="text-xs text-muted-foreground">{instance.profileName}</span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
                                                 {instance.apiUrl || 'Padrão'}
                                             </TableCell>

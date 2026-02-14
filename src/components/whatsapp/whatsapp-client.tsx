@@ -102,9 +102,12 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                                     <div className="bg-green-100 p-4 rounded-full inline-block">
                                         <Smartphone size={48} className="text-green-600" />
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-lg">{instance.phoneNumber || 'Número Conectado'}</p>
-                                        <p className="text-sm text-muted-foreground">O sistema está pronto para enviar mensagens.</p>
+                                    <div className="text-center">
+                                        {instance.profileName && <p className="font-bold text-lg">{instance.profileName}</p>}
+                                        <p className={instance.profileName ? "text-sm text-muted-foreground" : "font-bold text-lg"}>
+                                            {instance.phoneNumber || 'Número Conectado'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">O sistema está pronto para enviar mensagens.</p>
                                     </div>
                                     <div className="flex gap-2 justify-center">
                                         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>

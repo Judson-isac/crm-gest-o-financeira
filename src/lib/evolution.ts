@@ -75,17 +75,26 @@ export async function syncInstanceData(id: string) {
     try {
         const status = await checkInstanceStatus(instance.instanceName, instance.apiUrl, instance.instanceToken);
         let phoneNumber = instance.phoneNumber;
+        let profileName = instance.profileName;
 
         if (status === 'open') {
-            const info = await fetchEvolution(`/instance/fetchInstances?instanceName=${instance.instanceName}`, 'GET', undefined, instance.apiUrl, instance.instanceToken);
-            // Evolution might return various data structures, this is a placeholder for actual response mapping
-            phoneNumber = info?.[0]?.owner || phoneNumber;
+            const data = await fetchEvolution(`/instance/fetchInstances?instanceName=${instance.instanceName}`, 'GET', undefined, instance.apiUrl, instance.instanceToken);
+            // Handle both Evolution v1 (Array) and v2 (Array of objects with instance property)
+            const instancesList = Array.isArray(data) ? data : (data.instances || []);
+            const si = instancesList.find((i: any) => (i.instanceName || i.instance?.instanceName) === instance.instanceName);
+
+            if (si) {
+                const details = si.instance || si;
+                phoneNumber = details.owner || details.number || details.wid || phoneNumber;
+                profileName = details.profileName || details.name || profileName;
+            }
         }
 
         await saveWhatsAppInstance({
             id,
             status,
-            phoneNumber
+            phoneNumber,
+            profileName
         });
 
         revalidatePath('/whatsapp');
