@@ -82,10 +82,8 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Módulo WhatsApp</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex justify-between items-center">
                             Conexão
@@ -94,7 +92,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                             </Badge>
                         </CardTitle>
                         <CardDescription>
-                            Gerencie a conexão do seu número com o sistema.
+                            Gerencie a conexão do seu número com o sistema ({instance.instanceName}).
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
