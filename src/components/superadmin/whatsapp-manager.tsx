@@ -63,8 +63,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     }, []);
 
     const handleSave = async () => {
-        if (!newInstance.instanceName || !newInstance.instanceToken) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome e o Token' });
+        if (!newInstance.instanceName || !newInstance.instanceToken || !newInstance.redeId) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
             return;
         }
 
@@ -97,8 +97,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     };
 
     const handleImport = async () => {
-        if (!importData.url || !importData.token) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha a URL e a API Key' });
+        if (!importData.url || !importData.token || !importData.redeId) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha a URL, a API Key e selecione a Rede' });
             return;
         }
 
@@ -118,7 +118,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                 if (!instances.some(i => i.instanceName === name)) {
                     await saveWhatsAppInstance({
-                        redeId: importData.redeId === 'none' ? null : importData.redeId,
+                        redeId: importData.redeId,
                         instanceName: name,
                         instanceToken: token,
                         apiUrl: importData.url,
@@ -178,9 +178,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             rede?.nome.toLowerCase().includes(search) ||
             (!i.redeId && "sem rede".includes(search));
 
-        const matchesRede = selectedRedeId === 'all' ||
-            (selectedRedeId === 'none' && !i.redeId) ||
-            i.redeId === selectedRedeId;
+        const matchesRede = selectedRedeId === 'all' || i.redeId === selectedRedeId;
         return matchesSearch && matchesRede;
     });
 
@@ -188,12 +186,10 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         if (!newRedeId || newRedeId === 'all') return;
         if (!confirm(`Deseja mover ${selectedIds.length} instâncias para esta rede?`)) return;
 
-        const targetRedeId = newRedeId === 'none' ? null : newRedeId;
-
         setIsSyncing(true);
         try {
             for (const id of selectedIds) {
-                await saveWhatsAppInstance({ id, redeId: targetRedeId });
+                await saveWhatsAppInstance({ id, redeId: newRedeId });
             }
             toast({ title: 'Sucesso', description: `${selectedIds.length} instâncias movidas.` });
             setSelectedIds([]);
@@ -243,7 +239,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todas as Redes</SelectItem>
-                                <SelectItem value="none">Sem Rede (Básico)</SelectItem>
                                 {redes.map(r => (
                                     <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                                 ))}
@@ -271,7 +266,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                     <SelectValue placeholder="Mover p/ Rede..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Sem Rede (Básico)</SelectItem>
                                     {redes.map(r => (
                                         <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                                     ))}
@@ -304,14 +298,13 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <div className="space-y-2">
                                     <Label>Rede de Destino</Label>
                                     <Select
-                                        value={importData.redeId || ""}
+                                        value={importData.redeId}
                                         onValueChange={(v) => setImportData({ ...importData, redeId: v })}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a rede (opcional)" />
+                                            <SelectValue placeholder="Selecione a rede" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Sem Rede (Básico)</SelectItem>
                                             {redes.map(rede => (
                                                 <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
                                             ))}
@@ -360,14 +353,13 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <div className="space-y-2">
                                     <Label>Rede</Label>
                                     <Select
-                                        value={newInstance.redeId || "none"}
-                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v === 'none' ? null : v } as any)}
+                                        value={newInstance.redeId}
+                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a rede (opcional)" />
+                                            <SelectValue placeholder="Selecione a rede" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Sem Rede (Básico)</SelectItem>
                                             {redes.map(rede => (
                                                 <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
                                             ))}
@@ -404,10 +396,9 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
                                 <Button onClick={async () => {
                                     const toSave = { ...newInstance };
-                                    if (toSave.redeId === 'none') toSave.redeId = null;
 
-                                    if (!toSave.instanceName || !toSave.instanceToken) {
-                                        toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome e o Token' });
+                                    if (!toSave.instanceName || !toSave.instanceToken || !toSave.redeId) {
+                                        toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
                                         return;
                                     }
 
@@ -476,17 +467,10 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 </Button>
                                             </TableCell>
                                             <TableCell>
-                                                {rede ? (
-                                                    <div className="flex items-center gap-1.5 font-medium">
-                                                        <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                                        {rede.nome}
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-1.5 text-muted-foreground italic">
-                                                        <div className="h-2 w-2 rounded-full bg-slate-300" />
-                                                        Sem Rede
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center gap-1.5 font-medium">
+                                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                                    {rede?.nome || 'Desconhecida'}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
@@ -558,14 +542,13 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                             <div className="space-y-2">
                                 <Label>Rede</Label>
                                 <Select
-                                    value={editingInstance.redeId || "none"}
-                                    onValueChange={(v) => setEditingInstance({ ...editingInstance, redeId: v === 'none' ? null : v } as any)}
+                                    value={editingInstance.redeId}
+                                    onValueChange={(v) => setEditingInstance({ ...editingInstance, redeId: v })}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione a rede" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Sem Rede (Básico)</SelectItem>
                                         {redes.map(rede => (
                                             <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
                                         ))}
@@ -601,7 +584,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                         <Button onClick={async () => {
                             if (editingInstance) {
                                 const toSave = { ...editingInstance };
-                                if (toSave.redeId === 'none') toSave.redeId = null;
+
+                                if (!toSave.instanceName || !toSave.instanceToken || !toSave.redeId) {
+                                    toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
+                                    return;
+                                }
 
                                 try {
                                     const saved = await saveWhatsAppInstance(toSave);

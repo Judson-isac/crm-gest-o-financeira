@@ -307,7 +307,7 @@ export type SuperAdminStats = {
 
 export type WhatsAppInstance = {
   id: string;
-  redeId?: string | null; // Changed to allow null
+  redeId: string;
   apiUrl?: string;
   instanceName: string;
   instanceToken: string;
