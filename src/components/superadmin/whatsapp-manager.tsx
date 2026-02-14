@@ -32,6 +32,22 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         setInstances(initialInstances);
     }, [initialInstances]);
 
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isImportOpen, setIsImportOpen] = useState(false);
+    const [importData, setImportData] = useState({ url: '', token: '', redeId: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isConnecting, setIsConnecting] = useState<WhatsAppInstance | null>(null);
+    const [editingInstance, setEditingInstance] = useState<WhatsAppInstance | null>(null);
+    const [newInstance, setNewInstance] = useState<Partial<WhatsAppInstance>>({
+        instanceName: '',
+        instanceToken: '',
+        apiUrl: '',
+        redeId: '',
+    });
+
     const handleSave = async () => {
         if (!newInstance.instanceName || !newInstance.instanceToken || !newInstance.redeId) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Preencha todos os campos obrigatórios' });
