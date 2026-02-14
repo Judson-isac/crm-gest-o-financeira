@@ -73,6 +73,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         ignoreJids: ''
     });
 
+    const [activeTab, setActiveTab] = useState('geral');
+
     // Load persisted import credentials
     useEffect(() => {
         const savedUrl = localStorage.getItem('EVOLUTION_IMPORT_URL');
@@ -120,7 +122,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
     const handleSave = async () => {
         if (!newInstance.instanceName || !newInstance.instanceToken || !newInstance.redeId) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
+            setActiveTab('geral');
+            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede no cartão Geral' });
             return;
         }
 
@@ -151,6 +154,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 apiUrl: localStorage.getItem('EVOLUTION_IMPORT_URL') || '',
                 redeId: ''
             });
+            setActiveTab('geral');
 
             // Sync with Import state
             setImportData(prev => ({
@@ -469,7 +473,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <DialogTitle>Nova Instância Evolution</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                                <Tabs defaultValue="geral" className="w-full">
+                                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                     <TabsList className="grid w-full grid-cols-2">
                                         <TabsTrigger value="geral">Geral</TabsTrigger>
                                         <TabsTrigger value="chatwoot">Chatwoot</TabsTrigger>
