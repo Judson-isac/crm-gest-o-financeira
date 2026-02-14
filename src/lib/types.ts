@@ -305,10 +305,9 @@ export type SuperAdminStats = {
   totalFuncoes: number;
 };
 
-
 export type WhatsAppInstance = {
   id: string;
-  redeId: string;
+  redeId?: string | null; // Changed to allow null
   apiUrl?: string;
   instanceName: string;
   instanceToken: string;
