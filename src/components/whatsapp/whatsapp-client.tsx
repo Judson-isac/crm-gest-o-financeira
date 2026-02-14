@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, LogOut, Smartphone, AlertCircle } from 'lucide-react';
-import { getQRCode, logoutInstance, syncInstanceData } from '@/lib/evolution';
+import { getQRCode, logoutInstance, syncInstanceData, createInstance } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 
 interface WhatsAppClientProps {
@@ -19,6 +19,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
     const [status, setStatus] = useState(instance?.status || 'Disconnected');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [needsCreation, setNeedsCreation] = useState(false);
 
     useEffect(() => {
         if (instance?.id) {
@@ -32,12 +33,33 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
     const handleConnect = async () => {
         if (!instance) return;
         setLoading(true);
+        setNeedsCreation(false);
         try {
             const qr = await getQRCode(instance.instanceName, instance.apiUrl, instance.instanceToken);
             setQrCode(qr);
             toast({ title: 'QR Code gerado!', description: 'Escaneie no WhatsApp.' });
+        } catch (error: any) {
+            if (error.message === 'INSTANCE_NOT_FOUND') {
+                setNeedsCreation(true);
+            } else {
+                toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao gerar QR Code' });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreate = async () => {
+        if (!instance) return;
+        setLoading(true);
+        try {
+            await createInstance(instance.instanceName, instance.apiUrl, instance.instanceToken);
+            toast({ title: 'Sucesso', description: 'Instância criada no servidor!' });
+            setNeedsCreation(false);
+            // After creation, try to connect again
+            await handleConnect();
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao gerar QR Code' });
+            toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao criar instância no servidor' });
         } finally {
             setLoading(false);
         }
@@ -130,6 +152,23 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                                     </div>
                                     <p className="text-sm text-muted-foreground">Abra o WhatsApp {'>'} Aparelhos Conectados {'>'} Conectar Aparelho</p>
                                     <Button variant="outline" size="sm" onClick={() => setQrCode(null)}>Cancelar</Button>
+                                </div>
+                            ) : needsCreation ? (
+                                <div className="text-center space-y-4">
+                                    <div className="bg-amber-100 p-4 rounded-full inline-block">
+                                        <AlertCircle size={48} className="text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-amber-900">Instância não encontrada</p>
+                                        <p className="text-sm text-amber-700 max-w-xs mx-auto">Esta instância ainda não existe no servidor oficial da API. Deseja criá-la agora?</p>
+                                    </div>
+                                    <div className="flex gap-2 justify-center">
+                                        <Button variant="outline" size="sm" onClick={() => setNeedsCreation(false)}>Cancelar</Button>
+                                        <Button size="sm" onClick={handleCreate} disabled={loading}>
+                                            {loading ? <RefreshCw className="mr-2 animate-spin" size={16} /> : null}
+                                            Sim, Criar Agora
+                                        </Button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="text-center space-y-4">

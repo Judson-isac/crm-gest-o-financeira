@@ -68,20 +68,9 @@ export async function getQRCode(instanceName: string, baseUrl?: string, token?: 
         const data = await fetchEvolution(`/instance/connect/${instanceName}`, 'GET', undefined, baseUrl, token);
         return data.base64; // QR code base64
     } catch (error: any) {
-        // If the instance is not found, try to create it and then get the QR code again
+        // If the instance is not found, throw a specific signal
         if (error.message?.includes('Not Found') || error.message?.includes('404')) {
-            console.log(`[EVO] Instance ${instanceName} not found. Attempting to create...`);
-            try {
-                await createInstance(instanceName, baseUrl, token);
-                // Wait a moment for the instance to initialize
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                // Retry getting QR Code
-                const retryData = await fetchEvolution(`/instance/connect/${instanceName}`, 'GET', undefined, baseUrl, token);
-                return retryData.base64;
-            } catch (createErr) {
-                console.error(`[EVO] Failed to auto-create instance ${instanceName}:`, createErr);
-                throw error; // Throw original 404 if creation fails
-            }
+            throw new Error('INSTANCE_NOT_FOUND');
         }
         console.error('Error getting QR code:', error);
         throw error;
