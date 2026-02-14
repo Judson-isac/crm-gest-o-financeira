@@ -29,6 +29,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isImporting, setIsImporting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [isConnecting, setIsConnecting] = useState<WhatsAppInstance | null>(null);
     const [editingInstance, setEditingInstance] = useState<WhatsAppInstance | null>(null);
     const [newInstance, setNewInstance] = useState<Partial<WhatsAppInstance>>({
