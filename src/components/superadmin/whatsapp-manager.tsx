@@ -259,10 +259,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                 <div className="flex flex-wrap items-center gap-2">
                     {selectedIds.length > 0 && (
-                        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border mr-2">
-                            <span className="text-xs font-medium px-2 text-muted-foreground">{selectedIds.length} selecionados</span>
+                        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300 whitespace-nowrap">{selectedIds.length} selecionados</span>
+                            <div className="h-4 w-px bg-blue-200 dark:bg-blue-800" />
                             <Select onValueChange={handleBulkChangeRede}>
-                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <SelectTrigger className="w-[160px] h-8 text-xs bg-background border-blue-200 dark:border-blue-800 focus:ring-blue-500">
                                     <SelectValue placeholder="Mover p/ Rede..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -271,10 +272,10 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={handleBulkSync} disabled={isSyncing}>
+                            <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400" onClick={handleBulkSync} disabled={isSyncing}>
                                 <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-8 px-2 text-destructive" onClick={handleBulkDelete}>
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-destructive hover:bg-red-50 dark:hover:bg-red-950/30" onClick={handleBulkDelete}>
                                 <Trash2 size={14} />
                             </Button>
                         </div>
@@ -467,10 +468,38 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 </Button>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1.5 font-medium">
-                                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                                    {rede?.nome || 'Desconhecida'}
-                                                </div>
+                                                <Select
+                                                    value={instance.redeId}
+                                                    onValueChange={async (newRedeId) => {
+                                                        try {
+                                                            const saved = await saveWhatsAppInstance({ id: instance.id, redeId: newRedeId });
+                                                            setInstances(instances.map(i => i.id === saved.id ? saved : i));
+                                                            toast({ title: 'Sucesso', description: 'Rede atualizada' });
+                                                            router.refresh();
+                                                        } catch (error) {
+                                                            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao mudar rede' });
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-8 text-xs w-[160px] bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0 px-2 font-medium">
+                                                        <div className="flex items-center gap-1.5 truncate">
+                                                            <div className="h-2 w-2 rounded-full flex-shrink-0 bg-blue-500" />
+                                                            <SelectValue>
+                                                                {rede?.nome || 'Desconhecida'}
+                                                            </SelectValue>
+                                                        </div>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {redes.map(r => (
+                                                            <SelectItem key={r.id} value={r.id}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                                                    {r.nome}
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
