@@ -209,13 +209,13 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-                <h1 className="text-2xl font-bold">Gerenciar WhatsApp</h1>
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-background p-4 rounded-lg border shadow-sm">
+                <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-2xl font-bold mr-2">WhatsApp</h1>
+
                     <div className="flex items-center gap-2">
-                        <Label className="sr-only">Filtrar por Rede</Label>
                         <Select value={selectedRedeId} onValueChange={setSelectedRedeId}>
-                            <SelectTrigger className="w-[200px]">
+                            <SelectTrigger className="w-[180px] h-9">
                                 <SelectValue placeholder="Todas as Redes" />
                             </SelectTrigger>
                             <SelectContent>
@@ -228,20 +228,23 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                     </div>
 
                     <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Buscar por nome..."
-                            className="pl-8 w-[200px]"
+                            placeholder="Buscar instância..."
+                            className="pl-9 w-[200px] h-9"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                </div>
 
+                <div className="flex flex-wrap items-center gap-2">
                     {selectedIds.length > 0 && (
-                        <div className="flex gap-2 border-r pr-2">
+                        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border mr-2">
+                            <span className="text-xs font-medium px-2 text-muted-foreground">{selectedIds.length} selecionados</span>
                             <Select onValueChange={handleBulkChangeRede}>
-                                <SelectTrigger className="w-[180px] h-9">
-                                    <SelectValue placeholder="Mover para Rede..." />
+                                <SelectTrigger className="w-[150px] h-8 text-xs">
+                                    <SelectValue placeholder="Mover p/ Rede..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {redes.map(r => (
@@ -249,135 +252,135 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="sm" onClick={handleBulkSync} disabled={isSyncing}>
-                                <RefreshCw size={14} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sync ({selectedIds.length})
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={handleBulkSync} disabled={isSyncing}>
+                                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                             </Button>
-                            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                            <Button variant="ghost" size="sm" className="h-8 px-2 text-destructive" onClick={handleBulkDelete}>
                                 <Trash2 size={14} />
                             </Button>
                         </div>
                     )}
 
-                    <Button variant="outline" onClick={handleSyncAll} disabled={isSyncing}>
-                        <RefreshCw size={16} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar Todos
+                    <Button variant="outline" size="sm" className="h-9" onClick={handleSyncAll} disabled={isSyncing}>
+                        <RefreshCw size={16} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar Tudo
                     </Button>
+
+                    <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-2">
+                                <Upload size={16} /> Importar
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Importar Instâncias da Evolution</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Rede de Destino</Label>
+                                    <Select
+                                        value={importData.redeId}
+                                        onValueChange={(v) => setImportData({ ...importData, redeId: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a rede" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {redes.map(rede => (
+                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>URL do Servidor Evolution</Label>
+                                    <Input
+                                        placeholder="Ex: https://api.suaevolution.com"
+                                        value={importData.url}
+                                        onChange={(e) => setImportData({ ...importData, url: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Global API Key</Label>
+                                    <Input
+                                        placeholder="Sua Global API Key"
+                                        type="password"
+                                        value={importData.token}
+                                        onChange={(e) => setImportData({ ...importData, token: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsImportOpen(false)} disabled={isImporting}>Cancelar</Button>
+                                <Button onClick={handleImport} disabled={isImporting}>
+                                    {isImporting ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                                    {isImporting ? 'Importando...' : 'Importar Agora'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm" className="h-9 gap-2">
+                                <Plus size={16} /> Nova Instância
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Nova Instância Evolution</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Rede</Label>
+                                    <Select
+                                        value={newInstance.redeId}
+                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a rede" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {redes.map(rede => (
+                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Nome da Instância</Label>
+                                    <Input
+                                        placeholder="Ex: rede_conchas"
+                                        value={newInstance.instanceName}
+                                        onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Token da Instância (API Key)</Label>
+                                    <Input
+                                        placeholder="Token da Evolution API"
+                                        value={newInstance.instanceToken}
+                                        onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>URL da Evolution API (Opcional)</Label>
+                                    <Input
+                                        placeholder="Ex: https://api.suaevolution.com"
+                                        value={newInstance.apiUrl}
+                                        onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
+                                    />
+                                    <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleSave}>Salvar</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
-
-            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                        <RefreshCw size={16} /> Importar Servidor
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Importar Instâncias da Evolution</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Rede de Destino</Label>
-                            <Select
-                                value={importData.redeId}
-                                onValueChange={(v) => setImportData({ ...importData, redeId: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a rede" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {redes.map(rede => (
-                                        <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>URL do Servidor Evolution</Label>
-                            <Input
-                                placeholder="Ex: https://api.suaevolution.com"
-                                value={importData.url}
-                                onChange={(e) => setImportData({ ...importData, url: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Global API Key</Label>
-                            <Input
-                                placeholder="Sua Global API Key"
-                                type="password"
-                                value={importData.token}
-                                onChange={(e) => setImportData({ ...importData, token: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsImportOpen(false)} disabled={isImporting}>Cancelar</Button>
-                        <Button onClick={handleImport} disabled={isImporting}>
-                            {isImporting ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
-                            {isImporting ? 'Importando...' : 'Importar Agora'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2">
-                        <Plus size={16} /> Nova Instância
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Nova Instância Evolution</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Rede</Label>
-                            <Select
-                                value={newInstance.redeId}
-                                onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a rede" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {redes.map(rede => (
-                                        <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Nome da Instância</Label>
-                            <Input
-                                placeholder="Ex: rede_conchas"
-                                value={newInstance.instanceName}
-                                onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Token da Instância (API Key)</Label>
-                            <Input
-                                placeholder="Token da Evolution API"
-                                value={newInstance.instanceToken}
-                                onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>URL da Evolution API (Opcional)</Label>
-                            <Input
-                                placeholder="Ex: https://api.suaevolution.com"
-                                value={newInstance.apiUrl}
-                                onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
-                            />
-                            <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSave}>Salvar</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             <Card>
                 <CardHeader>

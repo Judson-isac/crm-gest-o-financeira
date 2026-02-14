@@ -19,11 +19,24 @@ export default async function SuperAdminAppLayout({
       <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 shadow-sm">
         <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-foreground">
           {config.appLogo ? (
-            <img src={config.appLogo} alt="Logo" className="h-8 w-auto object-contain" />
+            <>
+              <img
+                src={config.appLogo}
+                alt="Logo"
+                className={cn("h-8 w-auto object-contain", config.appLogoDark && "dark:hidden")}
+              />
+              {config.appLogoDark && (
+                <img
+                  src={config.appLogoDark}
+                  alt="Logo"
+                  className="hidden h-8 w-auto object-contain dark:block"
+                />
+              )}
+            </>
           ) : (
             <ShieldCheck className="h-6 w-6 text-primary" />
           )}
-          <span>Super Admin - {config.appName}</span>
+          <span>Super Admin{config.appName ? ` - ${config.appName}` : ''}</span>
         </div>
         <nav className="flex items-center gap-1 ml-8 text-sm font-medium">
           <Link href="/superadmin" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 text-muted-foreground hover:text-foreground')}>
