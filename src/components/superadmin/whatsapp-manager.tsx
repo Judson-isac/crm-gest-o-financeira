@@ -59,6 +59,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 url: savedUrl || '',
                 token: savedToken || ''
             }));
+            setNewInstance(prev => ({
+                ...prev,
+                apiUrl: savedUrl || '',
+                instanceToken: savedToken || ''
+            }));
         }
     }, []);
 
@@ -69,11 +74,27 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         }
 
         try {
+            // Persist credentials
+            if (newInstance.apiUrl) localStorage.setItem('EVOLUTION_IMPORT_URL', newInstance.apiUrl);
+            if (newInstance.instanceToken) localStorage.setItem('EVOLUTION_IMPORT_TOKEN', newInstance.instanceToken);
+
             const saved = await saveWhatsAppInstance(newInstance);
             setInstances([...instances, saved]);
             setIsAddOpen(false);
-            setNewInstance({ instanceName: '', instanceToken: '', apiUrl: '', redeId: '' });
+            setNewInstance({
+                instanceName: '',
+                instanceToken: localStorage.getItem('EVOLUTION_IMPORT_TOKEN') || '',
+                apiUrl: localStorage.getItem('EVOLUTION_IMPORT_URL') || '',
+                redeId: ''
+            });
             toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
+
+            // Sync with Import state
+            setImportData(prev => ({
+                ...prev,
+                url: newInstance.apiUrl || '',
+                token: newInstance.instanceToken || ''
+            }));
             router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
@@ -105,6 +126,13 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         // Persist credentials
         localStorage.setItem('EVOLUTION_IMPORT_URL', importData.url);
         localStorage.setItem('EVOLUTION_IMPORT_TOKEN', importData.token);
+
+        // Sync with Add Instance state
+        setNewInstance(prev => ({
+            ...prev,
+            apiUrl: importData.url,
+            instanceToken: importData.token
+        }));
 
         setIsImporting(true);
         try {
