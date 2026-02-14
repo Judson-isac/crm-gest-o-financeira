@@ -59,6 +59,15 @@ CREATE TABLE IF NOT EXISTS whatsapp_instances (
     UNIQUE("instanceName")
 );
 
+-- 5. Garante que a coluna apiUrl existe caso a tabela já tenha sido criada anteriormente
+DO \$\$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='whatsapp_instances' AND column_name='apiUrl') THEN
+        ALTER TABLE whatsapp_instances ADD COLUMN "apiUrl" TEXT;
+    END IF;
+END \$\$;
+
+
 EOF
 
 echo "✅ Correção de Tipos de Curso e WhatsApp aplicada com sucesso!"
