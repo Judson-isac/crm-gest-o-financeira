@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { WhatsAppInstance, Rede } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,23 +23,14 @@ interface WhatsAppManagerProps {
 }
 
 export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProps) {
+    const router = useRouter();
     const { toast } = useToast();
     const [instances, setInstances] = useState<WhatsAppInstance[]>(initialInstances);
-    const [isAddOpen, setIsAddOpen] = useState(false);
-    const [isImportOpen, setIsImportOpen] = useState(false);
-    const [importData, setImportData] = useState({ url: '', token: '', redeId: '' });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isImporting, setIsImporting] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [isConnecting, setIsConnecting] = useState<WhatsAppInstance | null>(null);
-    const [editingInstance, setEditingInstance] = useState<WhatsAppInstance | null>(null);
-    const [newInstance, setNewInstance] = useState<Partial<WhatsAppInstance>>({
-        instanceName: '',
-        instanceToken: '',
-        apiUrl: '',
-        redeId: '',
-    });
+
+    // Update local state when server data changes
+    useEffect(() => {
+        setInstances(initialInstances);
+    }, [initialInstances]);
 
     const handleSave = async () => {
         if (!newInstance.instanceName || !newInstance.instanceToken || !newInstance.redeId) {
@@ -52,6 +44,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             setIsAddOpen(false);
             setNewInstance({ instanceName: '', instanceToken: '', apiUrl: '', redeId: '' });
             toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
+            router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
             console.error(error);
@@ -64,11 +57,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             for (const instance of instances) {
                 await syncInstanceData(instance.id);
             }
-            // Reload instances (ideally we would have a way to fetch all from DB again, 
-            // but for now, we can just say success or wait for revalidatePath to kick in if using Server Props)
-            // Since this is a client component with initialInstances, we might need a refresh logic.
-            toast({ title: 'Sincronização iniciada', description: 'Os status estão sendo atualizados em segundo plano.' });
-            // For simple state update, we could wait a bit then window.location.reload() or just trust the next interval
+            toast({ title: 'Sucesso', description: 'Instâncias sincronizadas!' });
+            router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao sincronizar instâncias' });
         } finally {
@@ -106,9 +96,9 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 }
             }
 
-            toast({ title: 'Importação concluída', description: `${importedCount} instâncias importadas, ${skippedCount} já existiam.` });
+            toast({ title: 'Sucesso', description: `Importado ${importedCount} instâncias (${skippedCount} ignoradas por já existirem).` });
             setIsImportOpen(false);
-            window.location.reload();
+            router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao importar do servidor' });
         } finally {

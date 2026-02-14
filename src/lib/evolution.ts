@@ -141,4 +141,5 @@ export async function syncAllInstances(redeId?: string) {
     }
 
     revalidatePath('/whatsapp');
+    revalidatePath('/superadmin/whatsapp');
 }
