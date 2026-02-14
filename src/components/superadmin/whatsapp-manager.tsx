@@ -59,11 +59,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         url: '',
         token: '',
         accountId: '',
-        nameInbox: 'Evolution',
-        organization: 'Evolution Bot',
+        nameInbox: '',
+        organization: '',
         logo: '',
         signMsg: true,
-        signDelimiter: '\n',
+        signDelimiter: '',
         reopenConversation: true,
         conversationPending: false,
         importContacts: true,
@@ -517,192 +517,194 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
                                         </div>
                                     </TabsContent>
-                                    <TabsContent value="chatwoot" className="space-y-4 py-4">
-                                        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-                                            <div className="space-y-0.5">
-                                                <Label className="text-base">Habilitar Chatwoot</Label>
-                                                <p className="text-sm text-muted-foreground">Vincular esta instância a uma conta do Chatwoot</p>
+                                    <TabsContent value="chatwoot" className="py-4">
+                                        <div className="max-h-[60vh] overflow-y-auto px-1 space-y-6 animate-in fade-in duration-300">
+                                            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                                                <div className="space-y-0.5">
+                                                    <Label className="text-base">Habilitar Chatwoot</Label>
+                                                    <p className="text-sm text-muted-foreground">Vincular esta instância a uma conta do Chatwoot</p>
+                                                </div>
+                                                <Switch
+                                                    checked={isChatwootEnabled}
+                                                    onCheckedChange={setIsChatwootEnabled}
+                                                />
                                             </div>
-                                            <Switch
-                                                checked={isChatwootEnabled}
-                                                onCheckedChange={setIsChatwootEnabled}
-                                            />
+
+                                            {isChatwootEnabled && (
+                                                <div className="space-y-6">
+                                                    <div className="space-y-2">
+                                                        <Label>Perfil de Credenciais</Label>
+                                                        <div className="flex gap-2">
+                                                            <Select
+                                                                value={selectedProfileId}
+                                                                onValueChange={(id) => {
+                                                                    setSelectedProfileId(id);
+                                                                    const profile = chatwootProfiles.find(p => p.id === id);
+                                                                    if (profile) setChatwootConfig(profile.config);
+                                                                }}
+                                                            >
+                                                                <SelectTrigger className="flex-1">
+                                                                    <SelectValue placeholder="Selecione um perfil salvo" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {chatwootProfiles.map(p => (
+                                                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="icon"
+                                                                title="Salvar como novo perfil"
+                                                                onClick={() => {
+                                                                    const name = prompt('Nome do Perfil:');
+                                                                    if (name) saveChatwootProfile(name);
+                                                                }}
+                                                            >
+                                                                <Save className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Nome da Inbox</Label>
+                                                            <Input
+                                                                placeholder="Ex: WhatsApp Atendimento"
+                                                                value={chatwootConfig.nameInbox}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, nameInbox: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Organização</Label>
+                                                            <Input
+                                                                placeholder="Ex: Minha Empresa"
+                                                                value={chatwootConfig.organization}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, organization: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>URL do Chatwoot</Label>
+                                                            <Input
+                                                                placeholder="https://chat.dominio.com"
+                                                                value={chatwootConfig.url}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, url: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Account ID</Label>
+                                                            <Input
+                                                                placeholder="Ex: 1"
+                                                                value={chatwootConfig.accountId}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, accountId: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label>Token do Chatwoot</Label>
+                                                        <Input
+                                                            placeholder="Seu Token"
+                                                            type="password"
+                                                            value={chatwootConfig.token}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, token: e.target.value })}
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.signMsg}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, signMsg: v })}
+                                                            />
+                                                            <Label>Assinar Mensagens</Label>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Separador da Assinatura</Label>
+                                                            <Input
+                                                                placeholder="\n"
+                                                                value={chatwootConfig.signDelimiter}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, signDelimiter: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label>Link do Logo</Label>
+                                                        <Input
+                                                            placeholder="URL da imagem"
+                                                            value={chatwootConfig.logo}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, logo: e.target.value })}
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.conversationPending}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, conversationPending: v })}
+                                                            />
+                                                            <Label>Conversa Pendente</Label>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.reopenConversation}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, reopenConversation: v })}
+                                                            />
+                                                            <Label>Reabrir Conversa</Label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.importContacts}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importContacts: v })}
+                                                            />
+                                                            <Label>Importar Contatos</Label>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.importMessages}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importMessages: v })}
+                                                            />
+                                                            <Label>Importar Mensagens</Label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Limite de Dias (Importação)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={chatwootConfig.daysLimitImportMessages}
+                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, daysLimitImportMessages: parseInt(e.target.value) || 0 })}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Switch
+                                                                checked={chatwootConfig.autoCreate}
+                                                                onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, autoCreate: v })}
+                                                            />
+                                                            <Label>Auto Create (Inbox)</Label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label>Ignorar JIDs</Label>
+                                                        <Input
+                                                            placeholder="Ex: 1234567890@s.whatsapp.net, 0987654321@s.whatsapp.net"
+                                                            value={chatwootConfig.ignoreJids}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, ignoreJids: e.target.value })}
+                                                        />
+                                                        <p className="text-xs text-muted-foreground italic">Separe múltiplos JIDs por vírgula.</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        {isChatwootEnabled && (
-                                            <div className="space-y-6 animate-in fade-in duration-300">
-                                                <div className="space-y-2">
-                                                    <Label>Perfil de Credenciais</Label>
-                                                    <div className="flex gap-2">
-                                                        <Select
-                                                            value={selectedProfileId}
-                                                            onValueChange={(id) => {
-                                                                setSelectedProfileId(id);
-                                                                const profile = chatwootProfiles.find(p => p.id === id);
-                                                                if (profile) setChatwootConfig(profile.config);
-                                                            }}
-                                                        >
-                                                            <SelectTrigger className="flex-1">
-                                                                <SelectValue placeholder="Selecione um perfil salvo" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {chatwootProfiles.map(p => (
-                                                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <Button
-                                                            variant="secondary"
-                                                            size="icon"
-                                                            title="Salvar como novo perfil"
-                                                            onClick={() => {
-                                                                const name = prompt('Nome do Perfil:');
-                                                                if (name) saveChatwootProfile(name);
-                                                            }}
-                                                        >
-                                                            <Save className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Nome da Inbox</Label>
-                                                        <Input
-                                                            placeholder="Ex: WhatsApp Atendimento"
-                                                            value={chatwootConfig.nameInbox}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, nameInbox: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Organização</Label>
-                                                        <Input
-                                                            placeholder="Ex: Minha Empresa"
-                                                            value={chatwootConfig.organization}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, organization: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>URL do Chatwoot</Label>
-                                                        <Input
-                                                            placeholder="https://chat.dominio.com"
-                                                            value={chatwootConfig.url}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, url: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Account ID</Label>
-                                                        <Input
-                                                            placeholder="Ex: 1"
-                                                            value={chatwootConfig.accountId}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, accountId: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Token do Chatwoot</Label>
-                                                    <Input
-                                                        placeholder="Seu Token"
-                                                        type="password"
-                                                        value={chatwootConfig.token}
-                                                        onChange={(e) => setChatwootConfig({ ...chatwootConfig, token: e.target.value })}
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.signMsg}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, signMsg: v })}
-                                                        />
-                                                        <Label>Assinar Mensagens</Label>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Separador da Assinatura</Label>
-                                                        <Input
-                                                            placeholder="\n"
-                                                            value={chatwootConfig.signDelimiter}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, signDelimiter: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Link do Logo</Label>
-                                                    <Input
-                                                        placeholder="URL da imagem"
-                                                        value={chatwootConfig.logo}
-                                                        onChange={(e) => setChatwootConfig({ ...chatwootConfig, logo: e.target.value })}
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.conversationPending}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, conversationPending: v })}
-                                                        />
-                                                        <Label>Conversa Pendente</Label>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.reopenConversation}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, reopenConversation: v })}
-                                                        />
-                                                        <Label>Reabrir Conversa</Label>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.importContacts}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importContacts: v })}
-                                                        />
-                                                        <Label>Importar Contatos</Label>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.importMessages}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importMessages: v })}
-                                                        />
-                                                        <Label>Importar Mensagens</Label>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Limite de Dias (Importação)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={chatwootConfig.daysLimitImportMessages}
-                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, daysLimitImportMessages: parseInt(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Switch
-                                                            checked={chatwootConfig.autoCreate}
-                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, autoCreate: v })}
-                                                        />
-                                                        <Label>Auto Create (Inbox)</Label>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Ignorar JIDs</Label>
-                                                    <Input
-                                                        placeholder="Ex: 1234567890@s.whatsapp.net, 0987654321@s.whatsapp.net"
-                                                        value={chatwootConfig.ignoreJids}
-                                                        onChange={(e) => setChatwootConfig({ ...chatwootConfig, ignoreJids: e.target.value })}
-                                                    />
-                                                    <p className="text-xs text-muted-foreground italic">Separe múltiplos JIDs por vírgula.</p>
-                                                </div>
-                                            </div>
-                                        )}
                                     </TabsContent>
                                 </Tabs>
                             </div>
