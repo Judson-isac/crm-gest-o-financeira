@@ -28,7 +28,8 @@ const getTitle = (path: string) => {
   if (path === "/importacao/cursos") return "Importação de Cursos";
   if (path.startsWith("/importacao")) return "Importações";
 
-  if (path.startsWith("/importacao")) return "Importações";
+  if (path.startsWith("/whatsapp")) return "Módulo WhatsApp";
+  if (path.startsWith("/superadmin/whatsapp")) return "Gerenciar Instâncias WhatsApp";
 
   return "APP_NAME_PLACEHOLDER"; // Will be replaced by dynamic title component
 };

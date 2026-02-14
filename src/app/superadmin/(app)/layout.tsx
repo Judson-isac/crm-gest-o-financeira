@@ -1,6 +1,7 @@
 
 import { buttonVariants } from "@/components/ui/button";
 import { ShieldCheck, Users, Globe, UserCog, LayoutDashboard, MessageSquare } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/whatsapp-icon";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/superadmin/logout-button";
@@ -52,7 +53,7 @@ export default async function SuperAdminAppLayout({
             Administradores
           </Link>
           <Link href="/superadmin/whatsapp" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 text-muted-foreground hover:text-foreground')}>
-            <MessageSquare className="h-4 w-4" />
+            <WhatsAppIcon className="h-4 w-4" />
             WhatsApp
           </Link>
           <Link href="/superadmin/configuracoes" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 text-muted-foreground hover:text-foreground')}>

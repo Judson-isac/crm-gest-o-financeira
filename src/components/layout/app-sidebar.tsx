@@ -21,6 +21,7 @@ import {
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 import { LayoutDashboard, Wallet, Landmark, DownloadCloud, ChevronsLeft, ChevronsRight, ClipboardList, ChevronDown, ChevronRight, UserPlus, Table2, Users, ShieldCheck, Trophy, MessageSquare } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/whatsapp-icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Permissoes } from '@/lib/types';
@@ -422,7 +423,7 @@ export default function AppSidebar({
                   isActive={pathname.startsWith('/whatsapp')}
                   tooltip={{ children: "WhatsApp" }}
                 >
-                  <MessageSquare />
+                  <WhatsAppIcon className="h-5 w-5" />
                   <span>WhatsApp</span>
                 </SidebarMenuButton>
               </Link>
