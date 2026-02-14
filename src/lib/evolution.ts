@@ -13,23 +13,38 @@ async function fetchEvolution(endpoint: string, method: string = 'GET', body?: a
         'apikey': token || EVOLUTION_API_KEY,
     };
 
-    const response = await fetch(`${url}${endpoint}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-    });
+    try {
+        const response = await fetch(`${url}${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+        });
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(error.message || `Evolution API error: ${response.statusText}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = `Evolution API error: ${response.statusText}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error?.message || JSON.stringify(errorJson);
+            } catch (e) {
+                errorMessage = errorText || errorMessage;
+            }
+            console.error(`[Evolution API Error] ${method} ${endpoint}:`, errorMessage);
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    } catch (error: any) {
+        if (error.message?.includes('fetch failed')) {
+            throw new Error(`Erro de conexão com o servidor Evolution API (${url}). Verifique se a URL está correta.`);
+        }
+        throw error;
     }
-
-    return response.json();
 }
 
 export async function checkInstanceStatus(instanceName: string, baseUrl?: string, token?: string) {
     try {
-        const data = await fetchEvolution(`/instance/connectionState/${instanceName}`, 'GET', undefined, baseUrl, token);
+        const data = await fetchEvolution(`/instance/connectionState/${instanceName.trim()}`, 'GET', undefined, baseUrl, token);
         // Handle both Evolution v1 (data.instance.state) and v2 (data.state)
         return data.state || data.instance?.state || 'Disconnected';
     } catch (error) {
@@ -50,12 +65,13 @@ export async function fetchInstancesFromServer(baseUrl: string, token: string) {
 
 export async function createInstance(instanceName: string, baseUrl?: string, token?: string) {
     try {
+        const trimmedName = instanceName.trim().replace(/\s+/g, '_');
         const body = {
-            instanceName: instanceName,
-            token: token || EVOLUTION_API_KEY,
-            qrcode: true
+            instanceName: trimmedName,
+            token: token || '', // Let Evolution generate one if not provided, or use provided
+            qrcode: true,
+            integration: 'BAILEYS' // Explicit default for v2
         };
-        // Using common v2 endpoint for creation
         return await fetchEvolution('/instance/create', 'POST', body, baseUrl, token);
     } catch (error) {
         console.error('Error creating instance:', error);
