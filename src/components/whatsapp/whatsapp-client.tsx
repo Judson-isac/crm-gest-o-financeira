@@ -32,7 +32,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
         if (!instance) return;
         setLoading(true);
         try {
-            const qr = await getQRCode(instance.instanceName);
+            const qr = await getQRCode(instance.instanceName, instance.apiUrl, instance.instanceToken);
             setQrCode(qr);
             toast({ title: 'QR Code gerado!', description: 'Escaneie no WhatsApp.' });
         } catch (error) {
@@ -46,7 +46,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
         if (!instance || !confirm('Tem certeza que deseja desconectar?')) return;
         setLoading(true);
         try {
-            await logoutInstance(instance.instanceName);
+            await logoutInstance(instance.instanceName, instance.apiUrl, instance.instanceToken);
             setQrCode(null);
             setStatus('Disconnected');
             toast({ title: 'Sucesso', description: 'Desconectado com sucesso' });

@@ -25,6 +25,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     const [newInstance, setNewInstance] = useState<Partial<WhatsAppInstance>>({
         instanceName: '',
         instanceToken: '',
+        apiUrl: '',
         redeId: '',
     });
 
@@ -38,7 +39,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             const saved = await saveWhatsAppInstance(newInstance);
             setInstances([...instances, saved]);
             setIsAddOpen(false);
-            setNewInstance({ instanceName: '', instanceToken: '', redeId: '' });
+            setNewInstance({ instanceName: '', instanceToken: '', apiUrl: '', redeId: '' });
             toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
@@ -106,6 +107,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                     onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <Label>URL da Evolution API (Opcional)</Label>
+                                <Input
+                                    placeholder="Ex: https://api.suaevolution.com"
+                                    value={newInstance.apiUrl}
+                                    onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
+                                />
+                                <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
@@ -126,6 +136,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                             <TableRow>
                                 <TableHead>Rede</TableHead>
                                 <TableHead>Nome da Instância</TableHead>
+                                <TableHead>API URL</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Número</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
@@ -145,6 +156,9 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                         <TableRow key={instance.id}>
                                             <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
                                             <TableCell>{instance.instanceName}</TableCell>
+                                            <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
+                                                {instance.apiUrl || 'Padrão'}
+                                            </TableCell>
                                             <TableCell>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                     }`}>

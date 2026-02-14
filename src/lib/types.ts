@@ -309,6 +309,7 @@ export type SuperAdminStats = {
 export type WhatsAppInstance = {
   id: string;
   redeId: string;
+  apiUrl?: string;
   instanceName: string;
   instanceToken: string;
   ownerId?: string;

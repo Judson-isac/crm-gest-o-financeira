@@ -49,6 +49,7 @@ END \$\$;
 CREATE TABLE IF NOT EXISTS whatsapp_instances (
     id TEXT PRIMARY KEY,
     "redeId" TEXT NOT NULL REFERENCES redes(id) ON DELETE CASCADE,
+    "apiUrl" TEXT,
     "instanceName" TEXT NOT NULL,
     "instanceToken" TEXT NOT NULL,
     "ownerId" TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
