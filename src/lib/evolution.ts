@@ -63,15 +63,51 @@ export async function fetchInstancesFromServer(baseUrl: string, token: string) {
     }
 }
 
-export async function createInstance(instanceName: string, baseUrl?: string, token?: string) {
+export async function createInstance(
+    instanceName: string,
+    baseUrl?: string,
+    token?: string,
+    chatwoot?: {
+        accountId?: string;
+        token?: string;
+        url?: string;
+        signMsg?: boolean;
+        reopenConversation?: boolean;
+        conversationPending?: boolean;
+        importContacts?: boolean;
+        nameInbox?: string;
+        mergeBrazilContacts?: boolean;
+        importMessages?: boolean;
+        daysLimitImportMessages?: number;
+        organization?: string;
+        logo?: string;
+    }
+) {
     try {
         const trimmedName = instanceName.trim().replace(/\s+/g, '_');
-        const body = {
+        const body: any = {
             instanceName: trimmedName,
-            token: token || '', // Let Evolution generate one if not provided, or use provided
+            token: token || '',
             qrcode: true,
-            integration: 'BAILEYS' // Explicit default for v2
+            integration: 'WHATSAPP-BAILEYS'
         };
+
+        if (chatwoot && chatwoot.url && chatwoot.token && chatwoot.accountId) {
+            body.chatwootAccountId = chatwoot.accountId;
+            body.chatwootToken = chatwoot.token;
+            body.chatwootUrl = chatwoot.url;
+            body.chatwootSignMsg = chatwoot.signMsg ?? true;
+            body.chatwootReopenConversation = chatwoot.reopenConversation ?? true;
+            body.chatwootConversationPending = chatwoot.conversationPending ?? false;
+            body.chatwootImportContacts = chatwoot.importContacts ?? true;
+            body.chatwootNameInbox = chatwoot.nameInbox || 'evolution';
+            body.chatwootMergeBrazilContacts = chatwoot.mergeBrazilContacts ?? true;
+            body.chatwootImportMessages = chatwoot.importMessages ?? true;
+            body.chatwootDaysLimitImportMessages = chatwoot.daysLimitImportMessages ?? 3;
+            body.chatwootOrganization = chatwoot.organization || 'Evolution Bot';
+            body.chatwootLogo = chatwoot.logo || 'https://evolution-api.com/files/evolution-api-favicon.png';
+        }
+
         return await fetchEvolution('/instance/create', 'POST', body, baseUrl, token);
     } catch (error) {
         console.error('Error creating instance:', error);
@@ -177,4 +213,48 @@ export async function syncAllInstances(redeId?: string) {
 
     revalidatePath('/whatsapp');
     revalidatePath('/superadmin/whatsapp');
+}
+
+export async function setChatwoot(
+    instanceName: string,
+    config: {
+        accountId: string;
+        token: string;
+        url: string;
+        signMsg?: boolean;
+        reopenConversation?: boolean;
+        conversationPending?: boolean;
+        importContacts?: boolean;
+        nameInbox?: string;
+        mergeBrazilContacts?: boolean;
+        importMessages?: boolean;
+        daysLimitImportMessages?: number;
+        organization?: string;
+        logo?: string;
+    },
+    baseUrl?: string,
+    token?: string
+) {
+    try {
+        const body = {
+            enabled: true,
+            accountId: config.accountId,
+            token: config.token,
+            url: config.url,
+            signMsg: config.signMsg ?? true,
+            reopenConversation: config.reopenConversation ?? true,
+            conversationPending: config.conversationPending ?? false,
+            importContacts: config.importContacts ?? true,
+            nameInbox: config.nameInbox || 'evolution',
+            mergeBrazilContacts: config.mergeBrazilContacts ?? true,
+            importMessages: config.importMessages ?? true,
+            daysLimitImportMessages: config.daysLimitImportMessages ?? 3,
+            organization: config.organization || 'Evolution Bot',
+            logo: config.logo || 'https://evolution-api.com/files/evolution-api-favicon.png'
+        };
+        return await fetchEvolution(`/chatwoot/set/${instanceName.trim()}`, 'POST', body, baseUrl, token);
+    } catch (error) {
+        console.error('Error setting Chatwoot:', error);
+        throw error;
+    }
 }

@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload, Settings2 } from 'lucide-react';
 import { saveWhatsAppInstance, deleteWhatsAppInstance } from '@/lib/db';
-import { syncInstanceData, fetchInstancesFromServer, getQRCode, createInstance } from '@/lib/evolution';
+import { syncInstanceData, fetchInstancesFromServer, getQRCode, createInstance, setChatwoot } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppClient } from '../whatsapp/whatsapp-client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -50,6 +51,17 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         redeId: '',
     });
 
+    const [chatwootConfig, setChatwootConfig] = useState({
+        url: '',
+        token: '',
+        accountId: '',
+        signMsg: true,
+        reopenConversation: true,
+        importContacts: true,
+        importMessages: true,
+        daysLimitImportMessages: 3
+    });
+
     // Load persisted import credentials
     useEffect(() => {
         const savedUrl = localStorage.getItem('EVOLUTION_IMPORT_URL');
@@ -66,6 +78,19 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 instanceToken: savedToken || ''
             }));
         }
+
+        const savedChatwootUrl = localStorage.getItem('CHATWOOT_URL');
+        const savedChatwootToken = localStorage.getItem('CHATWOOT_TOKEN');
+        const savedChatwootAccountId = localStorage.getItem('CHATWOOT_ACCOUNT_ID');
+
+        if (savedChatwootUrl || savedChatwootToken || savedChatwootAccountId) {
+            setChatwootConfig(prev => ({
+                ...prev,
+                url: savedChatwootUrl || '',
+                token: savedChatwootToken || '',
+                accountId: savedChatwootAccountId || ''
+            }));
+        }
     }, []);
 
     const handleSave = async () => {
@@ -78,16 +103,24 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         try {
             // Attempt to create in Evolution API
             try {
-                await createInstance(newInstance.instanceName!, newInstance.apiUrl, newInstance.instanceToken);
+                await createInstance(
+                    newInstance.instanceName!,
+                    newInstance.apiUrl,
+                    newInstance.instanceToken,
+                    chatwootConfig
+                );
             } catch (err: any) {
-                // If the error is not "already exists", we might want to warn or stop
-                // But for now, we'll log it and proceed to save in DB
                 console.warn('Evolution API creation attempt:', err.message);
             }
 
             // Persist credentials
             if (newInstance.apiUrl) localStorage.setItem('EVOLUTION_IMPORT_URL', newInstance.apiUrl);
             if (newInstance.instanceToken) localStorage.setItem('EVOLUTION_IMPORT_TOKEN', newInstance.instanceToken);
+
+            // Persist Chatwoot
+            if (chatwootConfig.url) localStorage.setItem('CHATWOOT_URL', chatwootConfig.url);
+            if (chatwootConfig.token) localStorage.setItem('CHATWOOT_TOKEN', chatwootConfig.token);
+            if (chatwootConfig.accountId) localStorage.setItem('CHATWOOT_ACCOUNT_ID', chatwootConfig.accountId);
 
             const saved = await saveWhatsAppInstance(newInstance);
             setInstances([...instances, saved]);
@@ -164,6 +197,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         localStorage.setItem('EVOLUTION_IMPORT_URL', importData.url);
         localStorage.setItem('EVOLUTION_IMPORT_TOKEN', importData.token);
 
+        // Persist Chatwoot
+        if (chatwootConfig.url) localStorage.setItem('CHATWOOT_URL', chatwootConfig.url);
+        if (chatwootConfig.token) localStorage.setItem('CHATWOOT_TOKEN', chatwootConfig.token);
+        if (chatwootConfig.accountId) localStorage.setItem('CHATWOOT_ACCOUNT_ID', chatwootConfig.accountId);
+
         // Sync with Add Instance state
         setNewInstance(prev => ({
             ...prev,
@@ -182,6 +220,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 const token = si.token || si.instanceToken || importData.token;
 
                 if (!instances.some(i => i.instanceName === name)) {
+                    // Register in DB
                     await saveWhatsAppInstance({
                         redeId: importData.redeId,
                         instanceName: name,
@@ -189,6 +228,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                         apiUrl: importData.url,
                         status: si.status || 'Disconnected'
                     });
+
+                    // If Chatwoot is configured, attempt to link it
+                    if (chatwootConfig.url && chatwootConfig.token && chatwootConfig.accountId) {
+                        try {
+                            await setChatwoot(name, chatwootConfig, importData.url, importData.token);
+                        } catch (cwErr) {
+                            console.warn(`[CHATWOOT] Failed to link ${name}:`, cwErr);
+                        }
+                    }
                     importedCount++;
                 } else {
                     skippedCount++;
@@ -360,41 +408,73 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                             <DialogHeader>
                                 <DialogTitle>Importar Instâncias da Evolution</DialogTitle>
                             </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label>Rede de Destino</Label>
-                                    <Select
-                                        value={importData.redeId}
-                                        onValueChange={(v) => setImportData({ ...importData, redeId: v })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a rede" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {redes.map(rede => (
-                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>URL do Servidor Evolution</Label>
-                                    <Input
-                                        placeholder="Ex: https://api.suaevolution.com"
-                                        value={importData.url}
-                                        onChange={(e) => setImportData({ ...importData, url: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Global API Key</Label>
-                                    <Input
-                                        placeholder="Sua Global API Key"
-                                        type="password"
-                                        value={importData.token}
-                                        onChange={(e) => setImportData({ ...importData, token: e.target.value })}
-                                    />
-                                </div>
-                            </div>
+                            <Tabs defaultValue="geral" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="geral">Geral</TabsTrigger>
+                                    <TabsTrigger value="chatwoot">Chatwoot</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="geral" className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label>Rede</Label>
+                                        <Select
+                                            value={importData.redeId}
+                                            onValueChange={(v) => setImportData({ ...importData, redeId: v })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione a rede" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {redes.map(rede => (
+                                                    <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>URL da Evolution API</Label>
+                                        <Input
+                                            placeholder="https://api.suaevolution.com"
+                                            value={importData.url}
+                                            onChange={(e) => setImportData({ ...importData, url: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Global API Key</Label>
+                                        <Input
+                                            placeholder="Sua Global API Key"
+                                            type="password"
+                                            value={importData.token}
+                                            onChange={(e) => setImportData({ ...importData, token: e.target.value })}
+                                        />
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="chatwoot" className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label>URL do Chatwoot</Label>
+                                        <Input
+                                            placeholder="Ex: https://chat.seudominio.com"
+                                            value={chatwootConfig.url}
+                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, url: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Token do Chatwoot</Label>
+                                        <Input
+                                            placeholder="Seu Token do Chatwoot"
+                                            value={chatwootConfig.token}
+                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, token: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Account ID</Label>
+                                        <Input
+                                            placeholder="Ex: 1"
+                                            value={chatwootConfig.accountId}
+                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, accountId: e.target.value })}
+                                        />
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsImportOpen(false)} disabled={isImporting}>Cancelar</Button>
                                 <Button onClick={handleImport} disabled={isImporting}>
@@ -416,47 +496,89 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <DialogTitle>Nova Instância Evolution</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label>Rede</Label>
-                                    <Select
-                                        value={newInstance.redeId}
-                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione a rede" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {redes.map(rede => (
-                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Nome da Instância</Label>
-                                    <Input
-                                        placeholder="Ex: rede_conchas"
-                                        value={newInstance.instanceName}
-                                        onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Token da Instância (API Key)</Label>
-                                    <Input
-                                        placeholder="Sua Global API Key"
-                                        value={newInstance.instanceToken}
-                                        onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>URL da Evolution API (Opcional)</Label>
-                                    <Input
-                                        placeholder="Ex: https://api.suaevolution.com"
-                                        value={newInstance.apiUrl}
-                                        onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
-                                    />
-                                    <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
-                                </div>
+                                <Tabs defaultValue="geral" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="geral">Geral</TabsTrigger>
+                                        <TabsTrigger value="chatwoot">Chatwoot</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="geral" className="space-y-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label>Rede</Label>
+                                            <Select
+                                                value={newInstance.redeId}
+                                                onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione a rede" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {redes.map(rede => (
+                                                        <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Nome da Instância</Label>
+                                            <Input
+                                                placeholder="Ex: rede_conchas"
+                                                value={newInstance.instanceName}
+                                                onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Token da Instância (API Key)</Label>
+                                            <Input
+                                                placeholder="Sua Global API Key"
+                                                value={newInstance.instanceToken}
+                                                onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>URL da Evolution API (Opcional)</Label>
+                                            <Input
+                                                placeholder="Ex: https://api.suaevolution.com"
+                                                value={newInstance.apiUrl}
+                                                onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
+                                            />
+                                            <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
+                                        </div>
+                                    </TabsContent>
+                                    <TabsContent value="chatwoot" className="space-y-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label>URL do Chatwoot</Label>
+                                            <Input
+                                                placeholder="Ex: https://chat.seudominio.com"
+                                                value={chatwootConfig.url}
+                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, url: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Token do Chatwoot</Label>
+                                            <Input
+                                                placeholder="Seu Token do Chatwoot"
+                                                value={chatwootConfig.token}
+                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, token: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Account ID</Label>
+                                            <Input
+                                                placeholder="Ex: 1"
+                                                value={chatwootConfig.accountId}
+                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, accountId: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={chatwootConfig.signMsg}
+                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, signMsg: e.target.checked })}
+                                            />
+                                            <Label>Assinar Mensagens</Label>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isSaving}>Cancelar</Button>
