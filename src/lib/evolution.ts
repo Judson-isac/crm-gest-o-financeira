@@ -30,10 +30,21 @@ async function fetchEvolution(endpoint: string, method: string = 'GET', body?: a
 export async function checkInstanceStatus(instanceName: string, baseUrl?: string, token?: string) {
     try {
         const data = await fetchEvolution(`/instance/connectionState/${instanceName}`, 'GET', undefined, baseUrl, token);
-        return data.instance.state; // 'open', 'close', etc.
+        // Handle both Evolution v1 (data.instance.state) and v2 (data.state)
+        return data.state || data.instance?.state || 'Disconnected';
     } catch (error) {
         console.error('Error checking instance status:', error);
         return 'Disconnected';
+    }
+}
+
+export async function fetchInstancesFromServer(baseUrl: string, token: string) {
+    try {
+        const data = await fetchEvolution('/instance/fetchInstances', 'GET', undefined, baseUrl, token);
+        return Array.isArray(data) ? data : (data.instances || []);
+    } catch (error) {
+        console.error('Error fetching instances from server:', error);
+        throw error;
     }
 }
 

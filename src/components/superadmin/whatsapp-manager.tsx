@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Smartphone, RefreshCw } from 'lucide-react';
 import { saveWhatsAppInstance, deleteWhatsAppInstance } from '@/lib/db';
+import { syncInstanceData, fetchInstancesFromServer } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 
 interface WhatsAppManagerProps {
@@ -22,6 +23,9 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     const { toast } = useToast();
     const [instances, setInstances] = useState<WhatsAppInstance[]>(initialInstances);
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isImportOpen, setIsImportOpen] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [importData, setImportData] = useState({ url: '', token: '', redeId: '' });
     const [newInstance, setNewInstance] = useState<Partial<WhatsAppInstance>>({
         instanceName: '',
         instanceToken: '',
@@ -47,6 +51,60 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         }
     };
 
+    const handleSyncAll = async () => {
+        setIsSyncing(true);
+        try {
+            for (const instance of instances) {
+                await syncInstanceData(instance.id);
+            }
+            // Reload instances (ideally we would have a way to fetch all from DB again, 
+            // but for now, we can just say success or wait for revalidatePath to kick in if using Server Props)
+            // Since this is a client component with initialInstances, we might need a refresh logic.
+            toast({ title: 'Sincronização iniciada', description: 'Os status estão sendo atualizados em segundo plano.' });
+            // For simple state update, we could wait a bit then window.location.reload() or just trust the next interval
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao sincronizar instâncias' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const handleImport = async () => {
+        if (!importData.url || !importData.token || !importData.redeId) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha todos os campos' });
+            return;
+        }
+
+        try {
+            const serverInstances = await fetchInstancesFromServer(importData.url, importData.token);
+            let importedCount = 0;
+
+            for (const si of serverInstances) {
+                // si might be the raw Evolution instance object
+                const name = si.instanceName || si.name;
+                const token = si.token || si.instanceToken || importData.token; // Use global key if instance token not available
+
+                // Check if already exists in our list
+                if (!instances.some(i => i.instanceName === name)) {
+                    await saveWhatsAppInstance({
+                        redeId: importData.redeId,
+                        instanceName: name,
+                        instanceToken: token,
+                        apiUrl: importData.url,
+                        status: si.status || 'Disconnected'
+                    });
+                    importedCount++;
+                }
+            }
+
+            toast({ title: 'Sucesso', description: `${importedCount} instâncias importadas com sucesso.` });
+            setIsImportOpen(false);
+            window.location.reload(); // Refresh to show new instances
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao importar do servidor' });
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir esta instância?')) return;
 
@@ -64,121 +122,178 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Gerenciar WhatsApp</h1>
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="flex items-center gap-2">
-                            <Plus size={16} /> Nova Instância
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Nova Instância Evolution</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label>Rede</Label>
-                                <Select
-                                    value={newInstance.redeId}
-                                    onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione a rede" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {redes.map(rede => (
-                                            <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Nome da Instância</Label>
-                                <Input
-                                    placeholder="Ex: rede_conchas"
-                                    value={newInstance.instanceName}
-                                    onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Token da Instância (API Key)</Label>
-                                <Input
-                                    placeholder="Token da Evolution API"
-                                    value={newInstance.instanceToken}
-                                    onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>URL da Evolution API (Opcional)</Label>
-                                <Input
-                                    placeholder="Ex: https://api.suaevolution.com"
-                                    value={newInstance.apiUrl}
-                                    onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
-                                />
-                                <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleSave}>Salvar</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleSyncAll} disabled={isSyncing}>
+                        <RefreshCw size={16} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar Status
+                    </Button>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Instâncias Ativas</CardTitle>
-                    <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Rede</TableHead>
-                                <TableHead>Nome da Instância</TableHead>
-                                <TableHead>API URL</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Número</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {instances.length === 0 ? (
+                    <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <RefreshCw size={16} /> Importar do Servidor
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Importar Instâncias da Evolution</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Rede de Destino</Label>
+                                    <Select
+                                        value={importData.redeId}
+                                        onValueChange={(v) => setImportData({ ...importData, redeId: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a rede" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {redes.map(rede => (
+                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>URL do Servidor Evolution</Label>
+                                    <Input
+                                        placeholder="Ex: https://api.suaevolution.com"
+                                        value={importData.url}
+                                        onChange={(e) => setImportData({ ...importData, url: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Global API Key</Label>
+                                    <Input
+                                        placeholder="Sua Global API Key"
+                                        type="password"
+                                        value={importData.token}
+                                        onChange={(e) => setImportData({ ...importData, token: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsImportOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleImport}>Importar Agora</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="flex items-center gap-2">
+                                <Plus size={16} /> Nova Instância
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Nova Instância Evolution</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Rede</Label>
+                                    <Select
+                                        value={newInstance.redeId}
+                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione a rede" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {redes.map(rede => (
+                                                <SelectItem key={rede.id} value={rede.id}>{rede.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Nome da Instância</Label>
+                                    <Input
+                                        placeholder="Ex: rede_conchas"
+                                        value={newInstance.instanceName}
+                                        onChange={(e) => setNewInstance({ ...newInstance, instanceName: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Token da Instância (API Key)</Label>
+                                    <Input
+                                        placeholder="Token da Evolution API"
+                                        value={newInstance.instanceToken}
+                                        onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>URL da Evolution API (Opcional)</Label>
+                                    <Input
+                                        placeholder="Ex: https://api.suaevolution.com"
+                                        value={newInstance.apiUrl}
+                                        onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
+                                    />
+                                    <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleSave}>Salvar</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Instâncias Ativas</CardTitle>
+                        <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                        Nenhuma instância cadastrada.
-                                    </TableCell>
+                                    <TableHead>Rede</TableHead>
+                                    <TableHead>Nome da Instância</TableHead>
+                                    <TableHead>API URL</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Número</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
-                            ) : (
-                                instances.map((instance) => {
-                                    const rede = redes.find(r => r.id === instance.redeId);
-                                    return (
-                                        <TableRow key={instance.id}>
-                                            <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
-                                            <TableCell>{instance.instanceName}</TableCell>
-                                            <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
-                                                {instance.apiUrl || 'Padrão'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
-                                                    {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>{instance.phoneNumber || '-'}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(instance.id)}>
-                                                    <Trash2 size={16} className="text-destructive" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
-    );
+                            </TableHeader>
+                            <TableBody>
+                                {instances.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                            Nenhuma instância cadastrada.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    instances.map((instance) => {
+                                        const rede = redes.find(r => r.id === instance.redeId);
+                                        return (
+                                            <TableRow key={instance.id}>
+                                                <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
+                                                <TableCell>{instance.instanceName}</TableCell>
+                                                <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
+                                                    {instance.apiUrl || 'Padrão'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                        }`}>
+                                                        {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>{instance.phoneNumber || '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(instance.id)}>
+                                                        <Trash2 size={16} className="text-destructive" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+            );
 }
