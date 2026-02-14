@@ -59,6 +59,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         url: '',
         token: '',
         accountId: '',
+        nameInbox: 'Evolution',
+        organization: 'Evolution Bot',
         signMsg: true,
         reopenConversation: true,
         importContacts: true,
@@ -560,6 +562,25 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
+                                                        <Label>Nome da Inbox</Label>
+                                                        <Input
+                                                            placeholder="Ex: WhatsApp Atendimento"
+                                                            value={chatwootConfig.nameInbox}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, nameInbox: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Organização</Label>
+                                                        <Input
+                                                            placeholder="Ex: Minha Empresa"
+                                                            value={chatwootConfig.organization}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, organization: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
                                                         <Label>URL do Chatwoot</Label>
                                                         <Input
                                                             placeholder="https://chat.dominio.com"
@@ -587,12 +608,28 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                     />
                                                 </div>
 
-                                                <div className="flex items-center gap-2">
-                                                    <Switch
-                                                        checked={chatwootConfig.signMsg}
-                                                        onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, signMsg: v })}
-                                                    />
-                                                    <Label>Assinar Mensagens</Label>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.signMsg}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, signMsg: v })}
+                                                        />
+                                                        <Label>Assinar Mensagens</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.importContacts}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importContacts: v })}
+                                                        />
+                                                        <Label>Importar Contatos</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.importMessages}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, importMessages: v })}
+                                                        />
+                                                        <Label>Importar Mensagens</Label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
