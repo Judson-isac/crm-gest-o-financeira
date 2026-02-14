@@ -13,6 +13,7 @@ const permissionRouteMap: { permission: keyof Permissoes, route: string }[] = [
     { permission: 'gerenciarCadastrosGerais', route: '/cadastros' },
     { permission: 'gerenciarUsuarios', route: '/usuarios' },
     { permission: 'verRanking', route: '/ranking' },
+    { permission: 'gerenciarWhatsapp', route: '/whatsapp' },
 ];
 
 function getJwtSecretKey(): Uint8Array {
@@ -143,6 +144,7 @@ export async function checkUserPermissionForPath(request: NextRequest): Promise<
         '/usuarios': 'gerenciarUsuarios',
         '/importacao': 'realizarImportacoes',
         '/ranking': 'verRanking',
+        '/whatsapp': 'gerenciarWhatsapp',
     };
 
     const requiredPermissionKey = Object.keys(permissionMap)

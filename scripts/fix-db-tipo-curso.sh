@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script para corrigir colunas e constraints de tipos de curso
+# Script para corrigir colunas e constraints de tipos de curso e WhatsApp
 # Execute na VPS: ./scripts/fix-db-tipo-curso.sh
 
 echo "🔍 Verificando container do banco de dados..."
@@ -45,7 +45,20 @@ BEGIN
     END IF;
 END \$\$;
 
+-- 4. Cria tabela whatsapp_instances se não existir (ID como TEXT para compatibilidade)
+CREATE TABLE IF NOT EXISTS whatsapp_instances (
+    id TEXT PRIMARY KEY,
+    "redeId" TEXT NOT NULL REFERENCES redes(id) ON DELETE CASCADE,
+    "instanceName" TEXT NOT NULL,
+    "instanceToken" TEXT NOT NULL,
+    "ownerId" TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
+    status TEXT DEFAULT 'Disconnected',
+    "phoneNumber" TEXT,
+    "createdAt" TIMESTAMP DEFAULT NOW(),
+    UNIQUE("instanceName")
+);
+
 EOF
 
-echo "✅ Correção de Tipos de Curso aplicada com sucesso!"
-echo "🚀 Agora a importação automática deve funcionar corretamente."
+echo "✅ Correção de Tipos de Curso e WhatsApp aplicada com sucesso!"
+echo "🚀 Agora o CRM deve funcionar corretamente."

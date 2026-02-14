@@ -43,6 +43,7 @@ const availableModules = [
     { id: 'financeiro', label: 'Financeiro' },
     { id: 'cadastros', label: 'Cadastros' },
     { id: 'ranking', label: 'Ranking' },
+    { id: 'whatsapp', label: 'WhatsApp' },
 ];
 
 export function RedesManager({ initialRedes }: { initialRedes: Rede[] }) {

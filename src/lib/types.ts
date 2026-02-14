@@ -238,6 +238,7 @@ export type Permissoes = {
   gerenciarUsuarios: boolean;
   realizarImportacoes: boolean;
   verRanking: boolean;
+  gerenciarWhatsapp: boolean;
 };
 
 export type UserPermissions = Permissoes & {
@@ -304,3 +305,15 @@ export type SuperAdminStats = {
   totalFuncoes: number;
 };
 
+
+export type WhatsAppInstance = {
+  id: string;
+  redeId: string;
+  instanceName: string;
+  instanceToken: string;
+  ownerId?: string;
+  status: string;
+  phoneNumber?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};

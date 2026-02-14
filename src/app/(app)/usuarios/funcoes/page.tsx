@@ -12,6 +12,7 @@ const permissoesDisponiveis: { key: keyof Permissoes, label: string }[] = [
   { key: 'gerenciarUsuarios', label: 'Gerenciar Usuários' },
   { key: 'realizarImportacoes', label: 'Realizar Importações' },
   { key: 'verRanking', label: 'Ver Ranking' },
+  { key: 'gerenciarWhatsapp', label: 'Gerenciar WhatsApp' },
 ];
 
 export default async function FuncoesPage() {

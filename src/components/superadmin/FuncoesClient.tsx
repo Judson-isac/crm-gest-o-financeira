@@ -260,7 +260,8 @@ export default function FuncoesClient({ funcoes, redes, permissoesDisponiveis, a
                           'matriculas': ['gerenciarMatriculas', 'realizarImportacoes'],
                           'financeiro': ['verRelatoriosFinanceiros'],
                           'cadastros': ['gerenciarCadastrosGerais', 'gerenciarUsuarios'],
-                          'ranking': ['verRanking']
+                          'ranking': ['verRanking'],
+                          'whatsapp': ['gerenciarWhatsapp']
                         };
                         return rede.modulos.some(mod => moduleMap[mod]?.includes(p.key));
                       });

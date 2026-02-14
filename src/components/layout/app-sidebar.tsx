@@ -20,7 +20,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Wallet, Landmark, DownloadCloud, ChevronsLeft, ChevronsRight, ClipboardList, ChevronDown, ChevronRight, UserPlus, Table2, Users, ShieldCheck, Trophy } from "lucide-react";
+import { LayoutDashboard, Wallet, Landmark, DownloadCloud, ChevronsLeft, ChevronsRight, ClipboardList, ChevronDown, ChevronRight, UserPlus, Table2, Users, ShieldCheck, Trophy, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Permissoes } from '@/lib/types';
@@ -82,6 +82,7 @@ export default function AppSidebar({
   const [isGestaoOpen, setIsGestaoOpen] = React.useState(isGestaoFinanceiraActive);
   const [isImportacaoOpen, setIsImportacaoOpen] = React.useState(isImportacaoActive);
   const [isRankingOpen, setIsRankingOpen] = React.useState(pathname.startsWith('/ranking'));
+  const [isWhatsappOpen, setIsWhatsappOpen] = React.useState(pathname.startsWith('/whatsapp'));
 
   // Auto-close submenus when sidebar collapses to prevent vertical spacing issues
   React.useEffect(() => {
@@ -92,6 +93,7 @@ export default function AppSidebar({
       setIsGestaoOpen(false);
       setIsImportacaoOpen(false);
       setIsRankingOpen(false);
+      setIsWhatsappOpen(false);
     }
   }, [state]);
 
@@ -411,6 +413,20 @@ export default function AppSidebar({
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
+          )}
+
+          {permissions.gerenciarWhatsapp && (
+            <SidebarMenuItem>
+              <Link href="/whatsapp" passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith('/whatsapp')}
+                  tooltip={{ children: "WhatsApp" }}
+                >
+                  <MessageSquare />
+                  <span>WhatsApp</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
           )}
         </SidebarMenu>
       </SidebarContent>

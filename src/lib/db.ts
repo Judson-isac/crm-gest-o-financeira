@@ -2,7 +2,7 @@
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, MetaUsuario, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig } from './types';
+import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, MetaUsuario, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig, WhatsAppInstance } from './types';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -339,6 +339,7 @@ const defaultPermissions: UserPermissions = {
     verDashboard: false, gerenciarMatriculas: false, verRelatoriosFinanceiros: false,
     gerenciarCadastrosGerais: false, gerenciarUsuarios: false, realizarImportacoes: false,
     verRanking: false,
+    gerenciarWhatsapp: false,
     polos: [], isSuperadmin: false, redeId: null
 };
 
@@ -353,6 +354,7 @@ export async function getUserPermissionsById(userId: string, userObject?: Usuari
                 verDashboard: true, gerenciarMatriculas: true, verRelatoriosFinanceiros: true,
                 gerenciarCadastrosGerais: true, gerenciarUsuarios: true, realizarImportacoes: true,
                 verRanking: true,
+                gerenciarWhatsapp: true,
                 polos: null, isSuperadmin: true, redeId: null
             };
         }
@@ -393,7 +395,8 @@ export async function getUserPermissionsById(userId: string, userObject?: Usuari
                     'matriculas': ['gerenciarMatriculas', 'realizarImportacoes'],
                     'financeiro': ['verRelatoriosFinanceiros'],
                     'cadastros': ['gerenciarCadastrosGerais', 'gerenciarUsuarios'],
-                    'ranking': ['verRanking']
+                    'ranking': ['verRanking'],
+                    'whatsapp': ['gerenciarWhatsapp']
                 };
 
                 // Calculate set of allowed permissions based on enabled modules
@@ -479,7 +482,8 @@ export async function getFuncoes(redeId?: string): Promise<Funcao[]> {
             'matriculas': ['gerenciarMatriculas', 'realizarImportacoes'],
             'financeiro': ['verRelatoriosFinanceiros'],
             'cadastros': ['gerenciarCadastrosGerais', 'gerenciarUsuarios'],
-            'ranking': ['verRanking']
+            'ranking': ['verRanking'],
+            'whatsapp': ['gerenciarWhatsapp']
         };
 
         const allowedPermissions = new Set<string>();
@@ -611,7 +615,8 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                 gerenciarCadastrosGerais: true,
                 gerenciarUsuarios: true,
                 realizarImportacoes: true,
-                verRanking: true
+                verRanking: true,
+                gerenciarWhatsapp: true
             };
 
             await client.query(
@@ -660,6 +665,7 @@ export async function getDistinctValuesForRanking(redeId: string): Promise<any> 
         gerenciarUsuarios: true,
         realizarImportacoes: true,
         verRanking: true,
+        gerenciarWhatsapp: true,
         polos: null, // Allow all polos for the ranking filter options
         isSuperadmin: false,
         redeId: redeId
@@ -2175,3 +2181,69 @@ export async function getPolosSpacepointStatus(redeId: string, processoId: strin
         client.release();
     }
 }
+
+
+
+export async function getWhatsAppInstances(redeId?: string): Promise<WhatsAppInstance[]> {
+    const client = await pool.connect();
+    try {
+        let query = 'SELECT * FROM whatsapp_instances';
+        const params: string[] = [];
+        if (redeId) {
+            query += ' WHERE "redeId" = $1';
+            params.push(redeId);
+        }
+        const result = await client.query(query, params);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getWhatsAppInstanceById(id: string): Promise<WhatsAppInstance | null> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM whatsapp_instances WHERE id = $1', [id]);
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveWhatsAppInstance(instance: Partial<WhatsAppInstance>): Promise<WhatsAppInstance> {
+    const client = await pool.connect();
+    try {
+        if (instance.id) {
+            const { id, ...fields } = instance;
+            const entries = Object.entries(fields).filter(([_, v]) => v !== undefined);
+            const setClause = entries.map(([k, _], i) => `"${k}" = $${i + 2}`).join(', ');
+            const values = entries.map(([_, v]) => v);
+            const result = await client.query(
+                `UPDATE whatsapp_instances SET ${setClause} WHERE id = $1 RETURNING *`,
+                [id, ...values]
+            );
+            return result.rows[0];
+        } else {
+            const newId = uuidv4();
+            const { redeId, instanceName, instanceToken, ownerId, status, phoneNumber } = instance;
+            const result = await client.query(
+                `INSERT INTO whatsapp_instances (id, "redeId", "instanceName", "instanceToken", "ownerId", status, "phoneNumber") 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+                [newId, redeId, instanceName, instanceToken, ownerId, status || 'Disconnected', phoneNumber]
+            );
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteWhatsAppInstance(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM whatsapp_instances WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}
+
