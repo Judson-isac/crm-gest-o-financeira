@@ -48,11 +48,41 @@ export async function fetchInstancesFromServer(baseUrl: string, token: string) {
     }
 }
 
+export async function createInstance(instanceName: string, baseUrl?: string, token?: string) {
+    try {
+        const body = {
+            instanceName: instanceName,
+            token: token || EVOLUTION_API_KEY,
+            qrcode: true
+        };
+        // Using common v2 endpoint for creation
+        return await fetchEvolution('/instance/create', 'POST', body, baseUrl, token);
+    } catch (error) {
+        console.error('Error creating instance:', error);
+        throw error;
+    }
+}
+
 export async function getQRCode(instanceName: string, baseUrl?: string, token?: string) {
     try {
         const data = await fetchEvolution(`/instance/connect/${instanceName}`, 'GET', undefined, baseUrl, token);
         return data.base64; // QR code base64
-    } catch (error) {
+    } catch (error: any) {
+        // If the instance is not found, try to create it and then get the QR code again
+        if (error.message?.includes('Not Found') || error.message?.includes('404')) {
+            console.log(`[EVO] Instance ${instanceName} not found. Attempting to create...`);
+            try {
+                await createInstance(instanceName, baseUrl, token);
+                // Wait a moment for the instance to initialize
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Retry getting QR Code
+                const retryData = await fetchEvolution(`/instance/connect/${instanceName}`, 'GET', undefined, baseUrl, token);
+                return retryData.base64;
+            } catch (createErr) {
+                console.error(`[EVO] Failed to auto-create instance ${instanceName}:`, createErr);
+                throw error; // Throw original 404 if creation fails
+            }
+        }
         console.error('Error getting QR code:', error);
         throw error;
     }
