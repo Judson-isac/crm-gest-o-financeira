@@ -76,6 +76,8 @@ export async function syncInstanceData(id: string) {
         // First get connection state, it often contains number/name in v2
         const rawData = await fetchEvolution(`/instance/connectionState/${instance.instanceName}`, 'GET', undefined, instance.apiUrl, instance.instanceToken).catch(() => null);
 
+        console.log(`[SYNC DEBUG] Raw connectionState for ${instance.instanceName}:`, JSON.stringify(rawData));
+
         // Handle both Evolution v1 (data.instance.state) and v2 (data.state)
         const status = rawData?.state || rawData?.instance?.state || 'Disconnected';
 
@@ -92,6 +94,8 @@ export async function syncInstanceData(id: string) {
             if (!rawPhone || !rawProfile) {
                 try {
                     const data = await fetchEvolution(`/instance/fetchInstances`, 'GET', undefined, instance.apiUrl, instance.instanceToken);
+                    console.log(`[SYNC DEBUG] Raw fetchInstances for ${instance.instanceName}:`, JSON.stringify(data));
+
                     const instancesList = Array.isArray(data) ? data : (data.instances || []);
                     const si = instancesList.find((i: any) => {
                         const name = i.instanceName || i.instance?.instanceName;
