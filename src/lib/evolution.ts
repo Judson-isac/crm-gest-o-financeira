@@ -102,3 +102,13 @@ export async function syncInstanceData(id: string) {
         console.error('Error syncing instance data:', error);
     }
 }
+export async function syncAllInstances(redeId?: string) {
+    const { getWhatsAppInstances } = await import('./db');
+    const instances = await getWhatsAppInstances(redeId);
+
+    for (const instance of instances) {
+        await syncInstanceData(instance.id);
+    }
+
+    revalidatePath('/whatsapp');
+}
