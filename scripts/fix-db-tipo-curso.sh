@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS whatsapp_instances (
     "ownerId" TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
     status TEXT DEFAULT 'Disconnected',
     "phoneNumber" TEXT,
+    "profileName" TEXT,
+    "profilePicUrl" TEXT,
     "createdAt" TIMESTAMP DEFAULT NOW(),
     UNIQUE("instanceName")
 );

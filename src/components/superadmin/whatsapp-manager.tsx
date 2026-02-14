@@ -39,6 +39,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isImporting, setIsImporting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [isConnecting, setIsConnecting] = useState<WhatsAppInstance | null>(null);
     const [editingInstance, setEditingInstance] = useState<WhatsAppInstance | null>(null);
     const [selectedRedeId, setSelectedRedeId] = useState<string>('all');
@@ -73,6 +74,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             return;
         }
 
+        setIsSaving(true);
         try {
             // Persist credentials
             if (newInstance.apiUrl) localStorage.setItem('EVOLUTION_IMPORT_URL', newInstance.apiUrl);
@@ -87,7 +89,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 apiUrl: localStorage.getItem('EVOLUTION_IMPORT_URL') || '',
                 redeId: ''
             });
-            toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
 
             // Sync with Import state
             setImportData(prev => ({
@@ -95,10 +96,37 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 url: newInstance.apiUrl || '',
                 token: newInstance.instanceToken || ''
             }));
+
+            toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
             router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
             console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!editingInstance) return;
+
+        if (!editingInstance.instanceName || !editingInstance.instanceToken || !editingInstance.redeId) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const saved = await saveWhatsAppInstance(editingInstance);
+            setInstances(instances.map(i => i.id === saved.id ? saved : i));
+            setEditingInstance(null);
+            toast({ title: 'Sucesso', description: 'Instância atualizada' });
+            router.refresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar instância' });
+            console.error(error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -422,26 +450,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
-                                <Button onClick={async () => {
-                                    const toSave = { ...newInstance };
-
-                                    if (!toSave.instanceName || !toSave.instanceToken || !toSave.redeId) {
-                                        toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
-                                        return;
-                                    }
-
-                                    try {
-                                        const saved = await saveWhatsAppInstance(toSave);
-                                        setInstances([...instances, saved]);
-                                        setIsAddOpen(false);
-                                        setNewInstance({ instanceName: '', instanceToken: '', apiUrl: '', redeId: '' });
-                                        toast({ title: 'Sucesso', description: 'Instância salva com sucesso' });
-                                        router.refresh();
-                                    } catch (error) {
-                                        toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
-                                    }
-                                }}>Salvar</Button>
+                                <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isSaving}>Cancelar</Button>
+                                <Button onClick={handleSave} disabled={isSaving}>
+                                    {isSaving ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                                    Salvar
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -638,26 +651,10 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                     )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setEditingInstance(null)}>Cancelar</Button>
-                        <Button onClick={async () => {
-                            if (editingInstance) {
-                                const toSave = { ...editingInstance };
-
-                                if (!toSave.instanceName || !toSave.instanceToken || !toSave.redeId) {
-                                    toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome, o Token e selecione a Rede' });
-                                    return;
-                                }
-
-                                try {
-                                    const saved = await saveWhatsAppInstance(toSave);
-                                    setInstances(instances.map(i => i.id === saved.id ? saved : i));
-                                    setEditingInstance(null);
-                                    toast({ title: 'Sucesso', description: 'Instância atualizada' });
-                                    router.refresh();
-                                } catch (error) {
-                                    toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar instância' });
-                                }
-                            }
-                        }}>Salvar Alterações</Button>
+                        <Button onClick={handleUpdate} disabled={isSaving}>
+                            {isSaving ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                            Salvar Alterações
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
