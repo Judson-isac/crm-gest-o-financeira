@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Smartphone, ChevronRight, RefreshCw } from 'lucide-react';
 import { syncAllInstances, syncInstanceData } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface WhatsAppUserDashboardProps {
     instances: WhatsAppInstance[];
@@ -118,14 +119,17 @@ export function WhatsAppUserDashboard({ instances }: WhatsAppUserDashboardProps)
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-center gap-3 text-muted-foreground">
-                                <div className={`p-2 rounded-full ${instance.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
-                                    <Smartphone size={24} />
-                                </div>
-                                <div className="text-sm truncate pr-8">
+                                <Avatar className={`h-12 w-12 border ${instance.status === 'open' ? 'border-green-200' : ''}`}>
+                                    <AvatarImage src={instance.profilePicUrl} alt={instance.instanceName} />
+                                    <AvatarFallback className={instance.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}>
+                                        <Smartphone size={24} />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="text-sm truncate pr-8 flex-1">
                                     <p className="font-medium text-foreground truncate" title={instance.profileName || instance.phoneNumber}>
                                         {instance.profileName || instance.phoneNumber || (instance.status === 'open' ? 'Conectado' : 'Não conectado')}
                                     </p>
-                                    {instance.profileName && instance.phoneNumber && (
+                                    {instance.phoneNumber && (
                                         <p className="text-xs truncate">{instance.phoneNumber}</p>
                                     )}
                                     <p className="text-xs text-muted-foreground">Clique para gerenciar</p>

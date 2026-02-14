@@ -9,11 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Smartphone, RefreshCw, Search, CheckSquare, Square, Edit2 } from 'lucide-react';
+import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload } from 'lucide-react';
 import { saveWhatsAppInstance, deleteWhatsAppInstance } from '@/lib/db';
 import { syncInstanceData, fetchInstancesFromServer, getQRCode } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppClient } from '../whatsapp/whatsapp-client';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface WhatsAppManagerProps {
     initialInstances: WhatsAppInstance[];
@@ -374,11 +375,19 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             </TableCell>
                                             <TableCell className="font-medium">{rede?.nome || 'N/A'}</TableCell>
                                             <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">{instance.instanceName}</span>
-                                                    {instance.profileName && (
-                                                        <span className="text-xs text-muted-foreground">{instance.profileName}</span>
-                                                    )}
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 border">
+                                                        <AvatarImage src={instance.profilePicUrl} alt={instance.instanceName} />
+                                                        <AvatarFallback className="bg-muted">
+                                                            {instance.profileName ? instance.profileName.substring(0, 2).toUpperCase() : <Smartphone className="h-4 w-4 text-muted-foreground" />}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{instance.instanceName}</span>
+                                                        {instance.profileName && (
+                                                            <span className="text-xs text-muted-foreground">{instance.profileName}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>

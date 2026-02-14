@@ -316,6 +316,7 @@ export type WhatsAppInstance = {
   status: string;
   phoneNumber?: string;
   profileName?: string;
+  profilePicUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 };
