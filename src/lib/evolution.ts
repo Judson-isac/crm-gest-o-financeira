@@ -73,20 +73,46 @@ export async function syncInstanceData(id: string) {
     if (!instance) return;
 
     try {
-        const status = await checkInstanceStatus(instance.instanceName, instance.apiUrl, instance.instanceToken);
+        // First get connection state, it often contains number/name in v2
+        const rawData = await fetchEvolution(`/instance/connectionState/${instance.instanceName}`, 'GET', undefined, instance.apiUrl, instance.instanceToken).catch(() => null);
+
+        // Handle both Evolution v1 (data.instance.state) and v2 (data.state)
+        const status = rawData?.state || rawData?.instance?.state || 'Disconnected';
+
         let phoneNumber = instance.phoneNumber;
         let profileName = instance.profileName;
 
         if (status === 'open') {
-            const data = await fetchEvolution(`/instance/fetchInstances?instanceName=${instance.instanceName}`, 'GET', undefined, instance.apiUrl, instance.instanceToken);
-            // Handle both Evolution v1 (Array) and v2 (Array of objects with instance property)
-            const instancesList = Array.isArray(data) ? data : (data.instances || []);
-            const si = instancesList.find((i: any) => (i.instanceName || i.instance?.instanceName) === instance.instanceName);
+            // Try to get info from connectionState first (v2 style)
+            const connDetails = rawData?.instance || rawData;
+            let rawPhone = connDetails?.owner || connDetails?.number || connDetails?.wid || connDetails?.jid;
+            let rawProfile = connDetails?.profileName || connDetails?.name || connDetails?.pushName;
 
-            if (si) {
-                const details = si.instance || si;
-                phoneNumber = details.owner || details.number || details.wid || phoneNumber;
-                profileName = details.profileName || details.name || profileName;
+            // If not found in connectionState, try fetchInstances
+            if (!rawPhone || !rawProfile) {
+                try {
+                    const data = await fetchEvolution(`/instance/fetchInstances`, 'GET', undefined, instance.apiUrl, instance.instanceToken);
+                    const instancesList = Array.isArray(data) ? data : (data.instances || []);
+                    const si = instancesList.find((i: any) => {
+                        const name = i.instanceName || i.instance?.instanceName;
+                        return name?.toLowerCase() === instance.instanceName.toLowerCase();
+                    });
+
+                    if (si) {
+                        const details = si.instance || si;
+                        rawPhone = rawPhone || details.owner || details.number || details.wid || details.jid;
+                        rawProfile = rawProfile || details.profileName || details.name || details.pushName;
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetchInstances for details:', instance.instanceName);
+                }
+            }
+
+            if (rawPhone && typeof rawPhone === 'string') {
+                phoneNumber = rawPhone.split('@')[0].split(':')[0];
+            }
+            if (rawProfile) {
+                profileName = rawProfile;
             }
         }
 
@@ -98,6 +124,7 @@ export async function syncInstanceData(id: string) {
         });
 
         revalidatePath('/whatsapp');
+        revalidatePath('/superadmin/whatsapp');
     } catch (error) {
         console.error('Error syncing instance data:', error);
     }
