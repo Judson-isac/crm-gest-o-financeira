@@ -360,8 +360,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <div className="space-y-2">
                                     <Label>Rede</Label>
                                     <Select
-                                        value={newInstance.redeId || ""}
-                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
+                                        value={newInstance.redeId || "none"}
+                                        onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v === 'none' ? null : v } as any)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione a rede (opcional)" />
@@ -404,7 +404,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
                                 <Button onClick={async () => {
                                     const toSave = { ...newInstance };
-                                    if (toSave.redeId === 'none') toSave.redeId = null as any;
+                                    if (toSave.redeId === 'none') toSave.redeId = null;
 
                                     if (!toSave.instanceName || !toSave.instanceToken) {
                                         toast({ variant: 'destructive', title: 'Erro', description: 'Preencha o Nome e o Token' });
@@ -558,8 +558,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                             <div className="space-y-2">
                                 <Label>Rede</Label>
                                 <Select
-                                    value={editingInstance.redeId || ""}
-                                    onValueChange={(v) => setEditingInstance({ ...editingInstance, redeId: v })}
+                                    value={editingInstance.redeId || "none"}
+                                    onValueChange={(v) => setEditingInstance({ ...editingInstance, redeId: v === 'none' ? null : v } as any)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione a rede" />
@@ -600,11 +600,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                         <Button variant="outline" onClick={() => setEditingInstance(null)}>Cancelar</Button>
                         <Button onClick={async () => {
                             if (editingInstance) {
+                                const toSave = { ...editingInstance };
+                                if (toSave.redeId === 'none') toSave.redeId = null;
+
                                 try {
-                                    const saved = await saveWhatsAppInstance(editingInstance);
+                                    const saved = await saveWhatsAppInstance(toSave);
                                     setInstances(instances.map(i => i.id === saved.id ? saved : i));
                                     setEditingInstance(null);
                                     toast({ title: 'Sucesso', description: 'Instância atualizada' });
+                                    router.refresh();
                                 } catch (error) {
                                     toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar instância' });
                                 }
