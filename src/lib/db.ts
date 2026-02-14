@@ -2101,60 +2101,60 @@ export async function saveSystemConfig(config: SystemConfig): Promise<void> {
         `, [config.appLogoLoginOffsetY?.toString() || '0']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_OFFSET_X', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSidebarOffsetX?.toString() || '0']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SIDEBAR_OFFSET_X', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSidebarOffsetX?.toString() || '0']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_OFFSET_Y', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSidebarOffsetY?.toString() || '0']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SIDEBAR_OFFSET_Y', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSidebarOffsetY?.toString() || '0']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_HEIGHT', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSuperAdminHeight || '48']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SUPERADMIN_HEIGHT', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSuperAdminHeight || '48']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_LOGIN_HEIGHT', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoLoginHeight || '48']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_LOGIN_HEIGHT', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoLoginHeight || '48']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SIDEBAR_SCALE', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSidebarScale || '1']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SIDEBAR_SCALE', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSidebarScale || '1']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_SCALE', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSuperAdminScale || '1']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SUPERADMIN_SCALE', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSuperAdminScale || '1']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_POSITION', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSuperAdminPosition || 'center']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SUPERADMIN_POSITION', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSuperAdminPosition || 'center']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_OFFSET_X', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSuperAdminOffsetX?.toString() || '0']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SUPERADMIN_OFFSET_X', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSuperAdminOffsetX?.toString() || '0']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_SUPERADMIN_OFFSET_Y', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoSuperAdminOffsetY?.toString() || '0']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_SUPERADMIN_OFFSET_Y', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoSuperAdminOffsetY?.toString() || '0']);
 
         // Dark Mode Logos
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_LOGO_DARK', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appLogoDark || '']);
+            INSERT INTO system_config(key, value) VALUES('APP_LOGO_DARK', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appLogoDark || '']);
 
         await client.query(`
-            INSERT INTO system_config (key, value) VALUES ('APP_FAVICON_DARK', $1)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        `, [config.appFaviconDark || '']);
+            INSERT INTO system_config(key, value) VALUES('APP_FAVICON_DARK', $1)
+            ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value
+            `, [config.appFaviconDark || '']);
 
         await client.query('COMMIT');
     } catch (e) {
@@ -2181,7 +2181,6 @@ export async function getPolosSpacepointStatus(redeId: string, processoId: strin
         client.release();
     }
 }
-
 
 
 export async function getWhatsAppInstances(redeId?: string): Promise<WhatsAppInstance[]> {
@@ -2219,7 +2218,7 @@ export async function saveWhatsAppInstance(instance: Partial<WhatsAppInstance>):
             const setClause = entries.map(([k, _], i) => `"${k}" = $${i + 2}`).join(', ');
             const values = entries.map(([_, v]) => v);
             const result = await client.query(
-                `UPDATE whatsapp_instances SET ${setClause} WHERE id = $1 RETURNING *`,
+                `UPDATE whatsapp_instances SET ${setClause} WHERE id = $1 RETURNING * `,
                 [id, ...values]
             );
             return result.rows[0];
@@ -2227,8 +2226,8 @@ export async function saveWhatsAppInstance(instance: Partial<WhatsAppInstance>):
             const newId = uuidv4();
             const { redeId, apiUrl, instanceName, instanceToken, ownerId, status, phoneNumber } = instance;
             const result = await client.query(
-                `INSERT INTO whatsapp_instances (id, "redeId", "apiUrl", "instanceName", "instanceToken", "ownerId", status, "phoneNumber") 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+                `INSERT INTO whatsapp_instances(id, "redeId", "apiUrl", "instanceName", "instanceToken", "ownerId", status, "phoneNumber")
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING * `,
                 [newId, redeId, apiUrl, instanceName, instanceToken, ownerId, status || 'Disconnected', phoneNumber]
             );
             return result.rows[0];

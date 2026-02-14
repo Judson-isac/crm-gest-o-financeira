@@ -29,7 +29,7 @@ async function fetchEvolution(endpoint: string, method: string = 'GET', body?: a
 
 export async function checkInstanceStatus(instanceName: string, baseUrl?: string, token?: string) {
     try {
-        const data = await fetchEvolution(`/instance/connectionStatus/${instanceName}`, 'GET', undefined, baseUrl, token);
+        const data = await fetchEvolution(`/instance/connectionState/${instanceName}`, 'GET', undefined, baseUrl, token);
         return data.instance.state; // 'open', 'close', etc.
     } catch (error) {
         console.error('Error checking instance status:', error);
