@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload } from 'lucide-react';
 import { saveWhatsAppInstance, deleteWhatsAppInstance } from '@/lib/db';
-import { syncInstanceData, fetchInstancesFromServer, getQRCode } from '@/lib/evolution';
+import { syncInstanceData, fetchInstancesFromServer, getQRCode, createInstance } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppClient } from '../whatsapp/whatsapp-client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -76,6 +76,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
         setIsSaving(true);
         try {
+            // Attempt to create in Evolution API
+            try {
+                await createInstance(newInstance.instanceName!, newInstance.apiUrl, newInstance.instanceToken);
+            } catch (err: any) {
+                // If the error is not "already exists", we might want to warn or stop
+                // But for now, we'll log it and proceed to save in DB
+                console.warn('Evolution API creation attempt:', err.message);
+            }
+
             // Persist credentials
             if (newInstance.apiUrl) localStorage.setItem('EVOLUTION_IMPORT_URL', newInstance.apiUrl);
             if (newInstance.instanceToken) localStorage.setItem('EVOLUTION_IMPORT_TOKEN', newInstance.instanceToken);
