@@ -61,11 +61,16 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         accountId: '',
         nameInbox: 'Evolution',
         organization: 'Evolution Bot',
+        logo: '',
         signMsg: true,
+        signDelimiter: '\n',
         reopenConversation: true,
+        conversationPending: false,
         importContacts: true,
         importMessages: true,
-        daysLimitImportMessages: 3
+        daysLimitImportMessages: 7,
+        autoCreate: true,
+        ignoreJids: ''
     });
 
     // Load persisted import credentials
@@ -616,6 +621,43 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         />
                                                         <Label>Assinar Mensagens</Label>
                                                     </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Separador da Assinatura</Label>
+                                                        <Input
+                                                            placeholder="\n"
+                                                            value={chatwootConfig.signDelimiter}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, signDelimiter: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Link do Logo</Label>
+                                                    <Input
+                                                        placeholder="URL da imagem"
+                                                        value={chatwootConfig.logo}
+                                                        onChange={(e) => setChatwootConfig({ ...chatwootConfig, logo: e.target.value })}
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.conversationPending}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, conversationPending: v })}
+                                                        />
+                                                        <Label>Conversa Pendente</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.reopenConversation}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, reopenConversation: v })}
+                                                        />
+                                                        <Label>Reabrir Conversa</Label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
                                                     <div className="flex items-center gap-2">
                                                         <Switch
                                                             checked={chatwootConfig.importContacts}
@@ -630,6 +672,34 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         />
                                                         <Label>Importar Mensagens</Label>
                                                     </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Limite de Dias (Importação)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={chatwootConfig.daysLimitImportMessages}
+                                                            onChange={(e) => setChatwootConfig({ ...chatwootConfig, daysLimitImportMessages: parseInt(e.target.value) || 0 })}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={chatwootConfig.autoCreate}
+                                                            onCheckedChange={(v) => setChatwootConfig({ ...chatwootConfig, autoCreate: v })}
+                                                        />
+                                                        <Label>Auto Create (Inbox)</Label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Ignorar JIDs</Label>
+                                                    <Input
+                                                        placeholder="Ex: 1234567890@s.whatsapp.net, 0987654321@s.whatsapp.net"
+                                                        value={chatwootConfig.ignoreJids}
+                                                        onChange={(e) => setChatwootConfig({ ...chatwootConfig, ignoreJids: e.target.value })}
+                                                    />
+                                                    <p className="text-xs text-muted-foreground italic">Separe múltiplos JIDs por vírgula.</p>
                                                 </div>
                                             </div>
                                         )}

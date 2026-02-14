@@ -81,6 +81,9 @@ export async function createInstance(
         daysLimitImportMessages?: number;
         organization?: string;
         logo?: string;
+        signDelimiter?: string;
+        autoCreate?: boolean;
+        ignoreJids?: string;
     }
 ) {
     try {
@@ -97,6 +100,7 @@ export async function createInstance(
             body.chatwootToken = chatwoot.token;
             body.chatwootUrl = chatwoot.url;
             body.chatwootSignMsg = chatwoot.signMsg ?? true;
+            body.chatwootSignDelimiter = chatwoot.signDelimiter || '\n';
             body.chatwootReopenConversation = chatwoot.reopenConversation ?? true;
             body.chatwootConversationPending = chatwoot.conversationPending ?? false;
             body.chatwootImportContacts = chatwoot.importContacts ?? true;
@@ -105,7 +109,9 @@ export async function createInstance(
             body.chatwootImportMessages = chatwoot.importMessages ?? true;
             body.chatwootDaysLimitImportMessages = chatwoot.daysLimitImportMessages ?? 3;
             body.chatwootOrganization = chatwoot.organization || 'Evolution Bot';
-            body.chatwootLogo = chatwoot.logo || 'https://evolution-api.com/files/evolution-api-favicon.png';
+            body.chatwootLogo = chatwoot.logo || '';
+            body.chatwootAutoCreate = chatwoot.autoCreate ?? true;
+            body.chatwootIgnoreJids = chatwoot.ignoreJids || '';
         }
 
         return await fetchEvolution('/instance/create', 'POST', body, baseUrl, token);
@@ -231,6 +237,9 @@ export async function setChatwoot(
         daysLimitImportMessages?: number;
         organization?: string;
         logo?: string;
+        signDelimiter?: string;
+        autoCreate?: boolean;
+        ignoreJids?: string;
     },
     baseUrl?: string,
     token?: string
@@ -242,6 +251,7 @@ export async function setChatwoot(
             token: config.token,
             url: config.url,
             signMsg: config.signMsg ?? true,
+            signDelimiter: config.signDelimiter || '\n',
             reopenConversation: config.reopenConversation ?? true,
             conversationPending: config.conversationPending ?? false,
             importContacts: config.importContacts ?? true,
@@ -250,7 +260,9 @@ export async function setChatwoot(
             importMessages: config.importMessages ?? true,
             daysLimitImportMessages: config.daysLimitImportMessages ?? 3,
             organization: config.organization || 'Evolution Bot',
-            logo: config.logo || 'https://evolution-api.com/files/evolution-api-favicon.png'
+            logo: config.logo || '',
+            autoCreate: config.autoCreate ?? true,
+            ignoreJids: config.ignoreJids || ''
         };
         return await fetchEvolution(`/chatwoot/set/${instanceName.trim()}`, 'POST', body, baseUrl, token);
     } catch (error) {
