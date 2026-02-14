@@ -54,7 +54,23 @@ docker stack deploy -c docker-compose.prod.yml crm
 echo "⏳ 6. Aguardando serviço iniciar..."
 sleep 10
 
-# 7. Mostrar logs
-echo "📋 7. Mostrando logs (Ctrl+C para sair)..."
+# 7. Rodar migrações de banco
+echo "🗄️  7. Rodando migrações de banco..."
+PG_CONTAINER=$(docker ps -q -f name=pgvector | head -n 1)
+if [ ! -z "$PG_CONTAINER" ]; then
+    echo "🐘 Executando SQL no container $PG_CONTAINER..."
+    # Se o arquivo existir localmente, podemos enviá-lo para o container
+    if [ -f migration_whatsapp_nullable.sql ]; then
+        docker exec -i $PG_CONTAINER psql -U crm_user -d crm_gestao < migration_whatsapp_nullable.sql
+    else
+        docker exec -i $PG_CONTAINER psql -U crm_user -d crm_gestao -c 'ALTER TABLE whatsapp_instances ALTER COLUMN "redeId" DROP NOT NULL;'
+    fi
+    echo "✅ Migração concluída."
+else
+    echo "⚠️  Não foi possível encontrar o container do banco de dados (pgvector) para rodar migrações."
+fi
+
+# 8. Mostrar logs
+echo "📋 8. Mostrando logs (Ctrl+C para sair)..."
 echo "=========================================="
 docker service logs crm_crm -f
