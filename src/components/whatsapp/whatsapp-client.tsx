@@ -9,17 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { RefreshCw, LogOut, Smartphone, AlertCircle } from 'lucide-react';
 import { getQRCode, logoutInstance, syncInstanceData, createInstance } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface WhatsAppClientProps {
     instance: WhatsAppInstance | null;
 }
 
 export function WhatsAppClient({ instance }: WhatsAppClientProps) {
+    const router = useRouter();
     const { toast } = useToast();
     const [status, setStatus] = useState(instance?.status || 'Disconnected');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [needsCreation, setNeedsCreation] = useState(false);
+
+    // Update local status when prop changes
+    useEffect(() => {
+        if (instance?.status) {
+            setStatus(instance.status);
+        }
+    }, [instance?.status]);
 
     useEffect(() => {
         if (instance?.id) {
@@ -83,8 +92,15 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
     const handleRefresh = async () => {
         if (!instance) return;
         setLoading(true);
-        await syncInstanceData(instance.id);
-        setLoading(false);
+        try {
+            const newStatus = await syncInstanceData(instance.id);
+            if (newStatus) setStatus(newStatus);
+            router.refresh(); // Refresh parent data
+        } catch (error) {
+            console.error('Refresh error:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!instance) {
@@ -119,7 +135,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/50">
+                        <div className="flex flex-col items-center justify-center min-h-[300px] p-6 border-2 border-dashed rounded-lg bg-muted/50">
                             {status === 'open' ? (
                                 <div className="text-center space-y-4">
                                     <Avatar className="h-20 w-20 border-2 border-green-200">
@@ -146,9 +162,9 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                                 </div>
                             ) : qrCode ? (
                                 <div className="text-center space-y-4">
-                                    <div className="bg-white p-2 rounded shadow-sm">
+                                    <div className="bg-white p-2 rounded shadow-sm mx-auto flex justify-center items-center w-fit">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
+                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64 block" />
                                     </div>
                                     <p className="text-sm text-muted-foreground">Abra o WhatsApp {'>'} Aparelhos Conectados {'>'} Conectar Aparelho</p>
                                     <Button variant="outline" size="sm" onClick={() => setQrCode(null)}>Cancelar</Button>

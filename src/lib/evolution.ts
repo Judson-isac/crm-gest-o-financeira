@@ -221,8 +221,10 @@ export async function syncInstanceData(id: string) {
         revalidatePath('/whatsapp');
         revalidatePath('/superadmin/whatsapp');
 
+        return status;
     } catch (error) {
         console.error('Error syncing instance data:', error);
+        return 'Disconnected';
     }
 }
 export async function syncAllInstances(redeId?: string) {
