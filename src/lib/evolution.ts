@@ -25,7 +25,13 @@ async function fetchEvolution(endpoint: string, method: string = 'GET', body?: a
             let errorMessage = `Evolution API error: ${response.statusText}`;
             try {
                 const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorJson.error?.message || JSON.stringify(errorJson);
+
+                // Specific handling for common errors
+                if (response.status === 403 && errorText.includes('already in use')) {
+                    errorMessage = 'Este nome de instância já está em uso no servidor. Por favor, escolha outro nome.';
+                } else {
+                    errorMessage = errorJson.message || errorJson.error?.message || JSON.stringify(errorJson);
+                }
             } catch (e) {
                 errorMessage = errorText || errorMessage;
             }

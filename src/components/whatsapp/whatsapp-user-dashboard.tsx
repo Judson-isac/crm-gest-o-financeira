@@ -6,14 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { WhatsAppClient } from './whatsapp-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Smartphone, ChevronRight, RefreshCw, Plus } from 'lucide-react';
 import { syncAllInstances, syncInstanceData, createUserInstance } from '@/lib/evolution';
+import { deleteWhatsAppInstance } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import { Smartphone, ChevronRight, RefreshCw, Plus, Trash2 } from 'lucide-react';
 
 interface WhatsAppUserDashboardProps {
     instances: WhatsAppInstance[];
@@ -57,6 +58,22 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao sincronizar' });
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const handleDeleteInstance = async (e: React.MouseEvent, instance: WhatsAppInstance) => {
+        e.stopPropagation();
+        if (!confirm(`Tem certeza que deseja excluir a instância "${instance.instanceName}"? Isso também a removerá do servidor Evolution API.`)) return;
+
+        setIsSaving(true);
+        try {
+            await deleteWhatsAppInstance(instance.id);
+            toast({ title: 'Sucesso', description: 'Instância excluída com sucesso!' });
+            router.refresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao excluir instância' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -230,16 +247,28 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                                         <p className="text-xs text-muted-foreground">Clique para gerenciar</p>
                                     </div>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={(e) => handleSyncOne(e, instance.id)}
-                                        disabled={isSyncing}
-                                        title="Sincronizar"
-                                    >
-                                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                                    </Button>
+                                    <div className="flex flex-col gap-2 absolute right-2 bottom-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={(e) => handleDeleteInstance(e, instance)}
+                                            disabled={isSaving}
+                                            title="Excluir Instância"
+                                        >
+                                            <Trash2 size={14} />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => handleSyncOne(e, instance.id)}
+                                            disabled={isSyncing}
+                                            title="Sincronizar"
+                                        >
+                                            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
