@@ -221,7 +221,7 @@ export async function syncAllInstances(redeId?: string) {
     revalidatePath('/superadmin/whatsapp');
 }
 
-export async function createUserInstance(instanceName: string, redeId: string, ownerId: string) {
+export async function createUserInstance(instanceName: string, redeId: string, ownerId: string, inboxName?: string) {
     const { getRedeById } = await import('./db');
     const rede = await getRedeById(redeId);
 
@@ -233,12 +233,18 @@ export async function createUserInstance(instanceName: string, redeId: string, o
         throw new Error('Configuração de API pendente. Contate o suporte.');
     }
 
+    // Merge custom inbox name if provided
+    const chatwootConfig = {
+        ...(rede.whatsapp_chatwoot_config || {}),
+        nameInbox: inboxName || rede.whatsapp_chatwoot_config?.nameInbox || instanceName
+    };
+
     // Create in Evolution API
     await createInstance(
         instanceName,
         rede.whatsapp_api_url,
         rede.whatsapp_api_token,
-        rede.whatsapp_chatwoot_config
+        chatwootConfig
     );
 
     // Save to local database

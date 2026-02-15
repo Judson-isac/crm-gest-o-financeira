@@ -28,6 +28,7 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [newInstanceName, setNewInstanceName] = useState('');
+    const [newInboxName, setNewInboxName] = useState('');
     const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(
         instances.length === 1 ? instances[0] : null
     );
@@ -67,10 +68,11 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
 
         setIsSaving(true);
         try {
-            await createUserInstance(newInstanceName, user.redeId, user.id);
+            await createUserInstance(newInstanceName, user.redeId, user.id, newInboxName);
             toast({ title: 'Sucesso', description: 'Instância criada com sucesso!' });
             setIsAddOpen(false);
             setNewInstanceName('');
+            setNewInboxName('');
             router.refresh();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Erro ao criar instância' });
@@ -154,6 +156,16 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                                             onChange={(e) => setNewInstanceName(e.target.value)}
                                         />
                                         <p className="text-xs text-muted-foreground">Este nome ajudará você a identificar a conexão.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="inbox">Nome da Inbox (Chatwoot)</Label>
+                                        <Input
+                                            id="inbox"
+                                            placeholder="Ex: Comercial, Atendimento..."
+                                            value={newInboxName}
+                                            onChange={(e) => setNewInboxName(e.target.value)}
+                                        />
+                                        <p className="text-xs text-muted-foreground italic">Deixe vazio para usar o padrão da rede.</p>
                                     </div>
                                 </div>
                                 <DialogFooter>

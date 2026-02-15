@@ -833,7 +833,17 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                     <Label>Rede de Destino</Label>
                                     <Select
                                         value={importData.redeId}
-                                        onValueChange={(v) => setImportData({ ...importData, redeId: v })}
+                                        onValueChange={(v) => {
+                                            const rede = redes.find(r => r.id === v);
+                                            const profile = globalProfiles.find(p => p.id === rede?.whatsapp_profile_id);
+
+                                            setImportData({
+                                                ...importData,
+                                                redeId: v,
+                                                url: profile?.api_url || rede?.whatsapp_api_url || importData.url,
+                                                token: profile?.api_token || rede?.whatsapp_api_token || importData.token
+                                            });
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Selecione a rede" />
@@ -894,7 +904,32 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             <Label>Rede</Label>
                                             <Select
                                                 value={newInstance.redeId}
-                                                onValueChange={(v) => setNewInstance({ ...newInstance, redeId: v })}
+                                                onValueChange={(v) => {
+                                                    const rede = redes.find(r => r.id === v);
+                                                    const profile = globalProfiles.find(p => p.id === rede?.whatsapp_profile_id);
+
+                                                    const finalApiUrl = profile?.api_url || rede?.whatsapp_api_url || newInstance.apiUrl;
+                                                    const finalApiToken = profile?.api_token || rede?.whatsapp_api_token || newInstance.instanceToken;
+
+                                                    const finalChatwootConfig = {
+                                                        ...chatwootConfig,
+                                                        ...(profile?.chatwoot_config || {}),
+                                                        ...(rede?.whatsapp_chatwoot_config || {}),
+                                                        nameInbox: chatwootConfig.nameInbox || profile?.chatwoot_config?.nameInbox || rede?.whatsapp_chatwoot_config?.nameInbox || newInstance.instanceName
+                                                    };
+
+                                                    setNewInstance({
+                                                        ...newInstance,
+                                                        redeId: v,
+                                                        apiUrl: finalApiUrl,
+                                                        instanceToken: finalApiToken
+                                                    });
+
+                                                    if (profile || (rede?.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0)) {
+                                                        setIsChatwootEnabled(true);
+                                                        setChatwootConfig(finalChatwootConfig);
+                                                    }
+                                                }}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione a rede" />
@@ -931,6 +966,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 onChange={(e) => setNewInstance({ ...newInstance, apiUrl: e.target.value })}
                                             />
                                             <p className="text-xs text-muted-foreground italic">Se vazio, usará a URL padrão configurada no servidor.</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Nome da Inbox (Chatwoot)</Label>
+                                            <Input
+                                                placeholder="Ex: Comercial, Suporte..."
+                                                value={chatwootConfig.nameInbox}
+                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, nameInbox: e.target.value })}
+                                            />
+                                            <p className="text-xs text-muted-foreground italic">Identificador único da inbox no Chatwoot.</p>
                                         </div>
                                     </TabsContent>
                                     <TabsContent value="chatwoot" className="py-4">
