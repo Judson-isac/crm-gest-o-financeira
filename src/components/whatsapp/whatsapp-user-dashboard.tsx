@@ -96,14 +96,19 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
 
         setIsSaving(true);
         try {
-            await createUserInstance(newInstanceName, user.redeId, user.id, newInboxName);
-            toast({ title: 'Sucesso', description: 'Instância criada com sucesso!' });
-            setIsAddOpen(false);
-            setNewInstanceName('');
-            setNewInboxName('');
-            router.refresh();
+            const result = await createUserInstance(newInstanceName, user.redeId, user.id, newInboxName);
+
+            if (result.success) {
+                toast({ title: 'Sucesso', description: 'Instância criada com sucesso!' });
+                setIsAddOpen(false);
+                setNewInstanceName('');
+                setNewInboxName('');
+                router.refresh();
+            } else {
+                toast({ variant: 'destructive', title: 'Erro', description: result.error || 'Erro ao criar instância' });
+            }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Erro ao criar instância' });
+            toast({ variant: 'destructive', title: 'Erro', description: 'Erro inesperado ao criar instância' });
         } finally {
             setIsSaving(false);
         }

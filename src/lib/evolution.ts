@@ -240,43 +240,48 @@ export async function syncAllInstances(redeId?: string) {
 }
 
 export async function createUserInstance(instanceName: string, redeId: string, ownerId: string, inboxName?: string) {
-    const { getRedeById } = await import('./db');
-    const rede = await getRedeById(redeId);
+    try {
+        const { getRedeById } = await import('./db');
+        const rede = await getRedeById(redeId);
 
-    if (!rede || !rede.whatsapp_enabled) {
-        throw new Error('Criação de instância não habilitada para sua rede.');
+        if (!rede || !rede.whatsapp_enabled) {
+            return { success: false, error: 'Criação de instância não habilitada para sua rede.' };
+        }
+
+        if (!rede.whatsapp_api_url || !rede.whatsapp_api_token) {
+            return { success: false, error: 'Configuração de API pendente. Contate o suporte.' };
+        }
+
+        // Merge custom inbox name if provided
+        const chatwootConfig = {
+            ...(rede.whatsapp_chatwoot_config || {}),
+            nameInbox: inboxName || rede.whatsapp_chatwoot_config?.nameInbox || instanceName
+        };
+
+        // Create in Evolution API
+        await createInstance(
+            instanceName,
+            rede.whatsapp_api_url,
+            rede.whatsapp_api_token,
+            chatwootConfig
+        );
+
+        // Save to local database
+        const saved = await saveWhatsAppInstance({
+            instanceName,
+            redeId,
+            ownerId,
+            apiUrl: rede.whatsapp_api_url,
+            instanceToken: rede.whatsapp_api_token,
+            status: 'close'
+        });
+
+        revalidatePath('/whatsapp');
+        return { success: true, data: saved };
+    } catch (error: any) {
+        console.error('Error in createUserInstance:', error);
+        return { success: false, error: error.message || 'Erro desconhecido ao criar instância' };
     }
-
-    if (!rede.whatsapp_api_url || !rede.whatsapp_api_token) {
-        throw new Error('Configuração de API pendente. Contate o suporte.');
-    }
-
-    // Merge custom inbox name if provided
-    const chatwootConfig = {
-        ...(rede.whatsapp_chatwoot_config || {}),
-        nameInbox: inboxName || rede.whatsapp_chatwoot_config?.nameInbox || instanceName
-    };
-
-    // Create in Evolution API
-    await createInstance(
-        instanceName,
-        rede.whatsapp_api_url,
-        rede.whatsapp_api_token,
-        chatwootConfig
-    );
-
-    // Save to local database
-    const saved = await saveWhatsAppInstance({
-        instanceName,
-        redeId,
-        ownerId,
-        apiUrl: rede.whatsapp_api_url,
-        instanceToken: rede.whatsapp_api_token,
-        status: 'close'
-    });
-
-    revalidatePath('/whatsapp');
-    return saved;
 }
 
 export async function setChatwoot(
