@@ -142,7 +142,7 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
                         <div className="flex flex-col items-center justify-center min-h-[300px] p-6 border-2 border-dashed rounded-lg bg-muted/50">
                             {status === 'open' ? (
                                 <div className="text-center space-y-4">
-                                    <Avatar className="h-20 w-20 border-2 border-green-200">
+                                    <Avatar className="h-20 w-20 border-2 border-green-200 mx-auto">
                                         <AvatarImage src={instance.profilePicUrl} alt={instance.instanceName} />
                                         <AvatarFallback className="bg-green-100">
                                             <Smartphone size={40} className="text-green-600" />
