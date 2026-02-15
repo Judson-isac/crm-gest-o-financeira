@@ -110,7 +110,9 @@ export type Rede = {
   whatsapp_api_url?: string;
   whatsapp_api_token?: string;
   whatsapp_chatwoot_config?: any;
-  whatsapp_profile_id?: string;
+  whatsapp_profile_id?: string; // Legacy
+  whatsapp_evolution_profile_id?: string;
+  whatsapp_chatwoot_profile_id?: string;
 };
 
 export type WhatsAppProfile = {
@@ -119,6 +121,7 @@ export type WhatsAppProfile = {
   api_url?: string;
   api_token?: string;
   chatwoot_config?: any;
+  type: 'evolution' | 'chatwoot' | 'both';
   created_at?: Date;
   updated_at?: Date;
 };

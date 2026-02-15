@@ -575,25 +575,23 @@ export async function getRedes(): Promise<Rede[]> {
     try {
         const result = await client.query(`
             SELECT r.*, 
-                   p.api_url as profile_api_url, 
-                   p.api_token as profile_api_token, 
-                   p.chatwoot_config as profile_chatwoot_config
+                   ep.api_url as ep_api_url, 
+                   ep.api_token as ep_api_token, 
+                   cp.chatwoot_config as cp_chatwoot_config
             FROM redes r
-            LEFT JOIN whatsapp_profiles p ON r.whatsapp_profile_id = p.id
+            LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id
+            LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id
         `);
         return result.rows.map(row => {
-            if (row.whatsapp_profile_id) {
-                return {
-                    ...row,
-                    whatsapp_api_url: row.profile_api_url || row.whatsapp_api_url,
-                    whatsapp_api_token: row.profile_api_token || row.whatsapp_api_token,
-                    whatsapp_chatwoot_config: {
-                        ...(row.profile_chatwoot_config || {}),
-                        ...(row.whatsapp_chatwoot_config || {})
-                    }
-                };
-            }
-            return row;
+            return {
+                ...row,
+                whatsapp_api_url: row.ep_api_url || row.whatsapp_api_url,
+                whatsapp_api_token: row.ep_api_token || row.whatsapp_api_token,
+                whatsapp_chatwoot_config: {
+                    ...(row.cp_chatwoot_config || {}),
+                    ...(row.whatsapp_chatwoot_config || {})
+                }
+            };
         });
     } finally {
         client.release();
@@ -605,29 +603,27 @@ export async function getRedeById(id: string): Promise<Rede | null> {
     try {
         const result = await client.query(`
             SELECT r.*, 
-                   p.api_url as profile_api_url, 
-                   p.api_token as profile_api_token, 
-                   p.chatwoot_config as profile_chatwoot_config
+                   ep.api_url as ep_api_url, 
+                   ep.api_token as ep_api_token, 
+                   cp.chatwoot_config as cp_chatwoot_config
             FROM redes r
-            LEFT JOIN whatsapp_profiles p ON r.whatsapp_profile_id = p.id
+            LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id
+            LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id
             WHERE r.id = $1
         `, [id]);
 
         if (result.rows.length === 0) return null;
         const row = result.rows[0];
 
-        if (row.whatsapp_profile_id) {
-            return {
-                ...row,
-                whatsapp_api_url: row.profile_api_url || row.whatsapp_api_url,
-                whatsapp_api_token: row.profile_api_token || row.whatsapp_api_token,
-                whatsapp_chatwoot_config: {
-                    ...(row.profile_chatwoot_config || {}),
-                    ...(row.whatsapp_chatwoot_config || {})
-                }
-            };
-        }
-        return row;
+        return {
+            ...row,
+            whatsapp_api_url: row.ep_api_url || row.whatsapp_api_url,
+            whatsapp_api_token: row.ep_api_token || row.whatsapp_api_token,
+            whatsapp_chatwoot_config: {
+                ...(row.cp_chatwoot_config || {}),
+                ...(row.whatsapp_chatwoot_config || {})
+            }
+        };
     } finally {
         client.release();
     }
@@ -638,7 +634,7 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     try {
         if (rede.id) {
             const result = await client.query(
-                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, whatsapp_enabled = $5, whatsapp_api_url = $6, whatsapp_api_token = $7, whatsapp_chatwoot_config = $8, whatsapp_profile_id = $9 WHERE id = $1 RETURNING *',
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, whatsapp_enabled = $5, whatsapp_api_url = $6, whatsapp_api_token = $7, whatsapp_chatwoot_config = $8, whatsapp_profile_id = $9, whatsapp_evolution_profile_id = $10, whatsapp_chatwoot_profile_id = $11 WHERE id = $1 RETURNING *',
                 [
                     rede.id,
                     rede.nome,
@@ -648,14 +644,16 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                     rede.whatsapp_api_url || null,
                     rede.whatsapp_api_token || null,
                     rede.whatsapp_chatwoot_config || {},
-                    rede.whatsapp_profile_id || null
+                    rede.whatsapp_profile_id || null,
+                    rede.whatsapp_evolution_profile_id || null,
+                    rede.whatsapp_chatwoot_profile_id || null
                 ]
             );
             return result.rows[0];
         } else {
             const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO redes (id, nome, polos, modulos, whatsapp_enabled, whatsapp_api_url, whatsapp_api_token, whatsapp_chatwoot_config, whatsapp_profile_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+                'INSERT INTO redes (id, nome, polos, modulos, whatsapp_enabled, whatsapp_api_url, whatsapp_api_token, whatsapp_chatwoot_config, whatsapp_profile_id, whatsapp_evolution_profile_id, whatsapp_chatwoot_profile_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
                 [
                     newId,
                     rede.nome,
@@ -665,7 +663,9 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                     rede.whatsapp_api_url || null,
                     rede.whatsapp_api_token || null,
                     rede.whatsapp_chatwoot_config || {},
-                    rede.whatsapp_profile_id || null
+                    rede.whatsapp_profile_id || null,
+                    rede.whatsapp_evolution_profile_id || null,
+                    rede.whatsapp_chatwoot_profile_id || null
                 ]
             );
 
@@ -2340,14 +2340,15 @@ export async function saveWhatsAppProfile(profile: Partial<WhatsAppProfile>): Pr
     try {
         if (profile.id) {
             const result = await client.query(
-                'UPDATE whatsapp_profiles SET name = $2, api_url = $3, api_token = $4, chatwoot_config = $5 WHERE id = $1 RETURNING *',
-                [profile.id, profile.name, profile.api_url, profile.api_token, profile.chatwoot_config || {}]
+                'UPDATE whatsapp_profiles SET name = $2, api_url = $3, api_token = $4, chatwoot_config = $5, type = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+                [profile.id, profile.name, profile.api_url || null, profile.api_token || null, profile.chatwoot_config || {}, profile.type || 'both']
             );
             return result.rows[0];
         } else {
+            const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO whatsapp_profiles (name, api_url, api_token, chatwoot_config) VALUES ($1, $2, $3, $4) RETURNING *',
-                [profile.name, profile.api_url, profile.api_token, profile.chatwoot_config || {}]
+                'INSERT INTO whatsapp_profiles (id, name, api_url, api_token, chatwoot_config, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [newId, profile.name, profile.api_url || null, profile.api_token || null, profile.chatwoot_config || {}, profile.type || 'both']
             );
             return result.rows[0];
         }
