@@ -2,7 +2,7 @@
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, MetaUsuario, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig, WhatsAppInstance } from './types';
+import type { FinancialRecord, Filters, SummaryData, Usuario, Funcao, Permissoes, Rede, Canal, Campanha, ProcessoSeletivo, NumeroProcessoSeletivo, Meta, Spacepoint, TipoCurso, Curso, Despesa, ImportInfo, UserPermissions, Matricula, MetaUsuario, RankingConfig, RankingMessage, SuperAdminStats, SystemConfig, WhatsAppInstance, WhatsAppProfile } from './types';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -578,9 +578,9 @@ export async function getRedes(): Promise<Rede[]> {
                    ep.api_url as ep_api_url, 
                    ep.api_token as ep_api_token, 
                    cp.chatwoot_config as cp_chatwoot_config
-            FROM redes r
-            LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id
-            LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id
+             FROM redes r
+             LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id::text
+             LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id::text
         `);
         return result.rows.map(row => {
             return {
