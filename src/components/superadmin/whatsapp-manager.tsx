@@ -558,29 +558,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                         </div>
 
                                         <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1">
-                                            <div className="space-y-2">
-                                                <Label>URL da Evolution API (Padrão)</Label>
-                                                <Input
-                                                    placeholder="https://api.suaevolution.com"
-                                                    value={redeConfig.apiUrl}
-                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiUrl: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Token da Evolution API (Padrão)</Label>
-                                                <Input
-                                                    type="password"
-                                                    placeholder="API Key"
-                                                    value={redeConfig.apiToken}
-                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiToken: e.target.value })}
-                                                />
-                                            </div>
-
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label>Perfil Evolution API</Label>
                                                     <Select
-                                                        value={redeConfig.evolutionProfileId}
+                                                        value={redeConfig.evolutionProfileId || "manual"}
                                                         onValueChange={(id) => {
                                                             const profile = globalProfiles.find(p => p.id === id);
                                                             if (profile) {
@@ -610,7 +592,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 <div className="space-y-2">
                                                     <Label>Perfil Chatwoot</Label>
                                                     <Select
-                                                        value={redeConfig.chatwootProfileId}
+                                                        value={redeConfig.chatwootProfileId || "manual"}
                                                         onValueChange={(id) => {
                                                             const profile = globalProfiles.find(p => p.id === id);
                                                             if (profile) {
@@ -635,6 +617,24 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>URL da Evolution API (Padrão)</Label>
+                                                <Input
+                                                    placeholder="https://api.suaevolution.com"
+                                                    value={redeConfig.apiUrl}
+                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiUrl: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Token da Evolution API (Padrão)</Label>
+                                                <Input
+                                                    type="password"
+                                                    placeholder="API Key"
+                                                    value={redeConfig.apiToken}
+                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiToken: e.target.value })}
+                                                />
                                             </div>
 
                                             <div className="pt-4 border-t">
@@ -853,6 +853,30 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Perfil Evolution API</Label>
+                                        <Select
+                                            onValueChange={(id) => {
+                                                const profile = globalProfiles.find(p => p.id === id);
+                                                if (profile) {
+                                                    setImportData({ ...importData, url: profile.api_url || importData.url, token: profile.api_token || importData.token });
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione perfil Evolution" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="manual">Manual</SelectItem>
+                                                {globalProfiles.filter(p => p.type === 'evolution' || p.type === 'both').map(p => (
+                                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
                                 <div className="space-y-2">
                                     <Label>URL do Servidor Evolution</Label>
                                     <Input
@@ -938,6 +962,52 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Perfil Evolution API</Label>
+                                                <Select
+                                                    onValueChange={(id) => {
+                                                        const profile = globalProfiles.find(p => p.id === id);
+                                                        if (profile) {
+                                                            setNewInstance({ ...newInstance, apiUrl: profile.api_url || newInstance.apiUrl, instanceToken: profile.api_token || newInstance.instanceToken });
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione perfil Evolution" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="manual">Manual</SelectItem>
+                                                        {globalProfiles.filter(p => p.type === 'evolution' || p.type === 'both').map(p => (
+                                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Perfil Chatwoot</Label>
+                                                <Select
+                                                    onValueChange={(id) => {
+                                                        const profile = globalProfiles.find(p => p.id === id);
+                                                        if (profile) {
+                                                            setIsChatwootEnabled(true);
+                                                            setChatwootConfig({ ...chatwootConfig, ...(profile.chatwoot_config || {}) });
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione perfil Chatwoot" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="manual">Manual</SelectItem>
+                                                        {globalProfiles.filter(p => p.type === 'chatwoot' || p.type === 'both').map(p => (
+                                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Nome da Instância</Label>
