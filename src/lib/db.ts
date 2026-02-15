@@ -573,8 +573,28 @@ export async function deleteFuncao(id: string): Promise<void> {
 export async function getRedes(): Promise<Rede[]> {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM redes');
-        return result.rows;
+        const result = await client.query(`
+            SELECT r.*, 
+                   p.api_url as profile_api_url, 
+                   p.api_token as profile_api_token, 
+                   p.chatwoot_config as profile_chatwoot_config
+            FROM redes r
+            LEFT JOIN whatsapp_profiles p ON r.whatsapp_profile_id = p.id
+        `);
+        return result.rows.map(row => {
+            if (row.whatsapp_profile_id) {
+                return {
+                    ...row,
+                    whatsapp_api_url: row.profile_api_url || row.whatsapp_api_url,
+                    whatsapp_api_token: row.profile_api_token || row.whatsapp_api_token,
+                    whatsapp_chatwoot_config: {
+                        ...(row.profile_chatwoot_config || {}),
+                        ...(row.whatsapp_chatwoot_config || {})
+                    }
+                };
+            }
+            return row;
+        });
     } finally {
         client.release();
     }
@@ -583,8 +603,31 @@ export async function getRedes(): Promise<Rede[]> {
 export async function getRedeById(id: string): Promise<Rede | null> {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM redes WHERE id = $1', [id]);
-        return result.rows[0] || null;
+        const result = await client.query(`
+            SELECT r.*, 
+                   p.api_url as profile_api_url, 
+                   p.api_token as profile_api_token, 
+                   p.chatwoot_config as profile_chatwoot_config
+            FROM redes r
+            LEFT JOIN whatsapp_profiles p ON r.whatsapp_profile_id = p.id
+            WHERE r.id = $1
+        `, [id]);
+
+        if (result.rows.length === 0) return null;
+        const row = result.rows[0];
+
+        if (row.whatsapp_profile_id) {
+            return {
+                ...row,
+                whatsapp_api_url: row.profile_api_url || row.whatsapp_api_url,
+                whatsapp_api_token: row.profile_api_token || row.whatsapp_api_token,
+                whatsapp_chatwoot_config: {
+                    ...(row.profile_chatwoot_config || {}),
+                    ...(row.whatsapp_chatwoot_config || {})
+                }
+            };
+        }
+        return row;
     } finally {
         client.release();
     }
@@ -595,7 +638,7 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     try {
         if (rede.id) {
             const result = await client.query(
-                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, whatsapp_enabled = $5, whatsapp_api_url = $6, whatsapp_api_token = $7, whatsapp_chatwoot_config = $8 WHERE id = $1 RETURNING *',
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, whatsapp_enabled = $5, whatsapp_api_url = $6, whatsapp_api_token = $7, whatsapp_chatwoot_config = $8, whatsapp_profile_id = $9 WHERE id = $1 RETURNING *',
                 [
                     rede.id,
                     rede.nome,
@@ -604,14 +647,15 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                     rede.whatsapp_enabled ?? false,
                     rede.whatsapp_api_url || null,
                     rede.whatsapp_api_token || null,
-                    rede.whatsapp_chatwoot_config || {}
+                    rede.whatsapp_chatwoot_config || {},
+                    rede.whatsapp_profile_id || null
                 ]
             );
             return result.rows[0];
         } else {
             const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO redes (id, nome, polos, modulos, whatsapp_enabled, whatsapp_api_url, whatsapp_api_token, whatsapp_chatwoot_config) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                'INSERT INTO redes (id, nome, polos, modulos, whatsapp_enabled, whatsapp_api_url, whatsapp_api_token, whatsapp_chatwoot_config, whatsapp_profile_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
                 [
                     newId,
                     rede.nome,
@@ -620,7 +664,8 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
                     rede.whatsapp_enabled ?? false,
                     rede.whatsapp_api_url || null,
                     rede.whatsapp_api_token || null,
-                    rede.whatsapp_chatwoot_config || {}
+                    rede.whatsapp_chatwoot_config || {},
+                    rede.whatsapp_profile_id || null
                 ]
             );
 
@@ -2268,3 +2313,54 @@ export async function deleteWhatsAppInstance(id: string): Promise<void> {
     }
 }
 
+// --- WhatsApp Profiles ---
+
+export async function getWhatsAppProfiles(): Promise<WhatsAppProfile[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM whatsapp_profiles ORDER BY name ASC');
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getWhatsAppProfileById(id: string): Promise<WhatsAppProfile | null> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM whatsapp_profiles WHERE id = $1', [id]);
+        return result.rows[0] || null;
+    } finally {
+        client.release();
+    }
+}
+
+export async function saveWhatsAppProfile(profile: Partial<WhatsAppProfile>): Promise<WhatsAppProfile> {
+    const client = await pool.connect();
+    try {
+        if (profile.id) {
+            const result = await client.query(
+                'UPDATE whatsapp_profiles SET name = $2, api_url = $3, api_token = $4, chatwoot_config = $5 WHERE id = $1 RETURNING *',
+                [profile.id, profile.name, profile.api_url, profile.api_token, profile.chatwoot_config || {}]
+            );
+            return result.rows[0];
+        } else {
+            const result = await client.query(
+                'INSERT INTO whatsapp_profiles (name, api_url, api_token, chatwoot_config) VALUES ($1, $2, $3, $4) RETURNING *',
+                [profile.name, profile.api_url, profile.api_token, profile.chatwoot_config || {}]
+            );
+            return result.rows[0];
+        }
+    } finally {
+        client.release();
+    }
+}
+
+export async function deleteWhatsAppProfile(id: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query('DELETE FROM whatsapp_profiles WHERE id = $1', [id]);
+    } finally {
+        client.release();
+    }
+}

@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from '@/components/ui/switch';
-import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload, Settings2, Save } from 'lucide-react';
-import { saveWhatsAppInstance, deleteWhatsAppInstance } from '@/lib/db';
+import { Square, CheckSquare, Search, Edit2, Trash2, Smartphone, Plus, RefreshCw, Upload, Settings2, Save, Globe } from 'lucide-react';
+import { saveWhatsAppInstance, deleteWhatsAppInstance, getWhatsAppProfiles, saveWhatsAppProfile, deleteWhatsAppProfile } from '@/lib/db';
 import { syncInstanceData, fetchInstancesFromServer, getQRCode, createInstance, setChatwoot } from '@/lib/evolution';
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppClient } from '../whatsapp/whatsapp-client';
@@ -74,6 +74,9 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
     });
 
     const [activeTab, setActiveTab] = useState('geral');
+    const [globalProfiles, setGlobalProfiles] = useState<any[]>([]);
+    const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+    const [editingProfile, setEditingProfile] = useState<any>(null);
 
     // Network Setup states
     const [isRedeConfigOpen, setIsRedeConfigOpen] = useState(false);
@@ -82,6 +85,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         enabled: false,
         apiUrl: '',
         apiToken: '',
+        profileId: '',
         chatwootConfig: {
             url: '',
             token: '',
@@ -131,6 +135,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 console.error('Error parsing Chatwoot profiles:', e);
             }
         }
+        const fetchGlobalProfiles = async () => {
+            try {
+                const profiles = await getWhatsAppProfiles();
+                setGlobalProfiles(profiles);
+            } catch (error) {
+                console.error('Error fetching global profiles:', error);
+            }
+        };
+        fetchGlobalProfiles();
     }, []);
 
     const saveChatwootProfile = (name: string) => {
@@ -210,7 +223,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 whatsapp_enabled: redeConfig.enabled,
                 whatsapp_api_url: redeConfig.apiUrl,
                 whatsapp_api_token: redeConfig.apiToken,
-                whatsapp_chatwoot_config: redeConfig.chatwootConfig
+                whatsapp_chatwoot_config: redeConfig.chatwootConfig,
+                whatsapp_profile_id: redeConfig.profileId || null
             });
 
             toast({ title: 'Sucesso', description: 'Configurações da rede salvas com sucesso' });
@@ -399,6 +413,31 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         }
     };
 
+    const handleSaveProfile = async () => {
+        if (!editingProfile?.name) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'O nome do perfil é obrigatório' });
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const saved = await saveWhatsAppProfile(editingProfile);
+            if (editingProfile.id) {
+                setGlobalProfiles(globalProfiles.map(p => p.id === saved.id ? saved : p));
+            } else {
+                setGlobalProfiles([...globalProfiles, saved]);
+            }
+            setIsProfileDialogOpen(false);
+            setEditingProfile(null);
+            toast({ title: 'Sucesso', description: 'Perfil global salvo' });
+            router.refresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao salvar perfil global' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 bg-background p-4 rounded-lg border shadow-sm">
@@ -487,9 +526,10 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                     enabled: rede.whatsapp_enabled ?? false,
                                                     apiUrl: finalApiUrl,
                                                     apiToken: finalApiToken,
+                                                    profileId: rede.whatsapp_profile_id ?? '',
                                                     chatwootConfig: (rede.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0)
-                                                        ? rede.whatsapp_chatwoot_config
-                                                        : chatwootConfig
+                                                        ? { ...chatwootConfig, ...rede.whatsapp_chatwoot_config }
+                                                        : { ...chatwootConfig }
                                                 });
                                             }
                                         }}
@@ -541,30 +581,74 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 <h4 className="font-medium mb-4 text-sm uppercase tracking-wider text-muted-foreground">Configurações Chatwoot (Padrão)</h4>
 
                                                 <div className="space-y-2 mb-4">
-                                                    <Label>Perfil de Credenciais</Label>
-                                                    <Select
-                                                        onValueChange={(id) => {
-                                                            const profile = chatwootProfiles.find(p => p.id === id);
-                                                            if (profile) {
-                                                                setRedeConfig({
-                                                                    ...redeConfig,
-                                                                    chatwootConfig: { ...profile.config }
-                                                                });
-                                                            }
-                                                        }}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecione um perfil salvo" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {chatwootProfiles.map(p => (
-                                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <Label>Perfil Global de Configuração</Label>
+                                                    <div className="flex gap-2">
+                                                        <Select
+                                                            value={redeConfig.profileId}
+                                                            onValueChange={(id) => {
+                                                                const profile = globalProfiles.find(p => p.id === id);
+                                                                if (profile) {
+                                                                    setRedeConfig({
+                                                                        ...redeConfig,
+                                                                        profileId: profile.id,
+                                                                        apiUrl: profile.api_url || redeConfig.apiUrl,
+                                                                        apiToken: profile.api_token || redeConfig.apiToken,
+                                                                        chatwootConfig: { ...redeConfig.chatwootConfig, ...(profile.chatwoot_config || {}) }
+                                                                    });
+                                                                } else {
+                                                                    setRedeConfig({ ...redeConfig, profileId: '' });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="flex-1">
+                                                                <SelectValue placeholder="Selecione um perfil global" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">Configuração Manual (Sem Perfil)</SelectItem>
+                                                                {globalProfiles.map(p => (
+                                                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {redeConfig.profileId && (
+                                                            <Button variant="outline" size="icon" onClick={() => setRedeConfig({ ...redeConfig, profileId: '' })} title="Usar Manual">
+                                                                <RefreshCw size={14} />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground italic">
+                                                        {redeConfig.profileId
+                                                            ? "Vinculado a um perfil global. Alterações no perfil refletirão aqui."
+                                                            : "Usando configuração manual específica para esta rede."}
+                                                    </p>
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Nome da Inbox</Label>
+                                                        <Input
+                                                            placeholder="Ex: WhatsApp Atendimento"
+                                                            value={redeConfig.chatwootConfig.nameInbox}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, nameInbox: e.target.value }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Organização</Label>
+                                                        <Input
+                                                            placeholder="Ex: Minha Empresa"
+                                                            value={redeConfig.chatwootConfig.organization}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, organization: e.target.value }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-4">
                                                     <div className="space-y-2">
                                                         <Label>URL do Chatwoot</Label>
                                                         <Input
@@ -586,6 +670,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         />
                                                     </div>
                                                 </div>
+
                                                 <div className="space-y-2 mt-4">
                                                     <Label>Token do Chatwoot</Label>
                                                     <Input
@@ -594,6 +679,127 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         onChange={(e) => setRedeConfig({
                                                             ...redeConfig,
                                                             chatwootConfig: { ...redeConfig.chatwootConfig, token: e.target.value }
+                                                        })}
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.signMsg}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, signMsg: v }
+                                                            })}
+                                                        />
+                                                        <Label>Assinar Mensagens</Label>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Separador</Label>
+                                                        <Input
+                                                            placeholder="\n"
+                                                            value={redeConfig.chatwootConfig.signDelimiter}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, signDelimiter: e.target.value }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 mt-4">
+                                                    <Label>Link do Logo</Label>
+                                                    <Input
+                                                        placeholder="URL da imagem"
+                                                        value={redeConfig.chatwootConfig.logo}
+                                                        onChange={(e) => setRedeConfig({
+                                                            ...redeConfig,
+                                                            chatwootConfig: { ...redeConfig.chatwootConfig, logo: e.target.value }
+                                                        })}
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.conversationPending}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, conversationPending: v }
+                                                            })}
+                                                        />
+                                                        <Label>Conversa Pendente</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.reopenConversation}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, reopenConversation: v }
+                                                            })}
+                                                        />
+                                                        <Label>Reabrir Conversa</Label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.importContacts}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, importContacts: v }
+                                                            })}
+                                                        />
+                                                        <Label>Importar Contatos</Label>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.importMessages}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, importMessages: v }
+                                                            })}
+                                                        />
+                                                        <Label>Importar Mensagens</Label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Limite Dias</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={redeConfig.chatwootConfig.daysLimitImportMessages}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: {
+                                                                    ...redeConfig.chatwootConfig,
+                                                                    daysLimitImportMessages: parseInt(e.target.value) || 0
+                                                                }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={redeConfig.chatwootConfig.autoCreate}
+                                                            onCheckedChange={(v) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, autoCreate: v }
+                                                            })}
+                                                        />
+                                                        <Label>Auto Create (Inbox)</Label>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 mt-4">
+                                                    <Label>Ignorar JIDs</Label>
+                                                    <Input
+                                                        placeholder="Ex: 1234567890@s.whatsapp.net"
+                                                        value={redeConfig.chatwootConfig.ignoreJids}
+                                                        onChange={(e) => setRedeConfig({
+                                                            ...redeConfig,
+                                                            chatwootConfig: { ...redeConfig.chatwootConfig, ignoreJids: e.target.value }
                                                         })}
                                                     />
                                                 </div>
@@ -930,134 +1136,421 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Instâncias Ativas</CardTitle>
-                    <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]">
-                                    <Button variant="ghost" size="icon" onClick={toggleSelectAll}>
-                                        {selectedIds.length === filteredInstances.length && filteredInstances.length > 0 ? (
-                                            <CheckSquare className="h-4 w-4" />
-                                        ) : (
-                                            <Square className="h-4 w-4" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>Rede</TableHead>
-                                <TableHead>Nome da Instância</TableHead>
-                                <TableHead>API URL</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Número</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredInstances.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                        Nenhuma instância encontrada.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredInstances.map((instance) => {
-                                    const rede = redes.find(r => r.id === instance.redeId);
-                                    return (
-                                        <TableRow key={instance.id} className={selectedIds.includes(instance.id) ? "bg-muted/50" : ""}>
-                                            <TableCell>
-                                                <Button variant="ghost" size="icon" onClick={() => toggleSelect(instance.id)}>
-                                                    {selectedIds.includes(instance.id) ? (
-                                                        <CheckSquare className="h-4 w-4" />
-                                                    ) : (
-                                                        <Square className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Select
-                                                    value={instance.redeId}
-                                                    onValueChange={async (newRedeId) => {
-                                                        try {
-                                                            const saved = await saveWhatsAppInstance({ id: instance.id, redeId: newRedeId });
-                                                            setInstances(instances.map(i => i.id === saved.id ? saved : i));
-                                                            toast({ title: 'Sucesso', description: 'Rede atualizada' });
-                                                            router.refresh();
-                                                        } catch (error) {
-                                                            toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao mudar rede' });
-                                                        }
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="h-8 text-xs w-[160px] bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0 px-2 font-medium">
-                                                        <div className="flex items-center gap-1.5 truncate">
-                                                            <div className="h-2 w-2 rounded-full flex-shrink-0 bg-blue-500" />
-                                                            <SelectValue>
-                                                                {rede?.nome || 'Desconhecida'}
-                                                            </SelectValue>
-                                                        </div>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {redes.map(r => (
-                                                            <SelectItem key={r.id} value={r.id}>
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                                                    {r.nome}
-                                                                </div>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-10 w-10 border">
-                                                        <AvatarImage src={instance.profilePicUrl} alt={instance.instanceName} />
-                                                        <AvatarFallback className="bg-muted">
-                                                            {instance.profileName ? instance.profileName.substring(0, 2).toUpperCase() : <Smartphone className="h-4 w-4 text-muted-foreground" />}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{instance.instanceName}</span>
-                                                        {instance.profileName && (
-                                                            <span className="text-xs text-muted-foreground">{instance.profileName}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
-                                                {instance.apiUrl || 'Padrão'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
-                                                    {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>{instance.phoneNumber || '-'}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <Button variant="ghost" size="icon" title="Conectar" onClick={() => setIsConnecting(instance)}>
-                                                        <Smartphone size={16} className="text-blue-600" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" title="Editar" onClick={() => setEditingInstance(instance)}>
-                                                        <Edit2 size={16} className="text-muted-foreground" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" title="Excluir" onClick={() => handleDelete(instance.id)}>
-                                                        <Trash2 size={16} className="text-destructive" />
-                                                    </Button>
-                                                </div>
+            <Tabs defaultValue="instances" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                    <TabsTrigger value="instances">Instâncias Ativas</TabsTrigger>
+                    <TabsTrigger value="profiles">Perfis Globais</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="instances" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Instâncias Ativas</CardTitle>
+                            <CardDescription>Configure aqui as conexões com a Evolution API para cada rede.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px]">
+                                            <Button variant="ghost" size="icon" onClick={toggleSelectAll}>
+                                                {selectedIds.length === filteredInstances.length && filteredInstances.length > 0 ? (
+                                                    <CheckSquare className="h-4 w-4" />
+                                                ) : (
+                                                    <Square className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </TableHead>
+                                        <TableHead>Rede</TableHead>
+                                        <TableHead>Nome da Instância</TableHead>
+                                        <TableHead>API URL</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Número</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredInstances.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                                Nenhuma instância encontrada.
                                             </TableCell>
                                         </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                    ) : (
+                                        filteredInstances.map((instance) => {
+                                            const rede = redes.find(r => r.id === instance.redeId);
+                                            return (
+                                                <TableRow key={instance.id} className={selectedIds.includes(instance.id) ? "bg-muted/50" : ""}>
+                                                    <TableCell>
+                                                        <Button variant="ghost" size="icon" onClick={() => toggleSelect(instance.id)}>
+                                                            {selectedIds.includes(instance.id) ? (
+                                                                <CheckSquare className="h-4 w-4" />
+                                                            ) : (
+                                                                <Square className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Select
+                                                            value={instance.redeId}
+                                                            onValueChange={async (newRedeId) => {
+                                                                try {
+                                                                    const saved = await saveWhatsAppInstance({ id: instance.id, redeId: newRedeId });
+                                                                    setInstances(instances.map(i => i.id === saved.id ? saved : i));
+                                                                    toast({ title: 'Sucesso', description: 'Rede atualizada' });
+                                                                    router.refresh();
+                                                                } catch (error) {
+                                                                    toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao mudar rede' });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="h-8 text-xs w-[160px] bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0 px-2 font-medium">
+                                                                <div className="flex items-center gap-1.5 truncate">
+                                                                    <div className="h-2 w-2 rounded-full flex-shrink-0 bg-blue-500" />
+                                                                    <SelectValue>
+                                                                        {rede?.nome || 'Desconhecida'}
+                                                                    </SelectValue>
+                                                                </div>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {redes.map(r => (
+                                                                    <SelectItem key={r.id} value={r.id}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                                                            {r.nome}
+                                                                        </div>
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="h-10 w-10 border">
+                                                                <AvatarImage src={instance.profilePicUrl} alt={instance.instanceName} />
+                                                                <AvatarFallback className="bg-muted">
+                                                                    {instance.profileName ? instance.profileName.substring(0, 2).toUpperCase() : <Smartphone className="h-4 w-4 text-muted-foreground" />}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{instance.instanceName}</span>
+                                                                {instance.profileName && (
+                                                                    <span className="text-xs text-muted-foreground">{instance.profileName}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="max-w-[150px] truncate" title={instance.apiUrl || 'Padrão'}>
+                                                        {instance.apiUrl || 'Padrão'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${instance.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                            }`}>
+                                                            {instance.status === 'open' ? 'Conectado' : 'Desconectado'}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>{instance.phoneNumber || '-'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Button variant="ghost" size="icon" title="Conectar" onClick={() => setIsConnecting(instance)}>
+                                                                <Smartphone size={16} className="text-blue-600" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" title="Editar" onClick={() => setEditingInstance(instance)}>
+                                                                <Edit2 size={16} className="text-muted-foreground" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" title="Excluir" onClick={() => handleDelete(instance.id)}>
+                                                                <Trash2 size={16} className="text-destructive" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="profiles" className="mt-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Perfis Globais de Configuração</CardTitle>
+                                <CardDescription>Gerencie credenciais reutilizáveis para Evolution API e Chatwoot.</CardDescription>
+                            </div>
+                            <Button size="sm" onClick={() => { setEditingProfile(null); setIsProfileDialogOpen(true); }}>
+                                <Plus size={16} className="mr-2" /> Novo Perfil
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nome do Perfil</TableHead>
+                                        <TableHead>Evolution API</TableHead>
+                                        <TableHead>Chatwoot Account</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {globalProfiles.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                                Nenhum perfil cadastrado.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        globalProfiles.map((profile) => (
+                                            <TableRow key={profile.id}>
+                                                <TableCell className="font-medium">{profile.name}</TableCell>
+                                                <TableCell className="text-xs truncate max-w-[200px]">{profile.api_url || 'Nenhum'}</TableCell>
+                                                <TableCell className="text-xs">{profile.chatwoot_config?.accountId || '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button variant="ghost" size="icon" onClick={() => { setEditingProfile(profile); setIsProfileDialogOpen(true); }}>
+                                                            <Edit2 size={16} />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={async () => {
+                                                            if (confirm('Excluir este perfil? Redes vinculadas perderão o vínculo.')) {
+                                                                await deleteWhatsAppProfile(profile.id);
+                                                                setGlobalProfiles(globalProfiles.filter(p => p.id !== profile.id));
+                                                                toast({ title: 'Perfil excluído' });
+                                                            }
+                                                        }}>
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            <Dialog open={isProfileDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsProfileDialogOpen(false);
+                    setEditingProfile(null);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                        <DialogTitle>{editingProfile?.id ? 'Editar Perfil Global' : 'Novo Perfil Global'}</DialogTitle>
+                        <CardDescription>Defina credenciais que serão compartilhadas e sincronizadas entre múltiplas redes.</CardDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1">
+                        <div className="space-y-4">
+                            <h4 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">Configurações Base</h4>
+                            <div className="space-y-2">
+                                <Label>Nome do Perfil</Label>
+                                <Input
+                                    placeholder="Ex: Credenciais Oficiais - Brazao"
+                                    value={editingProfile?.name || ''}
+                                    onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>URL da Evolution</Label>
+                                    <Input
+                                        placeholder="https://api..."
+                                        value={editingProfile?.api_url || ''}
+                                        onChange={(e) => setEditingProfile({ ...editingProfile, api_url: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Token da Evolution</Label>
+                                    <Input
+                                        type="password"
+                                        placeholder="API Key"
+                                        value={editingProfile?.api_token || ''}
+                                        onChange={(e) => setEditingProfile({ ...editingProfile, api_token: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t space-y-4">
+                            <h4 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">Configurações Chatwoot (Global)</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Nome da Inbox</Label>
+                                    <Input
+                                        value={editingProfile?.chatwoot_config?.nameInbox || ''}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, nameInbox: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Organização</Label>
+                                    <Input
+                                        value={editingProfile?.chatwoot_config?.organization || ''}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, organization: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>URL do Chatwoot</Label>
+                                    <Input
+                                        value={editingProfile?.chatwoot_config?.url || ''}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, url: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Account ID</Label>
+                                    <Input
+                                        value={editingProfile?.chatwoot_config?.accountId || ''}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, accountId: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Token do Chatwoot</Label>
+                                <Input
+                                    type="password"
+                                    value={editingProfile?.chatwoot_config?.token || ''}
+                                    onChange={(e) => setEditingProfile({
+                                        ...editingProfile,
+                                        chatwoot_config: { ...editingProfile?.chatwoot_config, token: e.target.value }
+                                    })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.signMsg ?? true}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, signMsg: v }
+                                        })}
+                                    />
+                                    <Label>Assinar Mensagens</Label>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Separador</Label>
+                                    <Input
+                                        placeholder="\n"
+                                        value={editingProfile?.chatwoot_config?.signDelimiter || ''}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, signDelimiter: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.autoCreate ?? true}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, autoCreate: v }
+                                        })}
+                                    />
+                                    <Label>Auto Create (Inbox)</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.reopenConversation ?? true}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, reopenConversation: v }
+                                        })}
+                                    />
+                                    <Label>Reabrir Conversa</Label>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.conversationPending ?? false}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, conversationPending: v }
+                                        })}
+                                    />
+                                    <Label>Conversa Pendente</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.importContacts ?? true}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, importContacts: v }
+                                        })}
+                                    />
+                                    <Label>Importar Contatos</Label>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <Switch
+                                        checked={editingProfile?.chatwoot_config?.importMessages ?? true}
+                                        onCheckedChange={(v) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, importMessages: v }
+                                        })}
+                                    />
+                                    <Label>Importar Mensagens</Label>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Limite Dias</Label>
+                                    <Input
+                                        type="number"
+                                        value={editingProfile?.chatwoot_config?.daysLimitImportMessages ?? 7}
+                                        onChange={(e) => setEditingProfile({
+                                            ...editingProfile,
+                                            chatwoot_config: { ...editingProfile?.chatwoot_config, daysLimitImportMessages: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Ignorar JIDs</Label>
+                                <Input
+                                    placeholder="Ex: 1234567890@s.whatsapp.net"
+                                    value={editingProfile?.chatwoot_config?.ignoreJids || ''}
+                                    onChange={(e) => setEditingProfile({
+                                        ...editingProfile,
+                                        chatwoot_config: { ...editingProfile?.chatwoot_config, ignoreJids: e.target.value }
+                                    })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsProfileDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSaveProfile} disabled={isSaving}>
+                            {isSaving ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                            Salvar Perfil
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={!!isConnecting} onOpenChange={(open) => !open && setIsConnecting(null)}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
