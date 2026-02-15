@@ -835,13 +835,11 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                         value={importData.redeId}
                                         onValueChange={(v) => {
                                             const rede = redes.find(r => r.id === v);
-                                            const profile = globalProfiles.find(p => p.id === rede?.whatsapp_profile_id);
-
                                             setImportData({
                                                 ...importData,
                                                 redeId: v,
-                                                url: profile?.api_url || rede?.whatsapp_api_url || '',
-                                                token: profile?.api_token || rede?.whatsapp_api_token || ''
+                                                url: rede?.whatsapp_api_url || '',
+                                                token: rede?.whatsapp_api_token || ''
                                             });
                                         }}
                                     >
@@ -906,16 +904,16 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                 value={newInstance.redeId}
                                                 onValueChange={(v) => {
                                                     const rede = redes.find(r => r.id === v);
-                                                    const profile = globalProfiles.find(p => p.id === rede?.whatsapp_profile_id);
 
-                                                    const finalApiUrl = profile?.api_url || rede?.whatsapp_api_url || '';
-                                                    const finalApiToken = profile?.api_token || rede?.whatsapp_api_token || '';
+                                                    // With the new db join, rede.whatsapp_api_url/token already contains the profile data
+                                                    const finalApiUrl = rede?.whatsapp_api_url || '';
+                                                    const finalApiToken = rede?.whatsapp_api_token || '';
 
+                                                    // For chatwoot, we merge the network's config (which already contains profile data via db)
                                                     const finalChatwootConfig = {
                                                         ...chatwootConfig,
-                                                        ...(profile?.chatwoot_config || {}),
                                                         ...(rede?.whatsapp_chatwoot_config || {}),
-                                                        nameInbox: chatwootConfig.nameInbox || profile?.chatwoot_config?.nameInbox || rede?.whatsapp_chatwoot_config?.nameInbox || newInstance.instanceName
+                                                        nameInbox: chatwootConfig.nameInbox || rede?.whatsapp_chatwoot_config?.nameInbox || newInstance.instanceName
                                                     };
 
                                                     setNewInstance({
@@ -925,7 +923,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                         instanceToken: finalApiToken
                                                     });
 
-                                                    if (profile || (rede?.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0)) {
+                                                    if (rede?.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0) {
                                                         setIsChatwootEnabled(true);
                                                         setChatwootConfig(finalChatwootConfig);
                                                     }
