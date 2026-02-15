@@ -619,31 +619,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                     </p>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Nome da Inbox</Label>
-                                                        <Input
-                                                            placeholder="Ex: WhatsApp Atendimento"
-                                                            value={redeConfig.chatwootConfig.nameInbox}
-                                                            onChange={(e) => setRedeConfig({
-                                                                ...redeConfig,
-                                                                chatwootConfig: { ...redeConfig.chatwootConfig, nameInbox: e.target.value }
-                                                            })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Organização</Label>
-                                                        <Input
-                                                            placeholder="Ex: Minha Empresa"
-                                                            value={redeConfig.chatwootConfig.organization}
-                                                            onChange={(e) => setRedeConfig({
-                                                                ...redeConfig,
-                                                                chatwootConfig: { ...redeConfig.chatwootConfig, organization: e.target.value }
-                                                            })}
-                                                        />
-                                                    </div>
-                                                </div>
-
                                                 <div className="grid grid-cols-2 gap-4 mt-4">
                                                     <div className="space-y-2">
                                                         <Label>URL do Chatwoot</Label>
@@ -1024,25 +999,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="space-y-2">
-                                                            <Label>Nome da Inbox</Label>
-                                                            <Input
-                                                                placeholder="Ex: WhatsApp Atendimento"
-                                                                value={chatwootConfig.nameInbox}
-                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, nameInbox: e.target.value })}
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Organização</Label>
-                                                            <Input
-                                                                placeholder="Ex: Minha Empresa"
-                                                                value={chatwootConfig.organization}
-                                                                onChange={(e) => setChatwootConfig({ ...chatwootConfig, organization: e.target.value })}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
                                                             <Label>URL do Chatwoot</Label>
                                                             <Input
                                                                 placeholder="https://chat.dominio.com"
@@ -1418,28 +1374,6 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                         <div className="pt-4 border-t space-y-4">
                             <h4 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">Configurações Chatwoot (Global)</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Nome da Inbox</Label>
-                                    <Input
-                                        value={editingProfile?.chatwoot_config?.nameInbox || ''}
-                                        onChange={(e) => setEditingProfile({
-                                            ...editingProfile,
-                                            chatwoot_config: { ...editingProfile?.chatwoot_config, nameInbox: e.target.value }
-                                        })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Organização</Label>
-                                    <Input
-                                        value={editingProfile?.chatwoot_config?.organization || ''}
-                                        onChange={(e) => setEditingProfile({
-                                            ...editingProfile,
-                                            chatwoot_config: { ...editingProfile?.chatwoot_config, organization: e.target.value }
-                                        })}
-                                    />
-                                </div>
-                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>URL do Chatwoot</Label>
