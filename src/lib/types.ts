@@ -106,6 +106,10 @@ export type Rede = {
   nome: string;
   polos: string[];
   modulos?: string[];
+  whatsapp_enabled?: boolean;
+  whatsapp_api_url?: string;
+  whatsapp_api_token?: string;
+  whatsapp_chatwoot_config?: any;
 };
 
 // --- Cadastros ---

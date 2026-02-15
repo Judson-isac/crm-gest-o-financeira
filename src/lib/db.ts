@@ -595,15 +595,33 @@ export async function saveRede(rede: Partial<Rede>): Promise<Rede> {
     try {
         if (rede.id) {
             const result = await client.query(
-                'UPDATE redes SET nome = $2, polos = $3, modulos = $4 WHERE id = $1 RETURNING *',
-                [rede.id, rede.nome, rede.polos || [], rede.modulos || []]
+                'UPDATE redes SET nome = $2, polos = $3, modulos = $4, whatsapp_enabled = $5, whatsapp_api_url = $6, whatsapp_api_token = $7, whatsapp_chatwoot_config = $8 WHERE id = $1 RETURNING *',
+                [
+                    rede.id,
+                    rede.nome,
+                    rede.polos || [],
+                    rede.modulos || [],
+                    rede.whatsapp_enabled ?? false,
+                    rede.whatsapp_api_url || null,
+                    rede.whatsapp_api_token || null,
+                    rede.whatsapp_chatwoot_config || {}
+                ]
             );
             return result.rows[0];
         } else {
             const newId = uuidv4();
             const result = await client.query(
-                'INSERT INTO redes (id, nome, polos, modulos) VALUES ($1, $2, $3, $4) RETURNING *',
-                [newId, rede.nome, rede.polos || [], rede.modulos || []]
+                'INSERT INTO redes (id, nome, polos, modulos, whatsapp_enabled, whatsapp_api_url, whatsapp_api_token, whatsapp_chatwoot_config) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+                [
+                    newId,
+                    rede.nome,
+                    rede.polos || [],
+                    rede.modulos || [],
+                    rede.whatsapp_enabled ?? false,
+                    rede.whatsapp_api_url || null,
+                    rede.whatsapp_api_token || null,
+                    rede.whatsapp_chatwoot_config || {}
+                ]
             );
 
             // Create default "Admin" role for this new network

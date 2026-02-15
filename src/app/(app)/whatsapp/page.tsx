@@ -12,10 +12,13 @@ export default async function WhatsAppPage() {
         redirect('/login');
     }
 
-    // Fetch instances for the user's network
-    const instances = await getWhatsAppInstances(user.redeId || undefined);
+    // Fetch instances and rede info for the user's network
+    const [instances, rede] = await Promise.all([
+        getWhatsAppInstances(user.redeId || undefined),
+        user.redeId ? (await import('@/lib/db')).getRedeById(user.redeId) : null
+    ]);
 
     return (
-        <WhatsAppUserDashboard instances={instances} />
+        <WhatsAppUserDashboard instances={instances} rede={rede} user={user} />
     );
 }

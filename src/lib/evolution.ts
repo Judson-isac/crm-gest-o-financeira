@@ -221,6 +221,40 @@ export async function syncAllInstances(redeId?: string) {
     revalidatePath('/superadmin/whatsapp');
 }
 
+export async function createUserInstance(instanceName: string, redeId: string, ownerId: string) {
+    const { getRedeById } = await import('./db');
+    const rede = await getRedeById(redeId);
+
+    if (!rede || !rede.whatsapp_enabled) {
+        throw new Error('Criação de instância não habilitada para sua rede.');
+    }
+
+    if (!rede.whatsapp_api_url || !rede.whatsapp_api_token) {
+        throw new Error('Configuração de API pendente. Contate o suporte.');
+    }
+
+    // Create in Evolution API
+    await createInstance(
+        instanceName,
+        rede.whatsapp_api_url,
+        rede.whatsapp_api_token,
+        rede.whatsapp_chatwoot_config
+    );
+
+    // Save to local database
+    const saved = await saveWhatsAppInstance({
+        instanceName,
+        redeId,
+        ownerId,
+        apiUrl: rede.whatsapp_api_url,
+        instanceToken: rede.whatsapp_api_token,
+        status: 'close'
+    });
+
+    revalidatePath('/whatsapp');
+    return saved;
+}
+
 export async function setChatwoot(
     instanceName: string,
     config: {

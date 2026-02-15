@@ -75,6 +75,32 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
     const [activeTab, setActiveTab] = useState('geral');
 
+    // Network Setup states
+    const [isRedeConfigOpen, setIsRedeConfigOpen] = useState(false);
+    const [selectedRedeToConfig, setSelectedRedeToConfig] = useState<Rede | null>(null);
+    const [redeConfig, setRedeConfig] = useState({
+        enabled: false,
+        apiUrl: '',
+        apiToken: '',
+        chatwootConfig: {
+            url: '',
+            token: '',
+            accountId: '',
+            nameInbox: '',
+            organization: '',
+            logo: '',
+            signMsg: true,
+            signDelimiter: '',
+            reopenConversation: true,
+            conversationPending: false,
+            importContacts: true,
+            importMessages: true,
+            daysLimitImportMessages: 7,
+            autoCreate: true,
+            ignoreJids: ''
+        }
+    });
+
     // Load persisted import credentials
     useEffect(() => {
         const savedUrl = localStorage.getItem('EVOLUTION_IMPORT_URL');
@@ -167,6 +193,31 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
             router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar instância' });
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSaveRedeConfig = async () => {
+        if (!selectedRedeToConfig) return;
+
+        setIsSaving(true);
+        try {
+            const { saveRede } = await import('@/lib/db');
+            await saveRede({
+                ...selectedRedeToConfig,
+                whatsapp_enabled: redeConfig.enabled,
+                whatsapp_api_url: redeConfig.apiUrl,
+                whatsapp_api_token: redeConfig.apiToken,
+                whatsapp_chatwoot_config: redeConfig.chatwootConfig
+            });
+
+            toast({ title: 'Sucesso', description: 'Configurações da rede salvas com sucesso' });
+            setIsRedeConfigOpen(false);
+            router.refresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar configurações da rede' });
             console.error(error);
         } finally {
             setIsSaving(false);
@@ -407,6 +458,130 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                         <RefreshCw size={16} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar Tudo
                     </Button>
 
+                    <Dialog open={isRedeConfigOpen} onOpenChange={setIsRedeConfigOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-2">
+                                <Settings2 size={16} /> Configurar Rede
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>Configurar Padrões da Rede</DialogTitle>
+                                <CardDescription>Defina os padrões de WhatsApp e Chatwoot para instâncias criadas por usuários desta rede.</CardDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Selecione a Rede</Label>
+                                    <Select
+                                        value={selectedRedeToConfig?.id}
+                                        onValueChange={(id) => {
+                                            const rede = redes.find(r => r.id === id);
+                                            if (rede) {
+                                                setSelectedRedeToConfig(rede);
+                                                setRedeConfig({
+                                                    enabled: rede.whatsapp_enabled ?? false,
+                                                    apiUrl: rede.whatsapp_api_url ?? '',
+                                                    apiToken: rede.whatsapp_api_token ?? '',
+                                                    chatwootConfig: (rede.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0)
+                                                        ? rede.whatsapp_chatwoot_config
+                                                        : chatwootConfig
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione uma rede" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {redes.map(r => (
+                                                <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {selectedRedeToConfig && (
+                                    <>
+                                        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base">Liberar Criação para Usuários</Label>
+                                                <p className="text-sm text-muted-foreground">Permite que usuários desta rede criem suas próprias instâncias.</p>
+                                            </div>
+                                            <Switch
+                                                checked={redeConfig.enabled}
+                                                onCheckedChange={(v) => setRedeConfig({ ...redeConfig, enabled: v })}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1">
+                                            <div className="space-y-2">
+                                                <Label>URL da Evolution API (Padrão)</Label>
+                                                <Input
+                                                    placeholder="https://api.suaevolution.com"
+                                                    value={redeConfig.apiUrl}
+                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiUrl: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Token da Evolution API (Padrão)</Label>
+                                                <Input
+                                                    type="password"
+                                                    placeholder="API Key"
+                                                    value={redeConfig.apiToken}
+                                                    onChange={(e) => setRedeConfig({ ...redeConfig, apiToken: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="pt-4 border-t">
+                                                <h4 className="font-medium mb-4 text-sm uppercase tracking-wider text-muted-foreground">Configurações Chatwoot (Padrão)</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>URL do Chatwoot</Label>
+                                                        <Input
+                                                            value={redeConfig.chatwootConfig.url}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, url: e.target.value }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Account ID</Label>
+                                                        <Input
+                                                            value={redeConfig.chatwootConfig.accountId}
+                                                            onChange={(e) => setRedeConfig({
+                                                                ...redeConfig,
+                                                                chatwootConfig: { ...redeConfig.chatwootConfig, accountId: e.target.value }
+                                                            })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 mt-4">
+                                                    <Label>Token do Chatwoot</Label>
+                                                    <Input
+                                                        type="password"
+                                                        value={redeConfig.chatwootConfig.token}
+                                                        onChange={(e) => setRedeConfig({
+                                                            ...redeConfig,
+                                                            chatwootConfig: { ...redeConfig.chatwootConfig, token: e.target.value }
+                                                        })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsRedeConfigOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleSaveRedeConfig} disabled={isSaving || !selectedRedeToConfig}>
+                                    {isSaving ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                                    Salvar Padrões
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
                     <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm" className="h-9 gap-2">
@@ -507,6 +682,7 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             <Label>Token da Instância (API Key)</Label>
                                             <Input
                                                 placeholder="Sua Global API Key"
+                                                type="password"
                                                 value={newInstance.instanceToken}
                                                 onChange={(e) => setNewInstance({ ...newInstance, instanceToken: e.target.value })}
                                             />
