@@ -33,6 +33,8 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
     const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(
         instances.length === 1 ? instances[0] : null
     );
+    const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'close'>('all');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleSyncAll = async () => {
         setIsSyncing(true);
@@ -76,6 +78,14 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
             setIsSaving(false);
         }
     };
+
+    const filteredInstances = instances.filter(i => {
+        const matchesStatus = statusFilter === 'all' || (statusFilter === 'open' ? i.status === 'open' : i.status !== 'open');
+        const matchesSearch = i.instanceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (i.phoneNumber && i.phoneNumber.includes(searchTerm)) ||
+            (i.profileName && i.profileName.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchesStatus && matchesSearch;
+    });
 
     const handleCreateInstance = async () => {
         if (!newInstanceName.trim()) {
@@ -195,7 +205,28 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                             </DialogContent>
                         </Dialog>
                     )}
-                    <Button variant="outline" onClick={handleSyncAll} disabled={isSyncing}>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar..."
+                                className="pl-9 w-[180px] h-9"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+                            <SelectTrigger className="w-[150px] h-9">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="open">Conectados</SelectItem>
+                                <SelectItem value="close">Desconectados</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button variant="outline" onClick={handleSyncAll} disabled={isSyncing} className="h-9">
                         <RefreshCw size={16} className={`mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar Tudo
                     </Button>
                 </div>
@@ -205,15 +236,15 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                 <Card className="border-dashed">
                     <CardContent className="py-12 flex flex-col items-center justify-center text-center">
                         <Smartphone className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                        <h3 className="text-lg font-medium">Nenhuma instância ativa</h3>
+                        <h3 className="text-lg font-medium">Nenhuma instância encontrada</h3>
                         <p className="text-muted-foreground max-w-xs mx-auto">
-                            Clique em "Nova Instância" para começar a conectar seu WhatsApp.
+                            Tente ajustar seus filtros ou clique em "Nova Instância" para começar.
                         </p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {instances.map((instance) => (
+                    {filteredInstances.map((instance) => (
                         <Card
                             key={instance.id}
                             className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md relative group"
