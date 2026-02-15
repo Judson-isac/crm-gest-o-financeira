@@ -1,32 +1,33 @@
 #!/bin/bash
 
-# Configuration
-DB_NAME="crm_gestao"
-DB_USER="postgres"
+# Script para adicionar colunas de WhatsApp na tabela redes
+# Execute na VPS: ./scripts/add-rede-whatsapp-defaults.sh
 
-echo "=========================================="
-echo "ADDING WHATSAPP DEFAULTS TO REDES TABLE"
-echo "=========================================="
+echo "🔍 Verificando container do banco de dados..."
+CONTAINER_ID=$(docker ps -q -f name=pgvector)
 
-# SQL to add columns
-SQL_ALTER="
+if [ -z "$CONTAINER_ID" ]; then
+    echo "❌ Erro: Container do banco de dados não encontrado!"
+    exit 1
+fi
+
+echo "✅ Container encontrado: $CONTAINER_ID"
+echo "🛠️ Aplicando colunas de WhatsApp na tabela redes..."
+
+docker exec -i $CONTAINER_ID psql -U postgres -d crm_gestao <<EOF
 ALTER TABLE redes ADD COLUMN IF NOT EXISTS whatsapp_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE redes ADD COLUMN IF NOT EXISTS whatsapp_api_url TEXT;
 ALTER TABLE redes ADD COLUMN IF NOT EXISTS whatsapp_api_token TEXT;
 ALTER TABLE redes ADD COLUMN IF NOT EXISTS whatsapp_chatwoot_config JSONB DEFAULT '{}'::jsonb;
-"
-
-# Execute the SQL
-echo "[1/1] Altering table redes..."
-psql -d $DB_NAME -U $DB_USER -c "$SQL_ALTER"
+EOF
 
 if [ $? -eq 0 ]; then
     echo "=========================================="
-    echo "SUCCESS! Columns added to redes table."
+    echo "✅ SUCESSO! Colunas adicionadas com sucesso."
     echo "=========================================="
 else
     echo "=========================================="
-    echo "ERROR! Failed to alter table redes."
+    echo "❌ ERRO! Falha ao alterar a tabela redes."
     echo "=========================================="
     exit 1
 fi
