@@ -478,10 +478,15 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             const rede = redes.find(r => r.id === id);
                                             if (rede) {
                                                 setSelectedRedeToConfig(rede);
+
+                                                // Fallback to persisted credentials if rede is empty
+                                                const finalApiUrl = rede.whatsapp_api_url || importData.url;
+                                                const finalApiToken = rede.whatsapp_api_token || importData.token;
+
                                                 setRedeConfig({
                                                     enabled: rede.whatsapp_enabled ?? false,
-                                                    apiUrl: rede.whatsapp_api_url ?? '',
-                                                    apiToken: rede.whatsapp_api_token ?? '',
+                                                    apiUrl: finalApiUrl,
+                                                    apiToken: finalApiToken,
                                                     chatwootConfig: (rede.whatsapp_chatwoot_config && Object.keys(rede.whatsapp_chatwoot_config).length > 0)
                                                         ? rede.whatsapp_chatwoot_config
                                                         : chatwootConfig
@@ -534,6 +539,31 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
                                             <div className="pt-4 border-t">
                                                 <h4 className="font-medium mb-4 text-sm uppercase tracking-wider text-muted-foreground">Configurações Chatwoot (Padrão)</h4>
+
+                                                <div className="space-y-2 mb-4">
+                                                    <Label>Perfil de Credenciais</Label>
+                                                    <Select
+                                                        onValueChange={(id) => {
+                                                            const profile = chatwootProfiles.find(p => p.id === id);
+                                                            if (profile) {
+                                                                setRedeConfig({
+                                                                    ...redeConfig,
+                                                                    chatwootConfig: { ...profile.config }
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione um perfil salvo" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {chatwootProfiles.map(p => (
+                                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <Label>URL do Chatwoot</Label>
