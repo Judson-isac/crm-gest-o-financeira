@@ -31,13 +31,17 @@ export function WhatsAppClient({ instance }: WhatsAppClientProps) {
     }, [instance?.status]);
 
     useEffect(() => {
-        if (instance?.id) {
-            const interval = setInterval(() => {
-                syncInstanceData(instance.id);
-            }, 30000); // Poll every 30s
+        if (instance?.id && status !== 'open') {
+            const interval = setInterval(async () => {
+                const newStatus = await syncInstanceData(instance.id);
+                if (newStatus && newStatus !== status) {
+                    setStatus(newStatus);
+                    router.refresh();
+                }
+            }, 10000); // Poll every 10s if not connected
             return () => clearInterval(interval);
         }
-    }, [instance?.id]);
+    }, [instance?.id, status, router]);
 
     const handleConnect = async () => {
         if (!instance) return;

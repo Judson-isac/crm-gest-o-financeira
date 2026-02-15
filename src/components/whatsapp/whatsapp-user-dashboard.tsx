@@ -31,9 +31,10 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
     const [isSaving, setIsSaving] = useState(false);
     const [newInstanceName, setNewInstanceName] = useState('');
     const [newInboxName, setNewInboxName] = useState('');
-    const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(
-        instances.length === 1 ? instances[0] : null
+    const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(
+        instances.length === 1 ? instances[0].id : null
     );
+    const selectedInstance = instances.find(i => i.id === selectedInstanceId) || null;
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'close'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -121,7 +122,7 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <button
-                            onClick={() => setSelectedInstance(null)}
+                            onClick={() => setSelectedInstanceId(null)}
                             className="hover:text-foreground transition-colors"
                         >
                             WhatsApp
@@ -254,7 +255,7 @@ export function WhatsAppUserDashboard({ instances, rede, user }: WhatsAppUserDas
                         <Card
                             key={instance.id}
                             className="hover:border-primary/50 cursor-pointer transition-all hover:shadow-md relative group"
-                            onClick={() => setSelectedInstance(instance)}
+                            onClick={() => setSelectedInstanceId(instance.id)}
                         >
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex justify-between items-center text-lg">
