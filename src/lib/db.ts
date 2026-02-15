@@ -607,8 +607,8 @@ export async function getRedeById(id: string): Promise<Rede | null> {
                    ep.api_token as ep_api_token, 
                    cp.chatwoot_config as cp_chatwoot_config
             FROM redes r
-            LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id
-            LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id
+            LEFT JOIN whatsapp_profiles ep ON r.whatsapp_evolution_profile_id = ep.id::text
+            LEFT JOIN whatsapp_profiles cp ON r.whatsapp_chatwoot_profile_id = cp.id::text
             WHERE r.id = $1
         `, [id]);
 
