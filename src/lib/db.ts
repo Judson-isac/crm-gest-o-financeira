@@ -2305,6 +2305,16 @@ export async function saveWhatsAppInstance(instance: Partial<WhatsAppInstance>):
 }
 
 export async function deleteWhatsAppInstance(id: string): Promise<void> {
+    const instance = await getWhatsAppInstanceById(id);
+    if (instance) {
+        try {
+            const { deleteInstanceFromServer } = await import('./evolution');
+            await deleteInstanceFromServer(instance.instanceName, instance.apiUrl, instance.instanceToken);
+        } catch (err) {
+            console.warn(`[DELETE] Failed to delete instance ${instance.instanceName} from Evolution:`, err);
+        }
+    }
+
     const client = await pool.connect();
     try {
         await client.query('DELETE FROM whatsapp_instances WHERE id = $1', [id]);

@@ -145,6 +145,16 @@ export async function logoutInstance(instanceName: string, baseUrl?: string, tok
     }
 }
 
+export async function deleteInstanceFromServer(instanceName: string, baseUrl?: string, token?: string) {
+    try {
+        await fetchEvolution(`/instance/delete/${instanceName.trim()}`, 'DELETE', undefined, baseUrl, token);
+        return true;
+    } catch (error) {
+        console.error('Error deleting instance from server:', error);
+        return false; // Don't block local deletion if remote fails
+    }
+}
+
 export async function syncInstanceData(id: string) {
     const instance = await getWhatsAppInstanceById(id);
     if (!instance) return;
