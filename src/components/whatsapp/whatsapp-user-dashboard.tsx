@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
-import { Smartphone, ChevronRight, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { Smartphone, ChevronRight, RefreshCw, Plus, Trash2, Search } from 'lucide-react';
 
 interface WhatsAppUserDashboardProps {
     instances: WhatsAppInstance[];
