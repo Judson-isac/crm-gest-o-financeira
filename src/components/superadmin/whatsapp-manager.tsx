@@ -105,36 +105,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
         }
     });
 
-    // Load persisted import credentials
+    // Load persisted global profiles
     useEffect(() => {
-        const savedUrl = localStorage.getItem('EVOLUTION_IMPORT_URL');
-        const savedToken = localStorage.getItem('EVOLUTION_IMPORT_TOKEN');
-        if (savedUrl || savedToken) {
-            setImportData(prev => ({
-                ...prev,
-                url: savedUrl || '',
-                token: savedToken || ''
-            }));
-            setNewInstance(prev => ({
-                ...prev,
-                apiUrl: savedUrl || '',
-                instanceToken: savedToken || ''
-            }));
-        }
-
-        const savedProfiles = localStorage.getItem('CHATWOOT_PROFILES');
-        if (savedProfiles) {
-            try {
-                const parsed = JSON.parse(savedProfiles);
-                setChatwootProfiles(parsed);
-                if (parsed.length > 0) {
-                    setSelectedProfileId(parsed[0].id);
-                    setChatwootConfig(parsed[0].config);
-                }
-            } catch (e) {
-                console.error('Error parsing Chatwoot profiles:', e);
-            }
-        }
         const fetchGlobalProfiles = async () => {
             try {
                 const profiles = await getWhatsAppProfiles();
@@ -180,18 +152,36 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                 console.warn('Evolution API creation attempt:', err.message);
             }
 
-            // Persist credentials
-            if (newInstance.apiUrl) localStorage.setItem('EVOLUTION_IMPORT_URL', newInstance.apiUrl);
-            if (newInstance.instanceToken) localStorage.setItem('EVOLUTION_IMPORT_TOKEN', newInstance.instanceToken);
+            // Clear legacy local storage to avoid confusion
+            localStorage.removeItem('EVOLUTION_IMPORT_URL');
+            localStorage.removeItem('EVOLUTION_IMPORT_TOKEN');
 
             const saved = await saveWhatsAppInstance(newInstance);
             setInstances([...instances, saved]);
             setIsAddOpen(false);
             setNewInstance({
                 instanceName: '',
-                instanceToken: localStorage.getItem('EVOLUTION_IMPORT_TOKEN') || '',
-                apiUrl: localStorage.getItem('EVOLUTION_IMPORT_URL') || '',
+                instanceToken: '',
+                apiUrl: '',
                 redeId: ''
+            });
+            setIsChatwootEnabled(false);
+            setChatwootConfig({
+                url: '',
+                token: '',
+                accountId: '',
+                nameInbox: '',
+                organization: '',
+                logo: '',
+                signMsg: true,
+                signDelimiter: '',
+                reopenConversation: true,
+                conversationPending: false,
+                importContacts: true,
+                importMessages: true,
+                daysLimitImportMessages: 7,
+                autoCreate: true,
+                ignoreJids: ''
             });
             setActiveTab('geral');
 
@@ -319,6 +309,12 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
 
             toast({ title: 'Sucesso', description: `Importado ${importedCount} instâncias (${skippedCount} ignoradas por já existirem).` });
             setIsImportOpen(false);
+
+            // Clear import data after success
+            setImportData({ url: '', token: '', redeId: '' });
+            localStorage.removeItem('EVOLUTION_IMPORT_URL');
+            localStorage.removeItem('EVOLUTION_IMPORT_TOKEN');
+
             router.refresh();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao importar do servidor' });
@@ -840,8 +836,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                             setImportData({
                                                 ...importData,
                                                 redeId: v,
-                                                url: profile?.api_url || rede?.whatsapp_api_url || importData.url,
-                                                token: profile?.api_token || rede?.whatsapp_api_token || importData.token
+                                                url: profile?.api_url || rede?.whatsapp_api_url || '',
+                                                token: profile?.api_token || rede?.whatsapp_api_token || ''
                                             });
                                         }}
                                     >
@@ -908,8 +904,8 @@ export function WhatsAppManager({ initialInstances, redes }: WhatsAppManagerProp
                                                     const rede = redes.find(r => r.id === v);
                                                     const profile = globalProfiles.find(p => p.id === rede?.whatsapp_profile_id);
 
-                                                    const finalApiUrl = profile?.api_url || rede?.whatsapp_api_url || newInstance.apiUrl;
-                                                    const finalApiToken = profile?.api_token || rede?.whatsapp_api_token || newInstance.instanceToken;
+                                                    const finalApiUrl = profile?.api_url || rede?.whatsapp_api_url || '';
+                                                    const finalApiToken = profile?.api_token || rede?.whatsapp_api_token || '';
 
                                                     const finalChatwootConfig = {
                                                         ...chatwootConfig,
